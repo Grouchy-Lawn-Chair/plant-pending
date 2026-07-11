@@ -1,0 +1,34 @@
+{
+  "createdAt": "2026-07-11T01:43:55.530Z",
+  "plantCount": 1440,
+  "minConfidence": 0.86,
+  "sourceFiles": {
+    "usdaNational": null,
+    "usdaCalifornia": null,
+    "permapeople": null,
+    "permapeopleCompanionSample": null,
+    "companion": null
+  },
+  "sourceRecordCounts": {
+    "usdaNational": 0,
+    "usdaCalifornia": 0,
+    "permapeople": 0,
+    "companion": 0,
+    "permapeopleCompanionSample": 0
+  },
+  "matchCounts": {
+    "usdaNational": 0,
+    "usdaCalifornia": 0,
+    "permapeople": 0,
+    "companionGraph": 0,
+    "permapeopleCompanionSample": 0
+  },
+  "outputs": [
+    "data/source-databases/processed/green-acres-source-subset.json",
+    "data/source-databases/processed/green-acres-permapeople-matches.json",
+    "data/source-databases/processed/green-acres-companion-graph.csv",
+    "data/source-databases/processed/green-acres-source-subset-report.csv",
+    "public/green_acres_source_subset_summary.json"
+  ],
+  "note": "This subset contains only records matched to Green Acres plants. Raw downloads can stay local and can be excluded from project zips."
+}

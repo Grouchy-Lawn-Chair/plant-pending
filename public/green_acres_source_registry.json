@@ -1,0 +1,32 @@
+{
+  "greenAcres": {
+    "name": "Green Acres Nursery product catalog",
+    "url": "https://idiggreenacres.com/",
+    "use": "Primary source for product name, availability, price, image, Green Acres tags, size, light, water, bloom, attributes, colors, and landscape use when present.",
+    "trust": "primary buying source for this app"
+  },
+  "usdaPlantsChecklist": {
+    "name": "USDA PLANTS Complete Checklist",
+    "url": "https://plants.sc.egov.usda.gov/downloads",
+    "use": "Source for standardized symbol, accepted scientific/common names, synonym symbols, and family. Does not provide garden height, width, water, or light in the checklist file.",
+    "trust": "government taxonomy/checklist source"
+  },
+  "permapeople": {
+    "name": "Permapeople plant database API/cache",
+    "url": "https://permapeople.org/knowledgebase/api-docs/",
+    "use": "Optional source for plant profiles and attributes such as light requirement, water requirement, USDA hardiness zone, family, layer, and companions when an exact/high-confidence match is found.",
+    "trust": "community-maintained plant database; requires API credentials for live fetch"
+  },
+  "trefle": {
+    "name": "Trefle plants API/cache",
+    "url": "https://trefle.io/",
+    "use": "Optional botanical source for scientific name, common name, family, genus, and taxonomy when an exact/high-confidence match is found.",
+    "trust": "global plant API; requires API token for live fetch"
+  },
+  "companionDataset": {
+    "name": "Companion plants dataset from Wikipedia/list datasets",
+    "url": "https://www.kaggle.com/datasets/aramacus/companion-plants",
+    "use": "Optional source for companion/antagonist relationships only. It is not used to fill height, width, water, or light.",
+    "trust": "secondary relationship dataset derived from Wikipedia-style companion planting tables"
+  }
+}

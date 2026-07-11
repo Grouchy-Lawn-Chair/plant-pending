@@ -1,0 +1,1613 @@
+{
+  "generatedAt": "2026-07-11T15:17:28.173Z",
+  "source": "public/green_acres_normalized.json",
+  "scoredPlants": 1440,
+  "counts": {
+    "poolCandidates": 158,
+    "lowMessPoolCandidates": 155,
+    "slopeCandidates": 335,
+    "privacyCandidates": 203,
+    "colorAccentCandidates": 640,
+    "waterwiseCandidates": 393,
+    "needsManualReview": 0,
+    "attractsBees": 213,
+    "petFriendlyTagged": 56
+  },
+  "topExamples": {
+    "poolSafeScore": [
+      {
+        "plantId": 265,
+        "productName": "Assorted Succulent Pack",
+        "botanicalName": "Succulent Assorted",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "pet_friendly_tag",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 277,
+        "productName": "Blue Fescue",
+        "botanicalName": "Festuca glauca",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "groundcover_or_trailing",
+          "grass_or_strappy",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 298,
+        "productName": "Campfire Crassula",
+        "botanicalName": "Crassula capitella 'Campfire'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 316,
+        "productName": "Crassula 'Calico Kitten'",
+        "botanicalName": "Crassula marginalis rubra",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "groundcover_or_trailing",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 317,
+        "productName": "Crassula ovata 'Gollum'",
+        "botanicalName": "Crassula ovata 'Gollum'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 318,
+        "productName": "Crassula ovata 'Hobbit'",
+        "botanicalName": "Crassula ovata 'Hobbit'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 321,
+        "productName": "Crassula 'Princess Pine'",
+        "botanicalName": "Crassula 'Princess Pine'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "groundcover_or_trailing",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 344,
+        "productName": "Echeveria 'Afterglow'",
+        "botanicalName": "",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 347,
+        "productName": "Echeveria",
+        "botanicalName": "Echeveria 'Blue Bird'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 394,
+        "productName": "Graptosedum",
+        "botanicalName": "Graptosedum 'Vera Higgins'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "pet_friendly_tag",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 402,
+        "productName": "Haworthia",
+        "botanicalName": "",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "wildlife_attractor",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 462,
+        "productName": "Panda Plant",
+        "botanicalName": "Kalanchoe tomentosa 'Panda Plant'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 512,
+        "productName": "Sempervivum ??Sunset??",
+        "botanicalName": "",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 513,
+        "productName": "Senecio",
+        "botanicalName": "Senecio serpens",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "pet_friendly_tag",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 514,
+        "productName": "Senecio ??Spear Head??",
+        "botanicalName": "Senecio kleiniiformis ??Spear Head??",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 517,
+        "productName": "Skyscraper&#8482; Senecio",
+        "botanicalName": "Senecio ficoides 'Mount Everest'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "pet_friendly_tag",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 534,
+        "productName": "Stonecrop",
+        "botanicalName": "Sedum nussbaumerianum 'Coppetone'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "pet_friendly_tag",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 536,
+        "productName": "Stonecrop 'Firestorm'",
+        "botanicalName": "Sedum adolphii 'Firestorm'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "pet_friendly_tag",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 539,
+        "productName": "Variegated Carpet Stonecrop",
+        "botanicalName": "Sedum lineare 'Variegatum'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 541,
+        "productName": "Stonecrop",
+        "botanicalName": "Sedum morganianum 'Donkey Tail'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "groundcover_or_trailing",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 544,
+        "productName": "Stonecrop",
+        "botanicalName": "Sedum rubrotinctum",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "pet_friendly_tag",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 546,
+        "productName": "Stonecrop",
+        "botanicalName": "",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 671,
+        "productName": "Agave 'Blue Flame'",
+        "botanicalName": "Agave 'Blue Flame'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 672,
+        "productName": "Agave 'Blue Glow'",
+        "botanicalName": "Agave 'Blue Glow'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 673,
+        "productName": "Agave 'Blue Glow' | Monrovia",
+        "botanicalName": "Agave Assorted",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "succulent_like",
+          "full_sun"
+        ]
+      }
+    ],
+    "slopeScore": [
+      {
+        "plantId": 314,
+        "productName": "Cranesbill 'Bishops Form'",
+        "botanicalName": "Erodium variabile 'Bishops Form'",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "shade_tolerant",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 416,
+        "productName": "Silver Carpet Lamb's Ear",
+        "botanicalName": "Stachys byzantina 'Silver Carpet'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 424,
+        "productName": "Lantana 'Trailing Purple'",
+        "botanicalName": "Lantana montevidensis 'Trailing Purple'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor",
+          "groundcover_or_trailing"
+        ]
+      },
+      {
+        "plantId": 425,
+        "productName": "Lantana 'Trailing White'",
+        "botanicalName": "Lantana montevidensis 'Trailing White'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor",
+          "groundcover_or_trailing"
+        ]
+      },
+      {
+        "plantId": 449,
+        "productName": "Matilija Poppy / Fried Egg Poppy",
+        "botanicalName": "Romneya coulteri",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 451,
+        "productName": "Mexican Evening Primrose",
+        "botanicalName": "Oenothera speciosa 'Siskiyou'",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 505,
+        "productName": "Atlantis&#174; Sedum",
+        "botanicalName": "Sedum takesimense 'Atlantis' PP#27454",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 543,
+        "productName": "Stonecrop pachyphyllum",
+        "botanicalName": "Sedum pachyphyllum",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "attracts_bees",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 554,
+        "productName": "Sunsparkler&#174; Cherry Tart Sedum",
+        "botanicalName": "Sedum hybrid 'Cherry Tart' PP#24,603",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 555,
+        "productName": "Sunsparkler&#174; Lime Zinger Sedum",
+        "botanicalName": "Sedum hybrid 'Lime Zinger'",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "succulent_like",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 595,
+        "productName": "Flower Carpet&#174; Amber Rose",
+        "botanicalName": "Rosa x 'Flower Carpet Amber'",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "thorn_spine_caution",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 597,
+        "productName": "Landscape Rose 'Coral'",
+        "botanicalName": "Rosa x 'Landscape Coral'",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "thorn_spine_caution",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 598,
+        "productName": "Flower Carpet&#174; Pink Splash Rose",
+        "botanicalName": "Rosa x 'Flower Carpet Pink Splash'",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "thorn_spine_caution",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 599,
+        "productName": "Flower Carpet&#174; Pink Supreme Rose",
+        "botanicalName": "Rosa x 'Flower Carpet Pink Supreme'",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "thorn_spine_caution",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 600,
+        "productName": "Landscape Rose 'Red'",
+        "botanicalName": "Rosa x 'Landscape Red'",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "thorn_spine_caution",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 603,
+        "productName": "Flower Carpet&#174; Yellow Rose",
+        "botanicalName": "Rosa x 'Flower Carpet Yellow'",
+        "score": 10,
+        "flags": [
+          "evergreen_unlikely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "thorn_spine_caution",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 775,
+        "productName": "Blue Cape Plumbago",
+        "botanicalName": "Plumbago auriculata 'Imperial Blue'",
+        "score": 10,
+        "flags": [
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 783,
+        "productName": "Breath Of Heaven 'Sunset Gold'",
+        "botanicalName": "Coleonema pulchellum 'Sunset Gold'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 910,
+        "productName": "Japanese Tassel Fern",
+        "botanicalName": "Polystichum polyblepharum (setosum)",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "groundcover_or_trailing"
+        ]
+      },
+      {
+        "plantId": 954,
+        "productName": "Manzanita 'Emerald Carpet'",
+        "botanicalName": "Arctostaphylos 'Emerald Carpet'",
+        "score": 10,
+        "flags": [
+          "waterwise_likely",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 959,
+        "productName": "Myoporum 'Putah Creek'",
+        "botanicalName": "Myoporum parvifolium 'Putah Creek'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "attracts_bees",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 984,
+        "productName": "Pink Myoporum",
+        "botanicalName": "Myoporum parvifolium 'Pink'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "attracts_bees",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 1003,
+        "productName": "Rockrose ??Sunset??",
+        "botanicalName": "Cistus x 'Sunset'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 1044,
+        "productName": "Western Sword Fern",
+        "botanicalName": "Polystichum munitum",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "pet_friendly_tag",
+          "groundcover_or_trailing",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 1045,
+        "productName": "White Myoporum",
+        "botanicalName": "Myoporum parvifolium (White)",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "attracts_bees",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      }
+    ],
+    "privacyScore": [
+      {
+        "plantId": 76,
+        "productName": "Lavender",
+        "botanicalName": "",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "edible_or_fruit",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 108,
+        "productName": "Rosemary 'Barbecue'",
+        "botanicalName": "Rosmarinus officinalis",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "edible_or_fruit",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 154,
+        "productName": "Rosemary Upright",
+        "botanicalName": "Rosmarinus officinalis",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "edible_or_fruit",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 176,
+        "productName": "Sweet Lavender, Organic",
+        "botanicalName": "",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "edible_or_fruit",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 245,
+        "productName": "Flowering Maple",
+        "botanicalName": "Abutilon hybrid",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor"
+        ]
+      },
+      {
+        "plantId": 414,
+        "productName": "Kangaroo Paw",
+        "botanicalName": "Anigozanthos Assorted",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 415,
+        "productName": "Kangaroo Paw 'Pot-A-Roo'",
+        "botanicalName": "",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 443,
+        "productName": "Lion's Tail",
+        "botanicalName": "Leonotis leonurus",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 669,
+        "productName": "African Iris",
+        "botanicalName": "Dietes iridioides",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 694,
+        "productName": "Azalea 'Red Bird'",
+        "botanicalName": "Azalea b.i. 'Red Bird'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy"
+        ]
+      },
+      {
+        "plantId": 696,
+        "productName": "Azalea 'Sherwood Pink'",
+        "botanicalName": "Azalea kurume 'Sherwood Pink'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy"
+        ]
+      },
+      {
+        "plantId": 706,
+        "productName": "Beach Ball? Black Stem Pittosporum",
+        "botanicalName": "Pittosporum tenuifolium 'Beach Ball'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 714,
+        "productName": "Irish Fortune&#8482; Black Stem Pittosporum",
+        "botanicalName": "Pittosporum tenuifolium 'Irish Fortune'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 715,
+        "productName": "Black Stem Pittosporum 'Marjorie Channon'",
+        "botanicalName": "Pittosporum tenuifolium 'Marjorie Channon'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 734,
+        "productName": "Breath Of Heaven",
+        "botanicalName": "Coleonema pulchellum",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 735,
+        "productName": "Bush Anemone 'Elizabeth'",
+        "botanicalName": "Carpenteria californica 'Elizabeth'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor"
+        ]
+      },
+      {
+        "plantId": 751,
+        "productName": "Camellia j. 'Bob Hope' | Matsuda's",
+        "botanicalName": "Camellia japonica 'Bob Hope'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely"
+        ]
+      },
+      {
+        "plantId": 757,
+        "productName": "Camellia j. 'Mrs. Charles Cobb' | Matsuda's",
+        "botanicalName": "Camellia japonica 'Mrs. Charles Cobb'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "pet_friendly_tag",
+          "flowering_or_showy"
+        ]
+      },
+      {
+        "plantId": 761,
+        "productName": "Camellia s.",
+        "botanicalName": "Camellia sasanqua 'Yuletide'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "pet_friendly_tag",
+          "flowering_or_showy"
+        ]
+      },
+      {
+        "plantId": 763,
+        "productName": "Camellia s. 'Showa-No-Sakae' | Monrovia",
+        "botanicalName": "Camellia sasanqua 'Showa-No-Sakae'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy"
+        ]
+      },
+      {
+        "plantId": 766,
+        "productName": "Camellia s. 'Yuletide' | Monrovia",
+        "botanicalName": "Camellia sasanqua 'Yuletide' [M]",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "pet_friendly_tag",
+          "flowering_or_showy"
+        ]
+      },
+      {
+        "plantId": 769,
+        "productName": "Camellia j. 'Swan Lake' | Monrovia",
+        "botanicalName": "Camellia japonica 'Swan Lake'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 770,
+        "productName": "Camellia j. 'Tom Knudsen'",
+        "botanicalName": "Camellia japonica 'Tom Knudsen'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "pet_friendly_tag",
+          "flowering_or_showy"
+        ]
+      },
+      {
+        "plantId": 773,
+        "productName": "Camellia s. 'Yuletide'",
+        "botanicalName": "Camellia sasanqua 'Yuletide'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "pet_friendly_tag",
+          "flowering_or_showy"
+        ]
+      },
+      {
+        "plantId": 780,
+        "productName": "Dwarf Carolina Cherry Laurel Multi-Trunk",
+        "botanicalName": "Prunus caroliniana 'Compacta'",
+        "score": 9.2,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "wildlife_attractor",
+          "full_sun"
+        ]
+      }
+    ],
+    "colorInterestScore": [
+      {
+        "plantId": 245,
+        "productName": "Flowering Maple",
+        "botanicalName": "Abutilon hybrid",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor"
+        ]
+      },
+      {
+        "plantId": 251,
+        "productName": "Ajuga",
+        "botanicalName": "Ajuga reptans 'Catlin's Giant'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "groundcover_or_trailing",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 286,
+        "productName": "Ajuga 'Bronze'",
+        "botanicalName": "Ajuga reptans 'Bronze'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "groundcover_or_trailing",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 319,
+        "productName": "Crassula ovata 'Minor'",
+        "botanicalName": "Crassula ovata 'Minor'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 345,
+        "productName": "Echeveria",
+        "botanicalName": "",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 350,
+        "productName": "Echeveria 'Frosty'",
+        "botanicalName": "",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 380,
+        "productName": "French Lavender",
+        "botanicalName": "Lavandula dentata",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 393,
+        "productName": "Grafted Moon Cactus",
+        "botanicalName": "Gymnocalycium mihanovichii",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "succulent_like",
+          "thorn_spine_caution",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 434,
+        "productName": "Lavender 'Goodwin Creek'",
+        "botanicalName": "Lavandula x 'Goodwin Creek'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 436,
+        "productName": "Lavender 'Hidcote'",
+        "botanicalName": "Lavandula angustifolia 'Hidcote'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 437,
+        "productName": "Lavender 'Munstead'",
+        "botanicalName": "Lavandula angustifolia 'Munstead'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 438,
+        "productName": "Lavender 'Provence'",
+        "botanicalName": "Lavandula x intermedia 'Provence'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 460,
+        "productName": "Pachysedum 'Ganzhou'",
+        "botanicalName": "",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "succulent_like"
+        ]
+      },
+      {
+        "plantId": 667,
+        "productName": "Abelia 'Kaleidoscope'",
+        "botanicalName": "Abelia x grandiflora 'Kaleidoscope'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 721,
+        "productName": "Bountiful Blue&#174; Blueberry | Monrovia",
+        "botanicalName": "Vaccinium corymbosum 'Bountiful Blue'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "edible_or_fruit"
+        ]
+      },
+      {
+        "plantId": 722,
+        "productName": "Blueberry 'Jubilee'",
+        "botanicalName": "Vaccinium corymbosum 'Jubilee'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "edible_or_fruit",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 723,
+        "productName": "Blueberry 'Misty'",
+        "botanicalName": "Vaccinium corymbosum 'Misty'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "edible_or_fruit"
+        ]
+      },
+      {
+        "plantId": 725,
+        "productName": "Blueberry 'Sharpblue'",
+        "botanicalName": "Vaccinium corymbosum 'Sharpblue'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "edible_or_fruit"
+        ]
+      },
+      {
+        "plantId": 729,
+        "productName": "Bottlebrush 'Little John'",
+        "botanicalName": "Callistemon citrinus 'Little John'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 783,
+        "productName": "Breath Of Heaven 'Sunset Gold'",
+        "botanicalName": "Coleonema pulchellum 'Sunset Gold'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 799,
+        "productName": "Daphne 'Rebecca'",
+        "botanicalName": "Daphne odora 'Rebecca'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "wildlife_attractor"
+        ]
+      },
+      {
+        "plantId": 855,
+        "productName": "Fringe Flower 'Chang Nian Hong'",
+        "botanicalName": "Loropetalum chinense 'Chang Nian Hong'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 856,
+        "productName": "Fringe Flower Jazz Hands&#174 Dwarf Pink",
+        "botanicalName": "Loropetalum chinense Jazz Hands&#174 Dwarf Pink",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy"
+        ]
+      },
+      {
+        "plantId": 858,
+        "productName": "Fringe Flower Jazz Hands Mini&#174",
+        "botanicalName": "Loropetalum chinense Jazz Hands Mini&#174",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 859,
+        "productName": "Fringe Flower 'Purple Majesty'",
+        "botanicalName": "Loropetalum chinense 'Purple Majesty'",
+        "score": 10,
+        "flags": [
+          "evergreen_likely",
+          "flowering_or_showy",
+          "full_sun"
+        ]
+      }
+    ],
+    "layoutReliabilityScore": [
+      {
+        "plantId": 1,
+        "productName": "Alyssum",
+        "botanicalName": "Alyssum Assorted",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "groundcover_or_trailing",
+          "annual_or_seasonal",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 2,
+        "productName": "Angelonia",
+        "botanicalName": "Angelonia augustifolia",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "annual_or_seasonal",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 3,
+        "productName": "Annual Dianthus",
+        "botanicalName": "Dianthus Assorted",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "annual_or_seasonal",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 4,
+        "productName": "Annual Verbena",
+        "botanicalName": "",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "annual_or_seasonal",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 5,
+        "productName": "Annual Vinca",
+        "botanicalName": "Catharanthus roseus",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "annual_or_seasonal",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 6,
+        "productName": "Begonia",
+        "botanicalName": "Begonia Assorted",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "annual_or_seasonal",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 7,
+        "productName": "Begonia Nonstop&#174;",
+        "botanicalName": "Begonia Assorted",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "annual_or_seasonal",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 8,
+        "productName": "California Poppy",
+        "botanicalName": "Eschscholzia californica",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor",
+          "annual_or_seasonal"
+        ]
+      },
+      {
+        "plantId": 9,
+        "productName": "Celosia",
+        "botanicalName": "Celosia plumosa",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "annual_or_seasonal",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 10,
+        "productName": "Cosmos",
+        "botanicalName": "Cosmos bipinnatus",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "annual_or_seasonal",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 11,
+        "productName": "Firefly Petunia",
+        "botanicalName": "",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "annual_or_seasonal"
+        ]
+      },
+      {
+        "plantId": 12,
+        "productName": "FlameThrower&#8482; Coleus",
+        "botanicalName": "Coleus x hybridus",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "annual_or_seasonal",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 13,
+        "productName": "Hippo&#174; Polka Dot Plant",
+        "botanicalName": "Hypoestes phyllostachya",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "annual_or_seasonal",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 14,
+        "productName": "Impatiens",
+        "botanicalName": "Impatiens Assorted",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "annual_or_seasonal",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 15,
+        "productName": "Lobelia",
+        "botanicalName": "Lobelia Assorted",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "annual_or_seasonal",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 16,
+        "productName": "Marigold",
+        "botanicalName": "",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "wildlife_attractor",
+          "groundcover_or_trailing"
+        ]
+      },
+      {
+        "plantId": 17,
+        "productName": "Mojave&#174; Series Purslane",
+        "botanicalName": "Portulaca umbraticola",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "annual_or_seasonal"
+        ]
+      },
+      {
+        "plantId": 18,
+        "productName": "Nasturtium",
+        "botanicalName": "",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "attracts_bees",
+          "groundcover_or_trailing",
+          "annual_or_seasonal",
+          "edible_or_fruit"
+        ]
+      },
+      {
+        "plantId": 19,
+        "productName": "New Guinea Impatiens",
+        "botanicalName": "Impatiens hawkeri",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "annual_or_seasonal",
+          "shade_tolerant"
+        ]
+      },
+      {
+        "plantId": 20,
+        "productName": "Petunia",
+        "botanicalName": "Petunia Assorted",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "pet_friendly_tag",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "annual_or_seasonal"
+        ]
+      },
+      {
+        "plantId": 21,
+        "productName": "Pocketbook Flower",
+        "botanicalName": "",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "annual_or_seasonal"
+        ]
+      },
+      {
+        "plantId": 22,
+        "productName": "Purslane",
+        "botanicalName": "Portulaca oleracea",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "groundcover_or_trailing",
+          "annual_or_seasonal"
+        ]
+      },
+      {
+        "plantId": 23,
+        "productName": "Moss Rose",
+        "botanicalName": "Portulaca grandiflora",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "waterwise_likely",
+          "flowering_or_showy",
+          "groundcover_or_trailing",
+          "thorn_spine_caution",
+          "annual_or_seasonal"
+        ]
+      },
+      {
+        "plantId": 24,
+        "productName": "Red Hot Sally Sage",
+        "botanicalName": "Salvia splendens",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "annual_or_seasonal",
+          "full_sun"
+        ]
+      },
+      {
+        "plantId": 25,
+        "productName": "Sage",
+        "botanicalName": "Salvia farinacea 'Victoria Blue'",
+        "score": 9.4,
+        "flags": [
+          "evergreen_unlikely",
+          "flowering_or_showy",
+          "wildlife_attractor",
+          "annual_or_seasonal",
+          "full_sun"
+        ]
+      }
+    ]
+  },
+  "outputs": [
+    "public/green_acres_design_scores.json",
+    "public/green_acres_design_scores_report.csv",
+    "public/green_acres_design_score_summary.json"
+  ]
+}

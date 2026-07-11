@@ -1,0 +1,73 @@
+plantId,productName,botanicalName,handle,missingFields,note
+30,Sunflower,Helianthus annuus,sunflower,height,Still missing because no high-confidence source-backed value was found.
+100,Onion 'Yellow',Allium cepa,onion-yellow,attributes,Still missing because no high-confidence source-backed value was found.
+102,Oregano 'Hot n' Spicy',Origanum vulgare,oregano-hot-n-spicy,attributes,Still missing because no high-confidence source-backed value was found.
+177,Tarragon,Artemisia dracunculus,tarragon,attributes,Still missing because no high-confidence source-backed value was found.
+242,Winter Savory,Satureja montana,winter-savory,attributes,Still missing because no high-confidence source-backed value was found.
+243,Yellow Corn,Zea mays,yellow-corn,attributes,Still missing because no high-confidence source-backed value was found.
+250,Ajuga 'Burgundy Glow',Ajuga reptans 'Burgundy Glow',ajuga,width,Still missing because no high-confidence source-backed value was found.
+252,Aloe 'Bright Star',Aloe 'Bright Star',aloe-bright-star,attributes,Still missing because no high-confidence source-backed value was found.
+261,Artemisia 'Powis Castle',Artemisia x 'Powis Castle',artemisia-powis-castle,attributes,Still missing because no high-confidence source-backed value was found.
+332,Color Bowl,Color Bowl Assorted,day-of-the-dead-color-bowl,height; width,Still missing because no high-confidence source-backed value was found.
+342,Dwarf Mondo Grass,Ophiopogon japonicus 'Nana',dwarf-mondo-grass,width,Still missing because no high-confidence source-backed value was found.
+387,Gazania,,gazania,width,Still missing because no high-confidence source-backed value was found.
+392,Golden Moneywort,Lysimachia nummularia 'Aurea',golden-moneywort,width,Still missing because no high-confidence source-backed value was found.
+395,Green Carpet,Herniaria glabra,green-carpet,width,Still missing because no high-confidence source-backed value was found.
+396,Green Moneywort,Lysimachia nummularia,green-moneywort,width,Still missing because no high-confidence source-backed value was found.
+398,Ground Ivy,Glechoma hederacea,ground-ivy,width,Still missing because no high-confidence source-backed value was found.
+400,Hanging Basket 12,Hanging Basket Assorted,hanging-basket,height; width,Still missing because no high-confidence source-backed value was found.
+404,Hens & Chicks,Sempervivum Assorted,hens-chicks,width,Still missing because no high-confidence source-backed value was found.
+412,Kalanchoe 'Chocolate Soldier',Kalanchoe 'Chocolate Soldier',kalanchoe-chocolate-soldier,lightRequirements,Still missing because no high-confidence source-backed value was found.
+413,Kalanchoe millotii,Kalanchoe millotii,kalanchoe-millotii,lightRequirements,Still missing because no high-confidence source-backed value was found.
+417,Lamb's Ear,Stachys byzantina,lambs-ear-1,width,Still missing because no high-confidence source-backed value was found.
+418,Lamb's Ear 'Helene Von Stein',Stachys byzantina 'Helen Von Stein',lambs-ear-helene-von-stein,width,Still missing because no high-confidence source-backed value was found.
+440,Lemon Coral&#174; Sedum,Sedum mexicanum,lemon-coral-174-sedum,attributes,Still missing because no high-confidence source-backed value was found.
+454,Mondo Grass,Ophiopogon japonicus 'Nana',mondo-grass,width,Still missing because no high-confidence source-backed value was found.
+455,Moneywort,Lysimachia nummularia 'Goldilocks',moneywort-goldie,width,Still missing because no high-confidence source-backed value was found.
+464,Periwinkle,Vinca minor,periwinkle-blue,width,Still missing because no high-confidence source-backed value was found.
+465,Periwinkle 'Bowles Mauve',Vinca minor 'Bowles Mauve',periwinkle-bowles-mauve,width,Still missing because no high-confidence source-backed value was found.
+466,Periwinkle 'Sterling Silver',Vinca minor 'Sterling Silver',periwinkle-sterling-silver,width,Still missing because no high-confidence source-backed value was found.
+529,St. John's Wort,Hypericum calycinum,st-johns-wort,width,Still missing because no high-confidence source-backed value was found.
+530,Stonecrop,Sedum reflexum,stonecrop-angelina,attributes,Still missing because no high-confidence source-backed value was found.
+531,Stonecrop,,stonecrop-aurora,attributes,Still missing because no high-confidence source-backed value was found.
+558,Sweet Caroline Sweetheart Shadowstorm&#174;,Ipomoea batatas,sweet-caroline-sweetheart-shadowstorm-174,attributes,Still missing because no high-confidence source-backed value was found.
+559,Sweet Potato Vine,Ipomoea batatas,sweet-potato-vine,width; attributes,Still missing because no high-confidence source-backed value was found.
+560,Sweet Woodruff,Galium odoratum,sweet-woodruff,width,Still missing because no high-confidence source-backed value was found.
+566,Variegated Ground Ivy,Glechoma hederacea,variegated-ground-ivy,width,Still missing because no high-confidence source-backed value was found.
+570,Hanging Basket 10,Hanging Basket Assorted,warm-season-hanging-basket,height; width,Still missing because no high-confidence source-backed value was found.
+674,Arabian Jasmine,Jasminum sambac,arabian-jasmine,width,Still missing because no high-confidence source-backed value was found.
+699,Bamboo 'Alphonse Karr',Bambusa multiplex 'Alphonse Karr',bamboo-alphonse-karr,width,Still missing because no high-confidence source-backed value was found.
+700,Bamboo 'Golden Goddess',Bambusa multiplex 'Golden Goddess',bamboo-golden-goddess,width,Still missing because no high-confidence source-backed value was found.
+710,Black Bamboo,Phyllostachys nigra,black-bamboo,width,Still missing because no high-confidence source-backed value was found.
+850,Flax Lily,Dianella revoluta 'Coolvista',flax-lily-coolvista,attributes,Still missing because no high-confidence source-backed value was found.
+870,Giant Timber Bamboo,Bambusa oldhamii,giant-timber-bamboo,width,Still missing because no high-confidence source-backed value was found.
+874,Goldflame Honeysuckle Stake,Lonicera x heckrottii 'Goldflame',goldflame-honeysuckle-stake-monrovia,width,Still missing because no high-confidence source-backed value was found.
+893,Horsetail Reed,Equisetum hyemale,horsetail-reed,width,Still missing because no high-confidence source-backed value was found.
+895,Hydrangea,Hydrangea macrophylla,hydrangea,attributes,Still missing because no high-confidence source-backed value was found.
+995,Red Abyssinian Banana,Ensete ventricosum 'Maureli',red-abyssinian-banana,attributes,Still missing because no high-confidence source-backed value was found.
+1136,Cherry Multi-Graft Combo #1 Bareroot,Dave Wilson Nursery&#174;,cherry-multi-graft-combo-1-bareroot,width,Still missing because no high-confidence source-backed value was found.
+1137,Cherry Multi-Graft Combo #3 Bareroot,Dave Wilson Nursery&#174;,cherry-multi-graft-combo-3-bareroot,width,Still missing because no high-confidence source-backed value was found.
+1236,Japanese Laceleaf Maple 'Orangeola',Acer palmatum dissectum 'Orangeola',japanese-laceleaf-maple-orangeola,waterNeeds,Still missing because no high-confidence source-backed value was found.
+1335,Pear Multi-Graft Combo #2 Bareroot,Dave Wilson Nursery&#174;,pear-multi-graft-combo-2-bareroot,width,Still missing because no high-confidence source-backed value was found.
+1409,Wisteria 'Amethyst Falls' Staked,Wisteria frutescens 'Amethyst Falls',wisteria-amethyst-falls-staked,width,Still missing because no high-confidence source-backed value was found.
+1410,Wisteria 'Cooke's Purple' Staked,Wisteria sinensis 'Cooke's Purple',wisteria-cookes-purple-stake,width,Still missing because no high-confidence source-backed value was found.
+1411,Wisteria Staked,Wisteria sinensis,wisteria-staked,width,Still missing because no high-confidence source-backed value was found.
+1416,Black-Eyed Susan Vine,Thunbergia alata,black-eyed-susan-vine,width,Still missing because no high-confidence source-backed value was found.
+1418,Carolina Jessamine Stake,Gelsemium sempervirens,carolina-jessamine-stake,width,Still missing because no high-confidence source-backed value was found.
+1419,Clematis,,clematis,height; width,Still missing because no high-confidence source-backed value was found.
+1420,Creeping Fig Stake,Ficus pumila Stake,creepingfig,height; width,Still missing because no high-confidence source-backed value was found.
+1421,Crossvine 'Tangerine Beauty',Bignonia capreolata 'Tangerine Beauty',crossvine-tangerine-beauty-monrovia,width,Still missing because no high-confidence source-backed value was found.
+1422,Grape 'Black Monukka',Vitis 'Black Monukka',grape-black-monukka,width,Still missing because no high-confidence source-backed value was found.
+1423,Grape 'Concord Seedless',Vitis 'Concord Seedless',grape-concord-seedless,width,Still missing because no high-confidence source-backed value was found.
+1424,Grape 'Flame Seedless',Vitis 'Flame Seedless',grape-flame-seedless,width,Still missing because no high-confidence source-backed value was found.
+1425,Grape 'Thompson Seedless',Vitis 'Thompson Seedless',grape-thompson-seedless,width,Still missing because no high-confidence source-backed value was found.
+1426,Hall's Honeysuckle Stake,Lonicera japonica 'Halliana',halls-honeysuckle-stake,width,Still missing because no high-confidence source-backed value was found.
+1429,Lilac Vine Stake,Hardenbergia violacea,lilac-vine-stake,width,Still missing because no high-confidence source-backed value was found.
+1431,Morning Glory,Ipomoea acuminata,morning-glory-blue-dawn-flower,width,Still missing because no high-confidence source-backed value was found.
+1432,Passion Fruit,Passiflora edulis,passion-fruit,width,Still missing because no high-confidence source-backed value was found.
+1433,Pink Bower Vine,Pandorea jasminoides 'Rosea',pink-bower-vine,width,Still missing because no high-confidence source-backed value was found.
+1434,Pink Jasmine Stake,Jasminum polyanthum,pink-jasmine-stake,width,Still missing because no high-confidence source-backed value was found.
+1437,Variegated Bower Vine,Pandorea jasminoides 'Variegata',variegated-bower-vine,width,Still missing because no high-confidence source-backed value was found.
+1438,White Potato Vine Stake,Solanum jasminoides,white-potato-vine-stake,width,Still missing because no high-confidence source-backed value was found.
+1439,Zestful&#8482; Lollipop Grape | Monrovia,Vitis 'Zestful Lollipop',zestful-8482-lollipop-grape-monrovia,width,Still missing because no high-confidence source-backed value was found.
+1440,Zestful&#8482; Waterfall Grape | Monrovia,Vitis 'Zestful Waterfall',zestful-8482-waterfall-grape-monrovia,width,Still missing because no high-confidence source-backed value was found.

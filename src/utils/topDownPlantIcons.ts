@@ -1,0 +1,1 @@
+export { TOP_DOWN_PLANT_ICONS, TOP_DOWN_PLANT_ICON_LABELS, PLANT_ICON_TAXONOMY } from './plantIconTaxonomy';

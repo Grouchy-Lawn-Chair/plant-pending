@@ -1,0 +1,17 @@
+node_modules/
+dist/
+
+# Large source databases stay local and should not be uploaded in project zips.
+data/source-databases/raw/
+data/source-databases/cache/
+data/source-databases/permapeople-plants.json
+data/source-databases/permapeople-companions.json
+data/source-databases/usda-plants-checklist.txt
+data/source-databases/usda-california-checklist.txt
+data/source-databases/usda-*.csv
+data/source-databases/usda-*.txt
+
+# Keep the small processed Green Acres-only subset and README.
+!data/source-databases/README.md
+!data/source-databases/processed/
+!data/source-databases/processed/**

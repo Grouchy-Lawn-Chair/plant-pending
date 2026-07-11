@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-07-11T15:17:28.882Z",
+  "sourceVersion": "v94-uc-guided-classification",
+  "plantCount": 1440,
+  "counts": {
+    "welMatched": 99,
+    "arboretumAllStarMatched": 28,
+    "poolGoodOrExcellent": 115,
+    "poolUsableOrBetter": 352,
+    "slopeGoodOrExcellent": 173,
+    "slopeUsableOrBetter": 248,
+    "poolAccentOnly": 1104,
+    "slopeAccentOnly": 44
+  },
+  "sourceNotes": [
+    "UC Master Gardeners Sacramento County WEL source uses garden numbers: 1 Welcome, 2 Shade, 3 Perennial, 4 Popular Plant, 5 Native Plant, 6 Wildlife Habitat, 7 Streetscape.",
+    "UC Davis Arboretum All-Star terms are used as reliability/climate-ready source signals.",
+    "This is a researched/rule-based classifier. It improves generator categories but does not replace final horticultural review."
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "version": "v101-density-model-fix",
+  "purpose": "Practical planting-plan recipes used by the generator so zones read like designed plant communities; v101 makes density mean visible coverage, not hidden overlap.",
+  "recipes": {
+    "poolPlanter": {
+      "speciesTarget": "4-7 species",
+      "plantCountBehavior": "moderate to full visible coverage, repeated rhythm, no confetti and no hidden overlap",
+      "roles": {
+        "cleanEvergreenShrub": 0.3,
+        "grassOrStrappyFoliage": 0.3,
+        "colorFoliage": 0.2,
+        "architecturalAccent": 0.15,
+        "lowFlowerAccent": 0.05
+      },
+      "layoutDirective": "Use clean repeated evergreen/foliage masses with grasses or strappy foliage as rhythm plants. Agave, yucca, and succulents are accents only. Avoid heavy flower drop, leaf litter, toxic/caution plants, and bee-heavy flowers at the pool edge."
+    },
+    "slopePlanting": {
+      "speciesTarget": "5-8 species",
+      "plantCountBehavior": "fewer species repeated in visible drifts; high density fills more of the zone without hiding plants inside overlaps",
+      "roles": {
+        "matrixGroundcoverOrSpreadingShrub": 0.35,
+        "deepRootedGrassOrSedge": 0.25,
+        "lowShrubOrNativeShrub": 0.25,
+        "seasonalFlowerAccent": 0.1,
+        "succulentOrRockAccent": 0.05
+      },
+      "layoutDirective": "Build a soil-holding matrix with sprawling shrubs/groundcovers, deep-rooted grasses/sedges, and low shrubs. Use seasonal flowers and succulents only as accents."
+    },
+    "flowerBed": {
+      "speciesTarget": "6-9 species",
+      "plantCountBehavior": "layered masses/drifts; more plants than shrub zones, but still repeated groups",
+      "roles": {
+        "flowerLowFront": 0.3,
+        "flowerMiddleMass": 0.45,
+        "flowerTallBack": 0.15,
+        "flowerFoliageSupport": 0.1
+      },
+      "layoutDirective": "Use low/front, middle/body, and tall/back flowering drifts. Repeat color groups and use limited foliage support."
+    },
+    "grassDrift": {
+      "speciesTarget": "1-3 species",
+      "plantCountBehavior": "visible clumps and drifts; high density spreads clumps wider instead of stacking symbols on top of each other",
+      "roles": {
+        "grassMatrixClump": 0.82,
+        "grassAccentClump": 0.18
+      },
+      "layoutDirective": "Use one dominant grass/sedge/lomandra species and one optional accent grass for color or height. Place as repeated clumps."
+    },
+    "hedgeRow": {
+      "speciesTarget": "1 main species, optional accent later",
+      "plantCountBehavior": "density means percent of the edge covered; plants are evenly spaced",
+      "roles": {
+        "hedgeMain": 0.92,
+        "hedgeAccent": 0.08
+      },
+      "layoutDirective": "Use one clippable evergreen hedge plant. Keep it visually rectangular/hedge-like, not round blobs."
+    },
+    "rockGarden": {
+      "speciesTarget": "3-5 plant species plus 2-5 rocks",
+      "plantCountBehavior": "rocks are anchors; plants tuck around rocks in visible small groups, not hidden stacks",
+      "roles": {
+        "rockBoulderAnchor": 0.25,
+        "rockGroundcoverMat": 0.35,
+        "rockArchitecturalAccent": 0.25,
+        "rockColorAccent": 0.15
+      },
+      "layoutDirective": "Place rocks first as anchors, then tuck low mats, architectural accents, and color accents around them. Avoid a zone that is only succulents."
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "createdAt": "2026-07-11T15:17:21.130Z",
+  "baseline": "v84f app behavior; source-backed data enrichment only",
+  "dryRun": false,
+  "plantCount": 1440,
+  "sourceFiles": {
+    "usda": null,
+    "usdaCharacteristics": null,
+    "permapeople": null,
+    "trefle": null,
+    "companion": null,
+    "processedSubset": "data\\source-databases\\processed\\green-acres-source-subset.json"
+  },
+  "sourceRecordCounts": {
+    "usda": 0,
+    "usdaCharacteristics": 0,
+    "permapeople": 0,
+    "trefle": 0,
+    "companion": 0,
+    "processedSubset": 1440
+  },
+  "liveFetch": {
+    "permapeopleRequested": false,
+    "permapeopleHasCredentials": false,
+    "trefleRequested": false,
+    "trefleHasToken": false
+  },
+  "changedFieldCount": 0,
+  "sourceHitCounts": {
+    "usdaPlantsChecklist": 0,
+    "permapeople": 0,
+    "trefle": 0,
+    "companionDataset": 0
+  },
+  "stillMissingCount": 72,
+  "stillMissingByField": {
+    "height": 6,
+    "attributes": 15,
+    "width": 54,
+    "lightRequirements": 2,
+    "waterNeeds": 1
+  },
+  "noGuessingPolicy": "Fields are only filled when a source-backed record is matched with high confidence. USDA checklist is used for taxonomy; USDA characteristics data, when provided, may be used for backed height, growth habit, shade tolerance, and moisture/drought fields."
+}

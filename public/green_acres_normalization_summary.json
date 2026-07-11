@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-07-11T15:17:20.379Z",
+  "catalogRows": 1440,
+  "normalizedPlants": 1440,
+  "correctedPriceTextRows": 0,
+  "correctedVariantRows": 0,
+  "warningCounts": {
+    "missing_height": 6,
+    "missing_attributes": 15,
+    "missing_width": 54,
+    "missing_light": 2,
+    "missing_water": 1
+  },
+  "outputs": [
+    "public/green_acres_catalog.csv",
+    "public/green_acres_normalized.json",
+    "public/green_acres_data_quality_report.csv",
+    "public/green_acres_normalization_summary.json"
+  ]
+}

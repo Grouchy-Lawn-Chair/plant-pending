@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-07-11T15:09:55.178Z",
+  "targets": 312,
+  "fetched": 306,
+  "productsFound": 306,
+  "changedRows": 306,
+  "changedByField": {
+    "Green_Acres_Notes": 306,
+    "Green_Acres_Page_Last_Crawled": 306,
+    "Green_Acres_Tags": 304,
+    "Green_Acres_Light_Requirement": 71,
+    "Green_Acres_Water_Needs": 101,
+    "Green_Acres_USDA_Zone": 12,
+    "Green_Acres_Growth_Habit": 74,
+    "Green_Acres_Attributes": 235,
+    "Green_Acres_Page_Size_Text": 8,
+    "Green_Acres_Landscape_Size_Text": 8,
+    "Green_Acres_Growth_Rate": 14
+  },
+  "dryRun": false,
+  "outputs": [
+    "public/green_acres_catalog.csv",
+    "public/green_acres_bis_enrichment_report.csv",
+    "public/green_acres_bis_enrichment_summary.json"
+  ]
+}
