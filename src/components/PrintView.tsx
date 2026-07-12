@@ -154,9 +154,9 @@ function getFooterMessage(pageIndex: number): string {
 
 function PrintFooter({ pageIndex }: { pageIndex: number }) {
   return (
-    <div className="mt-auto flex h-[0.42in] shrink-0 items-center justify-between gap-3 border-t border-slate-200 pt-1 text-[10pt] leading-none text-slate-500">
-      <div className="flex w-[1.25in] items-center text-slate-700">
-        <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-[0.22in] w-auto" />
+    <div className="mt-auto flex h-[0.32in] shrink-0 items-center justify-between gap-3 border-t border-slate-200 pt-1 text-[10pt] leading-none text-slate-500">
+      <div className="flex w-[1.35in] items-center text-slate-700">
+        <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-[0.18in] w-auto" />
         <span className="ml-1 font-bold">Plant Pending</span>
       </div>
       <div className="flex-1 text-center italic">{getFooterMessage(pageIndex)}</div>
@@ -168,17 +168,17 @@ function PrintFooter({ pageIndex }: { pageIndex: number }) {
 function ZonePhotoGrid({ plantGroups, legendNumbers }: { plantGroups: PlantCountGroup[]; legendNumbers: Map<number, number> }) {
   if (plantGroups.length === 0) return null;
   return (
-    <div className="mt-0">
-      <h2 className="mb-2 text-base font-bold">Plant images in this zone</h2>
+    <div className="flex-1 min-h-0">
+      <h2 className="mb-2 text-[13pt] font-bold">Plant images</h2>
       <div className="grid grid-cols-4 gap-3">
-        {plantGroups.slice(0, 12).map(group => {
+        {plantGroups.map(group => {
           const image = getPlantImageUrl(group.plant);
           return (
             <div key={group.plant.id} className="break-inside-avoid overflow-hidden rounded-xl border border-slate-300 bg-slate-50">
-              <div className="h-28 bg-slate-200">
+              <div className="h-[1.15in] bg-slate-200">
                 {image ? <img src={image} alt={group.plant.commonName || group.plant.botanicalName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[10pt] text-slate-500">No image</div>}
               </div>
-              <div className="p-2 text-[11px] leading-tight">
+              <div className="p-2 text-[10pt] leading-tight">
                 <div className="font-bold">#{legendNumbers.get(group.plant.id)} {group.plant.commonName || group.plant.botanicalName}</div>
                 <div className="mt-1 text-slate-500">Qty {group.count} · {getSizeText(group.plant)}</div>
               </div>
@@ -186,7 +186,6 @@ function ZonePhotoGrid({ plantGroups, legendNumbers }: { plantGroups: PlantCount
           );
         })}
       </div>
-      {plantGroups.length > 12 && <p className="mt-2 text-[10pt] text-slate-500">Plus {plantGroups.length - 12} more plant types in this zone. The schedule has the full list.</p>}
     </div>
   );
 }
@@ -363,6 +362,15 @@ function PlanMap({
   );
 }
 
+function chunkArray<T>(items: T[], chunkSize: number): T[][] {
+  const safeChunkSize = Math.max(1, chunkSize);
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += safeChunkSize) {
+    chunks.push(items.slice(index, index + safeChunkSize));
+  }
+  return chunks;
+}
+
 export function PrintView({
   plants,
   placedPlants,
@@ -387,11 +395,15 @@ export function PrintView({
         pageHeightIn: 10.4,
         pagePaddingIn: 0.32,
         masterMapHeight: 760,
-        zoneMapHeight: 520,
+        zoneMapHeight: 500,
         masterSideWidth: '4.15in',
         zoneSideWidth: '5.35in',
-        zonePhotoLimit: 999,
         legendColumns: 4,
+        legendItemsPerPage: 40,
+        zoneListRowsOnPlanPage: 10,
+        zoneListRowsPerPage: 18,
+        photoCardsPerPage: 12,
+        scheduleRowsPerPage: 20,
       }
     : {
         label: 'Letter landscape',
@@ -399,12 +411,16 @@ export function PrintView({
         pageWidthIn: 10.5,
         pageHeightIn: 8.0,
         pagePaddingIn: 0.22,
-        masterMapHeight: 520,
-        zoneMapHeight: 385,
-        masterSideWidth: '3.25in',
-        zoneSideWidth: '3.75in',
-        zonePhotoLimit: 999,
+        masterMapHeight: 500,
+        zoneMapHeight: 340,
+        masterSideWidth: '3.05in',
+        zoneSideWidth: '3.7in',
         legendColumns: 3,
+        legendItemsPerPage: 21,
+        zoneListRowsOnPlanPage: 6,
+        zoneListRowsPerPage: 12,
+        photoCardsPerPage: 8,
+        scheduleRowsPerPage: 12,
       };
 
   const pageStyle = {
@@ -462,8 +478,82 @@ export function PrintView({
 
   const unassignedPlants = placedPlants.filter(placed => !placed.zone && (placed.itemType || 'plant') !== 'rock');
   const dated = new Date().toLocaleDateString();
+  const legendPages = chunkArray(plantCounts, paperSettings.legendItemsPerPage);
+  const schedulePages = chunkArray(plantCounts, paperSettings.scheduleRowsPerPage);
+
+  const zonePageCounts = zoneSummaries.map(({ plantGroups }) => {
+    const remainingListRows = Math.max(0, plantGroups.length - paperSettings.zoneListRowsOnPlanPage);
+    const continuationPages = chunkArray(plantGroups.slice(paperSettings.zoneListRowsOnPlanPage), paperSettings.zoneListRowsPerPage).length;
+    const photoPages = chunkArray(plantGroups, paperSettings.photoCardsPerPage).length;
+    return 1 + continuationPages + photoPages;
+  });
+
+  const getZoneStartPageIndex = (zoneIndex: number) => 1 + legendPages.length + zonePageCounts.slice(0, zoneIndex).reduce((sum, count) => sum + count, 0);
+  const scheduleStartPageIndex = 1 + legendPages.length + zonePageCounts.reduce((sum, count) => sum + count, 0);
+  const summaryPageIndex = scheduleStartPageIndex + schedulePages.length;
+  const notesPageIndex = summaryPageIndex + 1;
 
   const handlePrint = () => window.print();
+
+  const renderZonePlantTable = (plantGroupsForTable: PlantCountGroup[], includeHeader = true) => (
+    <table className="w-full border-collapse text-[10pt]">
+      {includeHeader && (
+        <thead>
+          <tr className="bg-slate-100 text-left text-[10pt] uppercase tracking-wide text-slate-600">
+            <th className="border border-slate-300 p-1.5">No.</th>
+            <th className="border border-slate-300 p-1.5">Plant</th>
+            <th className="border border-slate-300 p-1.5">Qty</th>
+            <th className="border border-slate-300 p-1.5">Size</th>
+            <th className="border border-slate-300 p-1.5">Cost</th>
+          </tr>
+        </thead>
+      )}
+      <tbody>
+        {plantGroupsForTable.map(group => (
+          <tr key={group.plant.id} className="break-inside-avoid">
+            <td className="border border-slate-300 p-1.5 text-center font-bold">{legendNumbers.get(group.plant.id)}</td>
+            <td className="border border-slate-300 p-1.5"><div className="font-semibold">{group.plant.commonName || group.plant.botanicalName}</div><div className="italic text-slate-500">{group.plant.botanicalName}</div></td>
+            <td className="border border-slate-300 p-1.5 text-center">{group.count}</td>
+            <td className="border border-slate-300 p-1.5">{getSizeText(group.plant)}</td>
+            <td className="border border-slate-300 p-1.5">{formatPrice(getPlantSubtotal(group.plant, group.count))}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  const renderScheduleTable = (groupsForTable: PlantCountGroup[]) => (
+    <table className="w-full border-collapse text-[10pt]">
+      <thead>
+        <tr className="bg-slate-100 text-left text-[10pt] uppercase tracking-wide text-slate-600">
+          <th className="border border-slate-300 p-1.5">No.</th>
+          <th className="border border-slate-300 p-1.5">Symbol</th>
+          <th className="border border-slate-300 p-1.5">Qty</th>
+          <th className="border border-slate-300 p-1.5">Plant</th>
+          <th className="border border-slate-300 p-1.5">Size</th>
+          <th className="border border-slate-300 p-1.5">Sun</th>
+          <th className="border border-slate-300 p-1.5">Water</th>
+          <th className="border border-slate-300 p-1.5">Unit price</th>
+          <th className="border border-slate-300 p-1.5">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {groupsForTable.map(group => (
+          <tr key={group.plant.id} className="break-inside-avoid">
+            <td className="border border-slate-300 p-1.5 text-center font-bold">{legendNumbers.get(group.plant.id)}</td>
+            <td className="border border-slate-300 p-1.5"><PlantSymbol plant={group.plant} placed={group.instances[0]} size={26} legendNumber={legendNumbers.get(group.plant.id)} placementIndex={Math.max(0, (legendNumbers.get(group.plant.id) || 1) - 1)} /></td>
+            <td className="border border-slate-300 p-1.5 text-center font-bold">{group.count}</td>
+            <td className="border border-slate-300 p-1.5"><div className="font-semibold">{group.plant.commonName || group.plant.botanicalName}</div><div className="italic text-slate-500">{group.plant.botanicalName}</div></td>
+            <td className="border border-slate-300 p-1.5">{getSizeText(group.plant)}</td>
+            <td className="border border-slate-300 p-1.5">{getSunText(group.plant)}</td>
+            <td className="border border-slate-300 p-1.5">{getWaterText(group.plant)}</td>
+            <td className="border border-slate-300 p-1.5">{formatPrice(getPlantUnitPrice(group.plant))}</td>
+            <td className="border border-slate-300 p-1.5 font-semibold">{formatPrice(getPlantSubtotal(group.plant, group.count))}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 
   return (
     <div className="print-shell fixed inset-0 z-[80] flex flex-col bg-black/60">
@@ -524,7 +614,8 @@ export function PrintView({
           }
 
           .print-page {
-            display: block !important;
+            display: flex !important;
+            flex-direction: column !important;
             width: ${paperSettings.pageWidthIn}in !important;
             height: ${paperSettings.pageHeightIn}in !important;
             min-height: ${paperSettings.pageHeightIn}in !important;
@@ -552,11 +643,11 @@ export function PrintView({
       <div className="print-hidden flex items-center justify-between border-b border-slate-800 bg-slate-950 px-4 py-3 text-slate-100">
         <div>
           <h2 className="text-base font-semibold">Print Plan Builder</h2>
-          <p className="text-[10pt] text-slate-400">Master plan, zone sheets, plant schedule, costs, and photo sheet.</p>
+          <p className="text-xs text-slate-400">Page-aware plan set: master plan, legend, zone sheets, photo sheets, schedule, and notes.</p>
         </div>
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200">
-            <span className="text-[10pt] uppercase tracking-wide text-slate-500">Paper</span>
+            <span className="text-xs uppercase tracking-wide text-slate-500">Paper</span>
             <select
               value={printPaperSize}
               onChange={(e) => setPrintPaperSize(e.target.value as PrintPaperSize)}
@@ -576,11 +667,11 @@ export function PrintView({
           <section className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
             <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
               <div className="flex items-start gap-4">
-                <img src={`${import.meta.env.BASE_URL}brand/logo.svg`} alt="Plant Pending" className="h-16 w-auto" />
+                <img src={`${import.meta.env.BASE_URL}brand/logo.svg`} alt="Plant Pending" className="h-14 w-auto" />
                 <div>
                   <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Plant Pending master plan</div>
                   <h1 className="mt-1 text-xl font-black">{planName || 'Untitled Planting Plan'}</h1>
-                  <p className="mt-1 text-sm text-slate-600">Generated {dated} · {placedPlants.length} placed items · {zoneSummaries.length} planting zones</p>
+                  <p className="mt-1 text-[10pt] text-slate-600">Generated {dated} · {placedPlants.length} placed items · {zoneSummaries.length} planting zones</p>
                 </div>
               </div>
               <div className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-right">
@@ -590,10 +681,10 @@ export function PrintView({
               </div>
             </div>
 
-            <div className="grid gap-5" style={{ gridTemplateColumns: `minmax(0,1fr) ${paperSettings.masterSideWidth}` }}>
-              <div>
+            <div className="grid flex-1 min-h-0 gap-5" style={{ gridTemplateColumns: `minmax(0,1fr) ${paperSettings.masterSideWidth}` }}>
+              <div className="min-w-0">
                 <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-lg font-bold">Overall plan</h2>
+                  <h2 className="text-[14pt] font-bold">Overall plan</h2>
                   <div className="text-[10pt] text-slate-500">Scale: {pixelsPerFoot ? `${pixelsPerFoot.toFixed(1)} px / ft` : 'not set'}</div>
                 </div>
                 <PlanMap
@@ -610,203 +701,177 @@ export function PrintView({
                 />
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <h2 className="mb-2 text-lg font-bold">Zones</h2>
-                  <div className="space-y-1.5">
-                    {zoneSummaries.length === 0 && <p className="text-sm text-slate-500">No zones drawn yet.</p>}
-                    {zoneSummaries.map(({ zone, zonePlants, zoneRocks, cost }) => (
-                      <div key={zone.id} className="rounded-xl border border-slate-300 p-2 text-[10pt]">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 font-bold">
-                            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: zone.color }} />
-                            {zone.name}
-                          </div>
-                          <div className="text-[10pt] text-slate-500">{getZoneArea(zone.points, pixelsPerFoot)}</div>
+              <div className="min-w-0">
+                <h2 className="mb-2 text-[14pt] font-bold">Zones</h2>
+                <div className="space-y-1.5">
+                  {zoneSummaries.length === 0 && <p className="text-[10pt] text-slate-500">No zones drawn yet.</p>}
+                  {zoneSummaries.map(({ zone, zonePlants, zoneRocks, cost }) => (
+                    <div key={zone.id} className="rounded-xl border border-slate-300 p-2 text-[10pt]">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 font-bold">
+                          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: zone.color }} />
+                          {zone.name}
                         </div>
-                        <div className="mt-0.5 text-[10pt] text-slate-600">{zonePlants.length} plants · {zoneRocks.length} rocks · {formatTotal(cost)}</div>
+                        <div className="text-[10pt] text-slate-500">{getZoneArea(zone.points, pixelsPerFoot)}</div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[10pt] leading-relaxed text-slate-600">
-                  <div className="font-bold text-slate-900">Plant legend moved to its own page</div>
-                  <p className="mt-1">The master page stays focused on the overall layout and zone summary. The full numbered legend follows on the next sheet so it does not run off the page.</p>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <div><span className="font-bold text-slate-900">{plantCounts.length}</span><br />unique plants</div>
-                    <div><span className="font-bold text-slate-900">{plantCounts.reduce((sum, group) => sum + group.count, 0)}</span><br />total plants</div>
-                  </div>
+                      <div className="mt-0.5 text-[10pt] text-slate-600">{zonePlants.length} plants · {zoneRocks.length} rocks · {formatTotal(cost)}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
             <PrintFooter pageIndex={0} />
           </section>
 
-          <section className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
-            <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
-              <div>
-                <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Plant Pending plant legend</div>
-                <h1 className="mt-1 text-xl font-black">Numbered plant legend</h1>
-                <p className="mt-1 text-sm text-slate-600">{plantCounts.length} unique plants · {plantCounts.reduce((sum, group) => sum + group.count, 0)} total plants</p>
-              </div>
-              <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
-            </div>
-
-            <div
-              className="grid gap-2 text-[10pt]"
-              style={{ gridTemplateColumns: `repeat(${paperSettings.legendColumns}, minmax(0, 1fr))` }}
-            >
-              {plantCounts.map((group) => (
-                <div key={group.plant.id} className="flex min-h-[0.52in] items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[10pt] font-bold text-white">{legendNumbers.get(group.plant.id)}</div>
-                  <PlantSymbol plant={group.plant} placed={group.instances[0]} size={26} legendNumber={legendNumbers.get(group.plant.id)} placementIndex={Math.max(0, (legendNumbers.get(group.plant.id) || 1) - 1)} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold">{group.plant.commonName || group.plant.botanicalName}</div>
-                    <div className="truncate text-[10pt] italic text-slate-500">{group.plant.botanicalName}</div>
-                    <div className="text-[10pt] text-slate-500">Qty {group.count} · {getSizeText(group.plant)}</div>
-                  </div>
+          {legendPages.map((legendPage, pageIndex) => (
+            <section key={`legend-${pageIndex}`} className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
+              <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
+                <div>
+                  <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Plant Pending plant legend</div>
+                  <h1 className="mt-1 text-xl font-black">Numbered plant legend{legendPages.length > 1 ? ` · ${pageIndex + 1} of ${legendPages.length}` : ''}</h1>
+                  <p className="mt-1 text-[10pt] text-slate-600">{plantCounts.length} unique plants · {plantCounts.reduce((sum, group) => sum + group.count, 0)} total plants</p>
                 </div>
-              ))}
-            </div>
-            <PrintFooter pageIndex={1} />
-          </section>
+                <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
+              </div>
+
+              <div
+                className="grid gap-2 text-[10pt]"
+                style={{ gridTemplateColumns: `repeat(${paperSettings.legendColumns}, minmax(0, 1fr))` }}
+              >
+                {legendPage.map((group) => (
+                  <div key={group.plant.id} className="flex min-h-[0.55in] items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[10pt] font-bold text-white">{legendNumbers.get(group.plant.id)}</div>
+                    <PlantSymbol plant={group.plant} placed={group.instances[0]} size={26} legendNumber={legendNumbers.get(group.plant.id)} placementIndex={Math.max(0, (legendNumbers.get(group.plant.id) || 1) - 1)} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-semibold">{group.plant.commonName || group.plant.botanicalName}</div>
+                      <div className="truncate italic text-slate-500">{group.plant.botanicalName}</div>
+                      <div className="text-slate-500">Qty {group.count} · {getSizeText(group.plant)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <PrintFooter pageIndex={1 + pageIndex} />
+            </section>
+          ))}
 
           {zoneSummaries.map(({ zone, plantGroups, zonePlants, zoneRocks, cost }, zoneIndex) => {
             const zoneBounds = inflateBounds(getBounds(zone.points), 80, canvasSize.width || 900, canvasSize.height || 650);
+            const firstRows = plantGroups.slice(0, paperSettings.zoneListRowsOnPlanPage);
+            const continuationPages = chunkArray(plantGroups.slice(paperSettings.zoneListRowsOnPlanPage), paperSettings.zoneListRowsPerPage);
+            const photoPages = chunkArray(plantGroups, paperSettings.photoCardsPerPage);
+            const zoneStartPageIndex = getZoneStartPageIndex(zoneIndex);
             return (
-            <Fragment key={zone.id}>
-              <section className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
-                <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
-                  <div>
-                    <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Zone detail sheet</div>
-                    <h1 className="mt-1 text-xl font-black">{zone.name}</h1>
-                    <p className="mt-1 text-sm text-slate-600">{zonePlants.length} plants · {zoneRocks.length} rocks · {getZoneArea(zone.points, pixelsPerFoot)}</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-right">
-                    <div className="text-[10pt] uppercase tracking-[0.18em] text-slate-500">Zone plant cost</div>
-                    <div className="mt-1 text-xl font-black text-emerald-700">{formatTotal(cost)}</div>
-                  </div>
-                </div>
-                <div className="grid gap-5" style={{ gridTemplateColumns: `1fr ${paperSettings.zoneSideWidth}` }}>
-                  <div>
-                    <h2 className="mb-2 text-lg font-bold">Mini map</h2>
-                    <PlanMap
-                      plants={plants}
-                      placedPlants={placedPlants}
-                      zones={zones}
-                      backgroundImage={backgroundImage}
-                      backgroundOpacity={backgroundOpacity}
-                      pixelsPerFoot={pixelsPerFoot}
-                      canvasSize={canvasSize}
-                      plantCircleOpacity={plantCircleOpacity}
-                      legendNumbers={legendNumbers}
-                      cropBounds={zoneBounds}
-                      showOnlyZoneId={zone.id}
-                      height={paperSettings.zoneMapHeight}
-                    />
-                    <div className="mt-2 grid grid-cols-3 gap-2 text-[10pt]">
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="text-[10pt] uppercase text-slate-500">Sun</div><div className="font-bold">{zone.sunExposure || 'Unknown'}</div></div>
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="text-[10pt] uppercase text-slate-500">Water</div><div className="font-bold">{zone.waterNeed || 'No preference'}</div></div>
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="text-[10pt] uppercase text-slate-500">Fullness</div><div className="font-bold">{zone.density ?? 50}%</div></div>
-                    </div>
-                    {zone.notes && <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">{zone.notes}</p>}
-                  </div>
-                  <div>
-                    <h2 className="mb-2 text-lg font-bold">Zone plant list</h2>
-                    {plantGroups.length === 0 ? (
-                      <p className="text-sm text-slate-500">No plants in this zone.</p>
-                    ) : (
-                      <table className="w-full border-collapse text-[10pt]">
-                        <thead>
-                          <tr className="bg-slate-100 text-left text-[10pt] uppercase tracking-wide text-slate-600">
-                            <th className="border border-slate-300 p-1.5">No.</th>
-                            <th className="border border-slate-300 p-1.5">Plant</th>
-                            <th className="border border-slate-300 p-1.5">Qty</th>
-                            <th className="border border-slate-300 p-1.5">Size</th>
-                            <th className="border border-slate-300 p-1.5">Cost</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {plantGroups.map(group => (
-                            <tr key={group.plant.id} className="break-inside-avoid">
-                              <td className="border border-slate-300 p-1.5 text-center font-bold">{legendNumbers.get(group.plant.id)}</td>
-                              <td className="border border-slate-300 p-1.5"><div className="font-semibold">{group.plant.commonName || group.plant.botanicalName}</div><div className="text-[10pt] italic text-slate-500">{group.plant.botanicalName}</div></td>
-                              <td className="border border-slate-300 p-1.5 text-center">{group.count}</td>
-                              <td className="border border-slate-300 p-1.5">{getSizeText(group.plant)}</td>
-                              <td className="border border-slate-300 p-1.5">{formatPrice(getPlantSubtotal(group.plant, group.count))}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                </div>
-                <PrintFooter pageIndex={zoneIndex * 2 + 2} />
-              </section>
-              {plantGroups.length > 0 && (
+              <Fragment key={zone.id}>
                 <section className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
                   <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
                     <div>
-                      <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Zone plant photo sheet</div>
+                      <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Zone detail sheet</div>
                       <h1 className="mt-1 text-xl font-black">{zone.name}</h1>
-                      <p className="mt-1 text-sm text-slate-600">{plantGroups.length} unique plant types · {zonePlants.length} placed plants</p>
+                      <p className="mt-1 text-[10pt] text-slate-600">{zonePlants.length} plants · {zoneRocks.length} rocks · {getZoneArea(zone.points, pixelsPerFoot)}</p>
                     </div>
-                    <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
+                    <div className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-right">
+                      <div className="text-[10pt] uppercase tracking-[0.18em] text-slate-500">Zone plant cost</div>
+                      <div className="mt-1 text-xl font-black text-emerald-700">{formatTotal(cost)}</div>
+                    </div>
                   </div>
-                  <ZonePhotoGrid plantGroups={plantGroups.slice(0, paperSettings.zonePhotoLimit)} legendNumbers={legendNumbers} />
-                  <PrintFooter pageIndex={zoneIndex * 2 + 3} />
+                  <div className="grid flex-1 min-h-0 gap-5" style={{ gridTemplateColumns: `1fr ${paperSettings.zoneSideWidth}` }}>
+                    <div className="min-w-0">
+                      <h2 className="mb-2 text-[13pt] font-bold">Mini map</h2>
+                      <PlanMap
+                        plants={plants}
+                        placedPlants={placedPlants}
+                        zones={zones}
+                        backgroundImage={backgroundImage}
+                        backgroundOpacity={backgroundOpacity}
+                        pixelsPerFoot={pixelsPerFoot}
+                        canvasSize={canvasSize}
+                        plantCircleOpacity={plantCircleOpacity}
+                        legendNumbers={legendNumbers}
+                        cropBounds={zoneBounds}
+                        showOnlyZoneId={zone.id}
+                        height={paperSettings.zoneMapHeight}
+                      />
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-[10pt]">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="uppercase text-slate-500">Sun</div><div className="font-bold">{zone.sunExposure || 'Unknown'}</div></div>
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="uppercase text-slate-500">Water</div><div className="font-bold">{zone.waterNeed || 'No preference'}</div></div>
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="uppercase text-slate-500">Fullness</div><div className="font-bold">{zone.density ?? 50}%</div></div>
+                      </div>
+                      {zone.notes && <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-[10pt] text-slate-700">{zone.notes}</p>}
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="mb-2 text-[13pt] font-bold">Zone plant list</h2>
+                      {firstRows.length === 0 ? (
+                        <p className="text-[10pt] text-slate-500">No plants in this zone.</p>
+                      ) : renderZonePlantTable(firstRows)}
+                      {continuationPages.length > 0 && <p className="mt-2 text-[10pt] text-slate-500">Plant list continues on the next page.</p>}
+                    </div>
+                  </div>
+                  <PrintFooter pageIndex={zoneStartPageIndex} />
                 </section>
-              )}
-            </Fragment>
+
+                {continuationPages.map((pageRows, continuationIndex) => (
+                  <section key={`${zone.id}-list-${continuationIndex}`} className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
+                    <div className="mb-3 border-b border-slate-300 pb-3">
+                      <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Zone plant list continued</div>
+                      <h1 className="mt-1 text-xl font-black">{zone.name}</h1>
+                      <p className="mt-1 text-[10pt] text-slate-600">Rows {paperSettings.zoneListRowsOnPlanPage + continuationIndex * paperSettings.zoneListRowsPerPage + 1}–{paperSettings.zoneListRowsOnPlanPage + continuationIndex * paperSettings.zoneListRowsPerPage + pageRows.length}</p>
+                    </div>
+                    <div className="flex-1 min-h-0">
+                      {renderZonePlantTable(pageRows)}
+                    </div>
+                    <PrintFooter pageIndex={zoneStartPageIndex + 1 + continuationIndex} />
+                  </section>
+                ))}
+
+                {photoPages.map((photoPage, photoIndex) => (
+                  <section key={`${zone.id}-photos-${photoIndex}`} className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
+                    <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
+                      <div>
+                        <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Zone plant photo sheet</div>
+                        <h1 className="mt-1 text-xl font-black">{zone.name}{photoPages.length > 1 ? ` · ${photoIndex + 1} of ${photoPages.length}` : ''}</h1>
+                        <p className="mt-1 text-[10pt] text-slate-600">{plantGroups.length} unique plant types · {zonePlants.length} placed plants</p>
+                      </div>
+                      <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
+                    </div>
+                    <ZonePhotoGrid plantGroups={photoPage} legendNumbers={legendNumbers} />
+                    <PrintFooter pageIndex={zoneStartPageIndex + 1 + continuationPages.length + photoIndex} />
+                  </section>
+                ))}
+              </Fragment>
             );
           })}
+
+          {schedulePages.map((schedulePage, scheduleIndex) => (
+            <section key={`schedule-${scheduleIndex}`} className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
+              <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
+                <div>
+                  <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Plant Pending plant schedule</div>
+                  <h1 className="mt-1 text-xl font-black">Shopping list and cost estimate{schedulePages.length > 1 ? ` · ${scheduleIndex + 1} of ${schedulePages.length}` : ''}</h1>
+                </div>
+                <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
+              </div>
+              <div className="flex-1 min-h-0">
+                {renderScheduleTable(schedulePage)}
+              </div>
+              <PrintFooter pageIndex={scheduleStartPageIndex + scheduleIndex} />
+            </section>
+          ))}
 
           <section className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
             <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
               <div>
-                <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Plant Pending plant schedule</div>
-                <h1 className="mt-1 text-xl font-black">Shopping list and cost estimate</h1>
+                <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Plant Pending cost summary</div>
+                <h1 className="mt-1 text-xl font-black">Totals and estimate notes</h1>
               </div>
               <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
             </div>
-            <table className="w-full border-collapse text-[10pt]">
-              <thead>
-                <tr className="bg-slate-100 text-left text-[10pt] uppercase tracking-wide text-slate-600">
-                  <th className="border border-slate-300 p-1.5">No.</th>
-                  <th className="border border-slate-300 p-1.5">Symbol</th>
-                  <th className="border border-slate-300 p-1.5">Qty</th>
-                  <th className="border border-slate-300 p-1.5">Plant</th>
-                  <th className="border border-slate-300 p-1.5">Size</th>
-                  <th className="border border-slate-300 p-1.5">Sun</th>
-                  <th className="border border-slate-300 p-1.5">Water</th>
-                  <th className="border border-slate-300 p-1.5">Unit price</th>
-                  <th className="border border-slate-300 p-1.5">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {plantCounts.map(group => (
-                  <tr key={group.plant.id} className="break-inside-avoid">
-                    <td className="border border-slate-300 p-1.5 text-center font-bold">{legendNumbers.get(group.plant.id)}</td>
-                    <td className="border border-slate-300 p-1.5"><PlantSymbol plant={group.plant} placed={group.instances[0]} legendNumber={legendNumbers.get(group.plant.id)} placementIndex={Math.max(0, (legendNumbers.get(group.plant.id) || 1) - 1)} /></td>
-                    <td className="border border-slate-300 p-1.5 text-center font-bold">{group.count}</td>
-                    <td className="border border-slate-300 p-1.5"><div className="font-semibold">{group.plant.commonName || group.plant.botanicalName}</div><div className="text-[10pt] italic text-slate-500">{group.plant.botanicalName}</div></td>
-                    <td className="border border-slate-300 p-1.5">{getSizeText(group.plant)}</td>
-                    <td className="border border-slate-300 p-1.5">{getSunText(group.plant)}</td>
-                    <td className="border border-slate-300 p-1.5">{getWaterText(group.plant)}</td>
-                    <td className="border border-slate-300 p-1.5">{formatPrice(getPlantUnitPrice(group.plant))}</td>
-                    <td className="border border-slate-300 p-1.5 font-semibold">{formatPrice(getPlantSubtotal(group.plant, group.count))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="mt-3 grid grid-cols-3 gap-3">
-              <div className="rounded-xl border border-slate-300 bg-slate-50 p-3"><div className="text-[10pt] uppercase tracking-wide text-slate-500">Total plant estimate</div><div className="mt-1 text-xl font-black text-emerald-700">{formatTotal(totalCost)}</div></div>
-              <div className="rounded-xl border border-slate-300 bg-slate-50 p-3"><div className="text-[10pt] uppercase tracking-wide text-slate-500">Unique plants</div><div className="mt-1 text-xl font-black">{plantCounts.length}</div></div>
-              <div className="rounded-xl border border-slate-300 bg-slate-50 p-3"><div className="text-[10pt] uppercase tracking-wide text-slate-500">Total plant count</div><div className="mt-1 text-xl font-black">{plantCounts.reduce((sum, group) => sum + group.count, 0)}</div></div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="rounded-xl border border-slate-300 bg-slate-50 p-4"><div className="text-[10pt] uppercase tracking-wide text-slate-500">Total plant estimate</div><div className="mt-1 text-xl font-black text-emerald-700">{formatTotal(totalCost)}</div></div>
+              <div className="rounded-xl border border-slate-300 bg-slate-50 p-4"><div className="text-[10pt] uppercase tracking-wide text-slate-500">Unique plants</div><div className="mt-1 text-xl font-black">{plantCounts.length}</div></div>
+              <div className="rounded-xl border border-slate-300 bg-slate-50 p-4"><div className="text-[10pt] uppercase tracking-wide text-slate-500">Total plant count</div><div className="mt-1 text-xl font-black">{plantCounts.reduce((sum, group) => sum + group.count, 0)}</div></div>
             </div>
             <p className="mt-4 text-[10pt] text-slate-500">Prices are planning estimates from the catalog where available. Call the nursery to confirm current inventory, price, and container size.</p>
-            <PrintFooter pageIndex={zoneSummaries.length * 2 + 3} />
+            <PrintFooter pageIndex={summaryPageIndex} />
           </section>
 
           {(notes || unassignedPlants.length > 0) && (
@@ -818,9 +883,9 @@ export function PrintView({
                 </div>
                 <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
               </div>
-              {unassignedPlants.length > 0 && <div className="mb-5"><h2 className="mb-2 text-lg font-bold">Unassigned plants</h2><p className="text-sm text-slate-600">{unassignedPlants.length} placed plants are not assigned to a zone.</p></div>}
-              {notes && <div><h2 className="mb-2 text-lg font-bold">General notes</h2><p className="whitespace-pre-wrap rounded-xl border border-slate-300 bg-slate-50 p-4 text-sm text-slate-700">{notes}</p></div>}
-              <PrintFooter pageIndex={zoneSummaries.length * 2 + 3} />
+              {unassignedPlants.length > 0 && <div className="mb-5"><h2 className="mb-2 text-[13pt] font-bold">Unassigned plants</h2><p className="text-[10pt] text-slate-600">{unassignedPlants.length} placed plants are not assigned to a zone.</p></div>}
+              {notes && <div><h2 className="mb-2 text-[13pt] font-bold">General notes</h2><p className="whitespace-pre-wrap rounded-xl border border-slate-300 bg-slate-50 p-4 text-[10pt] text-slate-700">{notes}</p></div>}
+              <PrintFooter pageIndex={notesPageIndex} />
             </section>
           )}
         </div>
