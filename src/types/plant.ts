@@ -198,6 +198,7 @@ export interface GardenPlan {
   backgroundImage: string | null;
   backgroundOpacity: number;
   backgroundLocked: boolean;
+  restoreBackgroundOnLaunch?: boolean;
   scalePixelsPerFoot: number | null;
   placedPlants: PlacedPlant[];
   zones?: GardenZone[];

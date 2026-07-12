@@ -1261,6 +1261,7 @@ function App() {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
   const [backgroundOpacity, setBackgroundOpacity] = useState(0.5);
   const [backgroundLocked, setBackgroundLocked] = useState(false);
+  const [restoreBackgroundOnLaunch, setRestoreBackgroundOnLaunch] = useState(false);
   const [pixelsPerFoot, setPixelsPerFoot] = useState<number | null>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 900, height: 650 });
   const [canvasWorldSize, setCanvasWorldSize] = useState({ width: 900, height: 650 });
@@ -1718,8 +1719,12 @@ function App() {
       if (saved.zones) setZones(saved.zones);
       if (saved.plantingGroups) setPlantingGroups(saved.plantingGroups);
       if (saved.zoneShapesVisible !== undefined) setZoneShapesVisible(saved.zoneShapesVisible);
-      // Do not auto-restore the last background image on app launch.
-      // Users can explicitly load a saved plan to bring its source image back.
+      const shouldRestoreBackground = saved.restoreBackgroundOnLaunch === true
+        || (saved.name === 'Example Plan' && typeof saved.backgroundImage === 'string' && saved.backgroundImage.startsWith('data:image/'));
+      setRestoreBackgroundOnLaunch(shouldRestoreBackground);
+      if (shouldRestoreBackground && saved.backgroundImage) {
+        setBackgroundImage(saved.backgroundImage);
+      }
       if (saved.backgroundOpacity !== undefined) setBackgroundOpacity(saved.backgroundOpacity);
       if (saved.backgroundLocked !== undefined) setBackgroundLocked(saved.backgroundLocked);
       if (saved.scalePixelsPerFoot !== undefined) setPixelsPerFoot(saved.scalePixelsPerFoot);
@@ -1750,6 +1755,7 @@ function App() {
       backgroundImage,
       backgroundOpacity,
       backgroundLocked,
+      restoreBackgroundOnLaunch,
       scalePixelsPerFoot: pixelsPerFoot,
       notes,
       name: planName,
@@ -1764,7 +1770,7 @@ function App() {
       zoneShapesVisible,
       shrubScore: shrubScoreState,
     });
-  }, [placedPlants, backgroundImage, backgroundOpacity, backgroundLocked, pixelsPerFoot, notes, planName, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, zones, plantingGroups, zoneShapesVisible, shrubScore, scoreEventKeys, scoreMilestones]);
+  }, [placedPlants, backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, notes, planName, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, zones, plantingGroups, zoneShapesVisible, shrubScore, scoreEventKeys, scoreMilestones]);
 
   // Filtered and sorted plants for the library
   const filteredPlants = useMemo(() => sortPlants(filterPlants(plants, filters), sortBy), [plants, filters, sortBy]);
@@ -1859,6 +1865,7 @@ function App() {
 
   const handleBackgroundImageChange = useCallback((image: string | null) => {
     setBackgroundImage(image);
+    setRestoreBackgroundOnLaunch(false);
     addTestLog('background.imageChanged', { hasImage: !!image });
   }, [addTestLog]);
 
@@ -2989,6 +2996,7 @@ function App() {
       backgroundImage,
       backgroundOpacity,
       backgroundLocked,
+      restoreBackgroundOnLaunch,
       scalePixelsPerFoot: pixelsPerFoot,
       placedPlants,
       zones,
@@ -3008,11 +3016,12 @@ function App() {
     setPlanName(trimmedName);
     awardScore(`save:${placedPlants.length}:${zones.length}:${trimmedName}`, 10, pickMessage(SAVE_MESSAGES, trimmedName));
     addTestLog('plan.saved', { name: trimmedName, updatedExisting: !!existingPlan, placedPlants: placedPlants.length, zones: zones.length, plantingGroups: plantingGroups.length });
-  }, [backgroundImage, backgroundOpacity, backgroundLocked, pixelsPerFoot, placedPlants, zones, plantingGroups, zoneShapesVisible, notes, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, shrubScoreState, addTestLog, awardScore]);
+  }, [backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, placedPlants, zones, plantingGroups, zoneShapesVisible, notes, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, shrubScoreState, addTestLog, awardScore]);
 
   const handleLoadPlan = useCallback((plan: GardenPlan) => {
     setPlanName(plan.name);
     setBackgroundImage(plan.backgroundImage);
+    setRestoreBackgroundOnLaunch(plan.restoreBackgroundOnLaunch ?? false);
     setBackgroundOpacity(plan.backgroundOpacity);
     setBackgroundLocked(plan.backgroundLocked);
     setPixelsPerFoot(plan.scalePixelsPerFoot);
@@ -3057,6 +3066,7 @@ function App() {
         name: examplePlan.name || 'Example Plan',
         createdAt: examplePlan.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        restoreBackgroundOnLaunch: true,
       });
       awardScore('load-example-plan', 25, 'Example plan loaded. The shrubs have prepared a brief orientation.');
       addTestLog('plan.exampleLoaded', { name: examplePlan.name || 'Example Plan' });
@@ -3084,6 +3094,7 @@ function App() {
     setBackgroundImage(null);
     setBackgroundOpacity(0.5);
     setBackgroundLocked(false);
+    setRestoreBackgroundOnLaunch(false);
     setPixelsPerFoot(null);
     setCanvasWorldSize({ width: 900, height: 650 });
     setCanvasSize({ width: 900, height: 650 });
@@ -3113,6 +3124,7 @@ function App() {
       backgroundImage,
       backgroundOpacity,
       backgroundLocked,
+      restoreBackgroundOnLaunch,
       scalePixelsPerFoot: pixelsPerFoot,
       placedPlants,
       zones,
@@ -3130,7 +3142,7 @@ function App() {
     exportPlanAsJSON(plan);
     awardScore(`export:${planName}:${placedPlants.length}:${zones.length}`, 50, 'The nursery has been warned.');
     addTestLog('plan.exported', { name: planName, placedPlants: placedPlants.length, zones: zones.length, plantingGroups: plantingGroups.length });
-  }, [planName, backgroundImage, backgroundOpacity, backgroundLocked, pixelsPerFoot, placedPlants, zones, plantingGroups, zoneShapesVisible, notes, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, shrubScoreState, addTestLog, awardScore]);
+  }, [planName, backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, placedPlants, zones, plantingGroups, zoneShapesVisible, notes, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, shrubScoreState, addTestLog, awardScore]);
 
   const handleImportPlan = useCallback((plan: GardenPlan) => {
     handleLoadPlan(plan);

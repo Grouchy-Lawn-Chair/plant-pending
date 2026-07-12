@@ -94,7 +94,23 @@ function ImagePanel({ plant, isSelected }: { plant: Plant; isSelected: boolean }
   const imageUrl = getPlantImageUrl(plant);
   const categoryColor = getPlantCategoryColor(plant);
   const hasImage = hasPlantImage(plant);
-  const imageHeight = isSelected ? 'h-32' : 'h-24';
+  const imageHeight = isSelected ? 'h-36' : 'h-28';
+  const commonName = plant.commonName || plant.botanicalName || 'Plant';
+  const botanicalName = (plant.botanicalName || '').trim();
+  const showBotanical = botanicalName && botanicalName !== commonName && isSelected;
+
+  const titleOverlay = (
+    <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-black/55 px-3 py-2 text-white shadow-sm backdrop-blur-[1px]">
+      <div className="truncate text-left text-lg font-extrabold leading-tight" title={commonName}>
+        {commonName}
+      </div>
+      {showBotanical && (
+        <div className="mt-0.5 truncate text-left text-xs italic text-white/85" title={botanicalName}>
+          {botanicalName}
+        </div>
+      )}
+    </div>
+  );
 
   if (!imageUrl || !hasImage) {
     return (
@@ -106,11 +122,12 @@ function ImagePanel({ plant, isSelected }: { plant: Plant; isSelected: boolean }
         <div className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white">
           {plant.category || 'Plant'}
         </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="h-16 w-16 rounded-full border-4 border-white/70 bg-white/20 flex items-center justify-center text-xl font-semibold text-white shadow-lg">
+        <div className="absolute inset-0 flex items-center justify-center pb-10">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white/70 bg-white/20 text-xl font-semibold text-white shadow-lg">
             {plant.abbreviation}
           </div>
         </div>
+        {titleOverlay}
       </div>
     );
   }
@@ -125,9 +142,11 @@ function ImagePanel({ plant, isSelected }: { plant: Plant; isSelected: boolean }
         className="h-full w-full object-cover"
       />
       <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/45 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
       <div className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white shadow-sm">
         {plant.category || 'Plant'}
       </div>
+      {titleOverlay}
     </div>
   );
 }
@@ -218,18 +237,7 @@ export function PlantCard({ plant, isSelected, onClick }: PlantCardProps) {
       <div className="p-3">
         <ImagePanel plant={plant} isSelected={isSelected} />
 
-        <div className="px-1 pb-1 pt-3">
-          <h3 className="text-center text-lg font-bold leading-tight text-slate-950" title={plant.commonName || plant.botanicalName}>
-            {plant.commonName || plant.botanicalName}
-          </h3>
-          {(plant.botanicalName || '').trim() && plant.botanicalName !== (plant.commonName || plant.botanicalName) && (
-            <p className="mt-1 text-center text-xs italic text-slate-600 truncate" title={plant.botanicalName}>
-              {plant.botanicalName}
-            </p>
-          )}
-        </div>
-
-        <div className="mt-2 grid grid-cols-3 gap-2.5">
+        <div className="mt-3 grid grid-cols-3 gap-2.5">
           <MetricTile value={sizeText} title={`Mature size: ${sizeText}`} />
           <MetricTile value="" accent="text-sky-700" icon={waterIconFor(waterIconType)} title={`Water need: ${waterText}`} />
           <MetricTile value="" accent="text-orange-700" icon={sunIconFor(sunIconType)} title={`Sun requirement: ${sunText}`} />
