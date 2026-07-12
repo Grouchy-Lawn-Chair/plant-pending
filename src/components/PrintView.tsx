@@ -263,101 +263,113 @@ function PlanMap({
   const visiblePlants = showOnlyZoneId ? placedPlants.filter(placed => placed.zone === showOnlyZoneId) : placedPlants;
   const visibleZones = showOnlyZoneId ? zones.filter(zone => zone.id === showOnlyZoneId && zone.zoneType !== 'exclusion') : zones.filter(zone => zone.zoneType !== 'exclusion');
 
+  const toFrameX = (x: number) => (x - bounds.minX) * scale;
+  const toFrameY = (y: number) => (y - bounds.minY) * scale;
+
   return (
-    <div className="relative overflow-hidden rounded-xl border border-slate-300 bg-slate-100" style={{ width: frameWidth, height: frameHeight }}>
-      <div
-        className="absolute left-0 top-0 origin-top-left"
-        style={{
-          width: liveWidth,
-          height: liveHeight,
-          transform: `translate(${-bounds.minX * scale}px, ${-bounds.minY * scale}px) scale(${scale})`,
-        }}
-      >
-        {backgroundImage && (
-          <div
-            className="absolute inset-0"
-            style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}
+    <div
+      className="relative isolate overflow-hidden rounded-xl border border-slate-300 bg-slate-100"
+      style={{ width: frameWidth, height: frameHeight }}
+    >
+      {backgroundImage && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            left: -bounds.minX * scale,
+            top: -bounds.minY * scale,
+            width: liveWidth * scale,
+            height: liveHeight * scale,
+            backgroundImage: `url(${backgroundImage})`,
+            backgroundSize: '100% 100%',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+      )}
+      {backgroundImage && backgroundOpacity < 1 && (
+        <div className="absolute inset-0 bg-slate-100 pointer-events-none" style={{ opacity: 1 - backgroundOpacity }} />
+      )}
+
+      <svg className="absolute inset-0 overflow-hidden" width={frameWidth} height={frameHeight} viewBox={`0 0 ${frameWidth} ${frameHeight}`}>
+        {visibleZones.map(zone => (
+          <polygon
+            key={zone.id}
+            points={zone.points.map(point => `${toFrameX(point.x)},${toFrameY(point.y)}`).join(' ')}
+            fill={zone.color || '#22c55e'}
+            fillOpacity={Math.max(0.12, Math.min(zone.opacity || 0.28, 0.5))}
+            stroke={zone.color || '#22c55e'}
+            strokeWidth={showOnlyZoneId ? 3 : 2}
           />
-        )}
-        {backgroundImage && backgroundOpacity < 1 && (
-          <div className="absolute inset-0 bg-slate-100 pointer-events-none" style={{ opacity: 1 - backgroundOpacity }} />
-        )}
+        ))}
+      </svg>
 
-        <svg className="absolute inset-0 overflow-visible" width={liveWidth} height={liveHeight}>
-          {visibleZones.map(zone => (
-            <polygon
-              key={zone.id}
-              points={zone.points.map(point => `${point.x},${point.y}`).join(' ')}
-              fill={zone.color || '#22c55e'}
-              fillOpacity={Math.max(0.12, Math.min(zone.opacity || 0.28, 0.5))}
-              stroke={zone.color || '#22c55e'}
-              strokeWidth={showOnlyZoneId ? 3 : 2}
-            />
-          ))}
-        </svg>
+      {visiblePlants.map((placed, index) => {
+        const plant = getPlantById(plants, placed.plantId);
+        if (!plant) return null;
+        const left = toFrameX(placed.x);
+        const top = toFrameY(placed.y);
 
-        {visiblePlants.map((placed, index) => {
-          const plant = getPlantById(plants, placed.plantId);
-          if (!plant) return null;
-          if ((placed.itemType || 'plant') === 'rock') {
-            const rockSize = Math.max((pixelsPerFoot || 20) * (placed.rockSizeFt || 2), 20);
-            return (
-              <div
-                key={placed.instanceId}
-                className="absolute flex items-center justify-center rounded-full border border-slate-600 shadow-sm"
-                style={{
-                  left: placed.x,
-                  top: placed.y,
-                  width: rockSize,
-                  height: rockSize,
-                  transform: `translate(-50%, -50%) rotate(${placed.rotationDeg || 0}deg)`,
-                  background: placed.rockColor || '#9ca3af',
-                }}
-              />
-            );
-          }
-          const radius = Math.max(((pixelsPerFoot || 20) * (placed.displayWidthFt || plant.matureWidthFt || 3)) / 2, 7);
-          const baseColor = getPlacedPlantColor(plant, placed, index) || getPlantCategoryColor(plant);
-          const imageUrl = getPlantImageUrl(plant);
-          const displayMode = getDisplayMode(placed, plant);
-          const showSymbol = displayMode === 'symbol' || displayMode === 'symbolLabel';
-          const showImage = !showSymbol && displayMode !== 'color' && !!imageUrl;
-          const legendNumber = legendNumbers.get(plant.id) || 0;
+        if ((placed.itemType || 'plant') === 'rock') {
+          const rockSize = Math.max((pixelsPerFoot || 20) * (placed.rockSizeFt || 2) * scale, 14);
           return (
             <div
               key={placed.instanceId}
-              className={`absolute overflow-visible flex items-center justify-center ${showSymbol ? '' : 'rounded-full'}`}
+              className="absolute flex items-center justify-center rounded-full border border-slate-600 shadow-sm"
               style={{
-                left: placed.x,
-                top: placed.y,
-                transform: 'translate(-50%, -50%)',
-                width: Math.max(radius * 2, 18),
-                height: Math.max(radius * 2, 18),
-                backgroundColor: showSymbol ? 'transparent' : baseColor,
-                opacity: showSymbol ? 1 : plantCircleOpacity,
-                border: showSymbol ? '0' : '2px solid white',
-                outline: showSymbol ? '0' : '1px solid rgba(0,0,0,0.28)',
+                left,
+                top,
+                width: rockSize,
+                height: rockSize,
+                transform: `translate(-50%, -50%) rotate(${placed.rotationDeg || 0}deg)`,
+                background: placed.rockColor || '#9ca3af',
               }}
-            >
-              {showSymbol && (
-                <TopDownPlantSymbol
-                  plant={plant}
-                  placed={placed}
-                  size={Math.max(radius * 2, 18)}
-                  placementIndex={Math.max(0, (legendNumbers.get(plant.id) || 1) - 1)}
-                  circleOpacity={plantCircleOpacity}
-                  labelMode="numbers"
-                  legendNumber={legendNumber}
-                />
-              )}
-              {showImage && <img src={imageUrl!} alt={plant.commonName || plant.botanicalName} className="absolute inset-0 h-full w-full rounded-full object-cover" />}
-              {!showSymbol && legendNumber > 0 && (
-                <span className="relative z-10 text-[10pt] font-bold text-slate-950" style={{ textShadow: '0 1px 0 white' }}>{legendNumber}</span>
-              )}
-            </div>
+            />
           );
-        })}
-      </div>
+        }
+
+        const radius = Math.max(((pixelsPerFoot || 20) * (placed.displayWidthFt || plant.matureWidthFt || 3) * scale) / 2, 7);
+        const baseColor = getPlacedPlantColor(plant, placed, index) || getPlantCategoryColor(plant);
+        const imageUrl = getPlantImageUrl(plant);
+        const displayMode = getDisplayMode(placed, plant);
+        const showSymbol = displayMode === 'symbol' || displayMode === 'symbolLabel';
+        const showImage = !showSymbol && displayMode !== 'color' && !!imageUrl;
+        const legendNumber = legendNumbers.get(plant.id) || 0;
+        const renderedSize = Math.max(radius * 2, 16);
+
+        return (
+          <div
+            key={placed.instanceId}
+            className={`absolute overflow-visible flex items-center justify-center ${showSymbol ? '' : 'rounded-full'}`}
+            style={{
+              left,
+              top,
+              transform: 'translate(-50%, -50%)',
+              width: renderedSize,
+              height: renderedSize,
+              backgroundColor: showSymbol ? 'transparent' : baseColor,
+              opacity: showSymbol ? 1 : plantCircleOpacity,
+              border: showSymbol ? '0' : '2px solid white',
+              outline: showSymbol ? '0' : '1px solid rgba(0,0,0,0.28)',
+            }}
+          >
+            {showSymbol && (
+              <TopDownPlantSymbol
+                plant={plant}
+                placed={placed}
+                size={renderedSize}
+                placementIndex={Math.max(0, (legendNumbers.get(plant.id) || 1) - 1)}
+                circleOpacity={plantCircleOpacity}
+                labelMode="numbers"
+                legendNumber={legendNumber}
+              />
+            )}
+            {showImage && <img src={imageUrl!} alt={plant.commonName || plant.botanicalName} className="absolute inset-0 h-full w-full rounded-full object-cover" />}
+            {!showSymbol && legendNumber > 0 && (
+              <span className="relative z-10 text-xs font-bold text-slate-950" style={{ textShadow: '0 1px 0 white' }}>{legendNumber}</span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
