@@ -9,7 +9,21 @@ import { buildGroupedCallouts } from '../utils/calloutUtils';
 import { buildPlantDriftClusters } from '../utils/driftUtils';
 import { PlantDriftOverlay } from './PlantDriftOverlay';
 
-const publicAssetUrl = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+const publicAssetUrl = (path: string) => {
+  if (!path) return import.meta.env.BASE_URL;
+  if (/^(https?:|data:|blob:)/.test(path)) return path;
+  const base = import.meta.env.BASE_URL;
+  const baseNoSlash = base.replace(/\/$/, '');
+  let cleanPath = path.trim();
+
+  if (cleanPath.startsWith(base)) {
+    cleanPath = cleanPath.slice(base.length);
+  } else if (baseNoSlash && cleanPath.startsWith(`${baseNoSlash}/`)) {
+    cleanPath = cleanPath.slice(baseNoSlash.length + 1);
+  }
+
+  return `${base}${cleanPath.replace(/^\/+/, '')}`;
+};
 
 interface GardenCanvasProps {
   plants: Plant[];
@@ -149,7 +163,7 @@ interface RockIconProps {
 }
 
 function RockIcon({ placed, sizePx, isSelected, onMouseDown }: RockIconProps) {
-  const rockUrl = placed.rockSvg || publicAssetUrl('rocks-icons/rock1.svg');
+  const rockUrl = publicAssetUrl(placed.rockSvg || 'rocks-icons/rock1.svg');
   const rockColor = placed.rockColor || '#8f8f8f';
   const rotationDeg = placed.rotationDeg ?? fallbackRotation(placed.instanceId, placed.plantId);
 
@@ -171,7 +185,7 @@ function RockIcon({ placed, sizePx, isSelected, onMouseDown }: RockIconProps) {
         style={{ transform: `rotate(${rotationDeg}deg)` }}
       >
         <PlanIconSvg
-          src={rockUrl.startsWith('/') ? publicAssetUrl(rockUrl) : rockUrl}
+          src={rockUrl}
           color={rockColor}
           opacity={0.9}
           className="rock-plan-icon w-full h-full"

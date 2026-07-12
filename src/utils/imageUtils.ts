@@ -6,7 +6,21 @@ import { Plant, PlacedPlant } from '../types/plant';
 const loadedImages = new Set<string>();
 const failedImages = new Set<string>();
 
-const publicAssetUrl = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+const publicAssetUrl = (path: string) => {
+  if (!path) return import.meta.env.BASE_URL;
+  if (/^(https?:|data:|blob:)/.test(path)) return path;
+  const base = import.meta.env.BASE_URL;
+  const baseNoSlash = base.replace(/\/$/, '');
+  let cleanPath = path.trim();
+
+  if (cleanPath.startsWith(base)) {
+    cleanPath = cleanPath.slice(base.length);
+  } else if (baseNoSlash && cleanPath.startsWith(`${baseNoSlash}/`)) {
+    cleanPath = cleanPath.slice(baseNoSlash.length + 1);
+  }
+
+  return `${base}${cleanPath.replace(/^\/+/, '')}`;
+};
 
 // Get the image URL for a plant.
 // Green Acres hotlinked product images are preferred for catalog-matched plants.

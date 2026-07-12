@@ -1977,7 +1977,7 @@ function App() {
       displayMode: 'symbol',
       customColor: null,
       rotationDeg: getNextRockRotation(),
-      rockSvg: `${import.meta.env.BASE_URL}rocks-icons/rock${rockNumber}.svg`,
+      rockSvg: `rocks-icons/rock${rockNumber}.svg`,
       rockSizeFt: 2,
       rockColor: getRandomRockColor(),
     };
@@ -2454,7 +2454,7 @@ function App() {
         displayMode: 'symbol',
         customColor: null,
         rotationDeg: Math.round(random() * 360),
-        rockSvg: `${import.meta.env.BASE_URL}rocks-icons/rock${rockNumber}.svg`,
+        rockSvg: `rocks-icons/rock${rockNumber}.svg`,
         rockSizeFt,
         rockColor: `rgb(${r}, ${g}, ${b})`,
       };

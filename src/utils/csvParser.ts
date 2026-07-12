@@ -2,7 +2,21 @@
 
 import { Plant, GARDEN_NUMBER_MAP } from '../types/plant';
 
-const publicAssetUrl = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+const publicAssetUrl = (path: string) => {
+  if (!path) return import.meta.env.BASE_URL;
+  if (/^(https?:|data:|blob:)/.test(path)) return path;
+  const base = import.meta.env.BASE_URL;
+  const baseNoSlash = base.replace(/\/$/, '');
+  let cleanPath = path.trim();
+
+  if (cleanPath.startsWith(base)) {
+    cleanPath = cleanPath.slice(base.length);
+  } else if (baseNoSlash && cleanPath.startsWith(`${baseNoSlash}/`)) {
+    cleanPath = cleanPath.slice(baseNoSlash.length + 1);
+  }
+
+  return `${base}${cleanPath.replace(/^\/+/, '')}`;
+};
 
 const GREEN_ACRES_ONLY_CATALOG = true;
 

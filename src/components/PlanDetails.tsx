@@ -6,7 +6,21 @@ import { importPlanFromJSON } from '../utils/storage';
 import { hasPlantImage, getPlantImageUrl, getPlantCategoryColor, getPlantSymbolColor } from '../utils/imageUtils';
 import { PlanIconSvg } from './PlanIconSvg';
 
-const publicAssetUrl = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+const publicAssetUrl = (path: string) => {
+  if (!path) return import.meta.env.BASE_URL;
+  if (/^(https?:|data:|blob:)/.test(path)) return path;
+  const base = import.meta.env.BASE_URL;
+  const baseNoSlash = base.replace(/\/$/, '');
+  let cleanPath = path.trim();
+
+  if (cleanPath.startsWith(base)) {
+    cleanPath = cleanPath.slice(base.length);
+  } else if (baseNoSlash && cleanPath.startsWith(`${baseNoSlash}/`)) {
+    cleanPath = cleanPath.slice(baseNoSlash.length + 1);
+  }
+
+  return `${base}${cleanPath.replace(/^\/+/, '')}`;
+};
 
 type InspectorSection = 'item' | 'canvas' | 'zones' | 'groups' | 'legend' | 'debug' | null;
 
@@ -424,7 +438,7 @@ export function PlanDetails({
                         style={{ color: selectedPlaced.rockColor || '#8f8f8f' }}
                       >
                         <PlanIconSvg
-                          src={selectedPlaced.rockSvg ? (selectedPlaced.rockSvg.startsWith('/') ? publicAssetUrl(selectedPlaced.rockSvg) : selectedPlaced.rockSvg) : publicAssetUrl('rocks-icons/rock1.svg')}
+                          src={publicAssetUrl(selectedPlaced.rockSvg || 'rocks-icons/rock1.svg')}
                           color={selectedPlaced.rockColor || '#8f8f8f'}
                           opacity={0.9}
                           className="rock-plan-icon w-20 h-20"
