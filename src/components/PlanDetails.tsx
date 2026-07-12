@@ -8,6 +8,7 @@ import { PlanIconSvg } from './PlanIconSvg';
 
 const publicAssetUrl = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
 
+type InspectorSection = 'item' | 'canvas' | 'zones' | 'groups' | 'legend' | 'debug' | null;
 
 const ZONE_LAYOUT_OPTIONS: { value: ZoneLayoutMode; label: string; helper: string }[] = [
   { value: 'fill', label: 'Fill zone', helper: 'Scatter plants throughout the zone' },
@@ -92,6 +93,8 @@ interface PlanDetailsProps {
   globalDisplayMode: DisplayMode;
   plantClumpingEnabled: boolean;
   plantClumpStrength: PlantClumpStrength;
+  inspectorSection: InspectorSection;
+  onInspectorSectionChange: (section: InspectorSection) => void;
   testLog: TestLogEntry[];
   debugSnapshots: TestSnapshot[];
   onClearTestLog: () => void;
@@ -147,6 +150,8 @@ export function PlanDetails({
   globalDisplayMode,
   plantClumpingEnabled,
   plantClumpStrength,
+  inspectorSection,
+  onInspectorSectionChange,
   testLog,
   debugSnapshots,
   onClearTestLog,
@@ -186,7 +191,6 @@ export function PlanDetails({
   const [saveName, setSaveName] = useState(currentPlanName);
   const [fullSizeImage, setFullSizeImage] = useState<{ url: string; title: string; subtitle?: string } | null>(null);
   const [editingZoneId, setEditingZoneId] = useState<string | null>(null);
-  const [inspectorSection, setInspectorSection] = useState<'item' | 'canvas' | 'zones' | 'groups' | 'legend' | 'debug' | null>('zones');
   const [zoneSettingsTab, setZoneSettingsTab] = useState<'site' | 'generate' | 'style'>('site');
   const [zoneModalPosition, setZoneModalPosition] = useState({ x: 360, y: 90 });
   const [newGroupName, setNewGroupName] = useState('');
@@ -204,10 +208,10 @@ export function PlanDetails({
 
   useEffect(() => {
     if (!selectedZoneId) return;
-    setInspectorSection('zones');
+    onInspectorSectionChange('zones');
     setEditingZoneId(selectedZoneId);
     setZoneSettingsTab('site');
-  }, [selectedZoneId]);
+  }, [selectedZoneId, onInspectorSectionChange]);
 
   useEffect(() => {
     if (!selectedInstanceId) return;
@@ -348,16 +352,16 @@ export function PlanDetails({
 
   return (
     <div className="inspector-dark relative h-full flex flex-col bg-slate-950 text-slate-100 pr-12">
-      <div className="border-b border-slate-800 bg-slate-900 px-3 py-2">
+      <div className={`${inspectorSection ? '' : 'hidden'} border-b border-slate-800 bg-slate-900 px-3 py-2`}>
         <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Current plan</div>
         <p className="mt-1 truncate text-sm font-medium text-slate-100">{currentPlanName || 'Untitled Plan'}</p>
       </div>
 
       <div className="absolute inset-y-0 right-0 z-20 flex w-12 flex-col items-center gap-2 border-l border-slate-800 bg-slate-950 px-1.5 py-3">
         {[
-          { id: 'item' as const, label: 'Selected item', icon: '◆' },
-          { id: 'canvas' as const, label: 'Canvas', icon: '□' },
-          { id: 'zones' as const, label: 'Zones', icon: '▱' },
+          { id: 'item' as const, label: selectedPlaced ? 'Selection' : 'Selection (nothing selected)', icon: '◆' },
+          { id: 'canvas' as const, label: 'Canvas', iconSrc: `${import.meta.env.BASE_URL}ui-icons/noun-canvas-8382519.svg` },
+          { id: 'zones' as const, label: 'Zones', iconSrc: `${import.meta.env.BASE_URL}ui-icons/noun-screenshot-4899159.svg` },
           { id: 'groups' as const, label: 'Groups', icon: '☷' },
           { id: 'legend' as const, label: 'Legend', icon: '#' },
           { id: 'debug' as const, label: 'Debug', icon: '⌁' },
@@ -366,16 +370,25 @@ export function PlanDetails({
             key={section.id}
             type="button"
             title={section.label}
-            onClick={() => setInspectorSection(current => current === section.id ? null : section.id)}
+            onClick={() => onInspectorSectionChange(inspectorSection === section.id ? null : section.id)}
             className={`flex h-9 w-9 items-center justify-center rounded-xl border text-sm font-bold ${inspectorSection === section.id ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
           >
-            {section.icon}
+            {'iconSrc' in section ? (
+              <img
+                src={section.iconSrc}
+                alt=""
+                aria-hidden="true"
+                className={`h-5 w-5 ${inspectorSection === section.id ? 'invert brightness-0 sepia saturate-[8] hue-rotate-[105deg]' : 'invert opacity-80'}`}
+              />
+            ) : (
+              section.icon
+            )}
           </button>
         ))}
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={`${inspectorSection ? '' : 'hidden'} flex-1 overflow-y-auto`}>
         {/* Multi-select details */}
         {selectedInstanceIds.length > 1 && (
           <div className="p-3 border-b border-slate-800 bg-slate-900">
@@ -400,7 +413,7 @@ export function PlanDetails({
         {/* Selected plant details */}
         {inspectorSection === 'item' && selectedPlaced && (
           <div className="p-3 border-b border-slate-800 bg-slate-950 text-slate-100">
-            <h3 className="text-sm font-medium text-slate-100 mb-2">Selected Item</h3>
+            <h3 className="text-sm font-medium text-slate-100 mb-2">Selection</h3>
             {(() => {
               if (selectedPlaced.itemType === 'rock') {
                 return (
@@ -1004,7 +1017,7 @@ export function PlanDetails({
                 <div
                   key={plant.id}
                   onClick={() => onSelectPlacedPlant(instances[0].instanceId)}
-                  className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer text-sm border border-slate-200"
+                  className="flex items-center gap-2 p-2 rounded cursor-pointer text-sm border border-slate-700 bg-slate-900/60 hover:bg-slate-800 focus:bg-slate-800"
                 >
                   <span className="w-7 h-7 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-bold flex-shrink-0" title="Legend number">
                     #{index + 1}
@@ -1013,7 +1026,7 @@ export function PlanDetails({
                     <div className="truncate font-medium text-slate-100">{plant.commonName || plant.botanicalName}</div>
                     {plant.commonName && <div className="truncate text-xs text-slate-400 italic">{plant.botanicalName}</div>}
                   </div>
-                  <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-medium flex-shrink-0" title="Quantity">
+                  <span className="px-2 py-1 rounded-lg bg-emerald-700 text-white text-xs font-bold flex-shrink-0 shadow-sm" title="Quantity">
                     Qty {count}
                   </span>
                 </div>

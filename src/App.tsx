@@ -1241,6 +1241,7 @@ function App() {
   const [visiblePlantLimit, setVisiblePlantLimit] = useState(120);
   const [sortBy, setSortBy] = useState<SortOption>('commonName');
   const [leftPanelMode, setLeftPanelMode] = useState<'library' | 'filters' | 'closed'>('library');
+  const [rightInspectorSection, setRightInspectorSection] = useState<'item' | 'canvas' | 'zones' | 'groups' | 'legend' | 'debug' | null>('zones');
   const categories = useMemo(() => getCategories(plants), [plants]);
   // Selection state
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
@@ -1294,6 +1295,7 @@ function App() {
   const [showFileMenu, setShowFileMenu] = useState(false);
   const [showOpenPlanModal, setShowOpenPlanModal] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showAttribution, setShowAttribution] = useState(false);
   const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
   const [showWelcomeOnStartup, setShowWelcomeOnStartup] = useState(true);
   const [showHelpCenter, setShowHelpCenter] = useState(false);
@@ -1766,6 +1768,7 @@ function App() {
     if (selectedInstanceId === instanceId && selectedInstanceIds.length <= 1) return;
     setSelectedInstanceId(instanceId);
     setSelectedInstanceIds(instanceId ? [instanceId] : []);
+    if (instanceId) setRightInspectorSection('item');
     const placed = placedPlants.find(item => item.instanceId === instanceId);
     addTestLog('selection.placedPlant', {
       instanceId,
@@ -1782,6 +1785,7 @@ function App() {
   const handleSelectMultiplePlacedPlants = useCallback((instanceIds: string[]) => {
     setSelectedInstanceIds(instanceIds);
     setSelectedInstanceId(instanceIds[0] || null);
+    if (instanceIds.length > 0) setRightInspectorSection('item');
     setSelectedPlant(null);
     setPlacingRock(false);
     addTestLog('selection.marquee', {
@@ -1795,6 +1799,7 @@ function App() {
     if (zoneId) setSelectedInstanceIds([]);
     if (selectedZoneId === zoneId) return;
     setSelectedZoneId(zoneId);
+    if (zoneId) setRightInspectorSection('zones');
     const zone = zones.find(item => item.id === zoneId);
     addTestLog('selection.zone', {
       zoneId,
@@ -3599,7 +3604,7 @@ function App() {
           </div>
         </main>
 
-        <aside className="w-[23rem] shrink-0 border-l border-slate-800 bg-[#0f1720]">
+        <aside className={`${rightInspectorSection ? 'w-[23rem]' : 'w-12'} shrink-0 border-l border-slate-800 bg-[#0f1720] transition-[width] duration-200`}>
           <div className="h-full">
             <PlanDetails
             plants={plants}
@@ -3621,6 +3626,8 @@ function App() {
             globalDisplayMode={globalDisplayMode}
             plantClumpingEnabled={plantClumpingEnabled}
             plantClumpStrength={plantClumpStrength}
+            inspectorSection={rightInspectorSection}
+            onInspectorSectionChange={setRightInspectorSection}
             testLog={testLog}
             debugSnapshots={debugSnapshots}
             onClearTestLog={clearTestLog}
@@ -3762,7 +3769,59 @@ function App() {
               <div className="rounded-2xl border border-emerald-900/60 bg-emerald-950/30 p-4 text-emerald-100">
                 The app remains helpful first, funny second, and mildly concerned about future pruning.
               </div>
+              <button
+                type="button"
+                onClick={() => setShowAttribution(true)}
+                className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-800"
+              >
+                View icon and data attribution
+              </button>
               <p className="text-xs text-slate-500">Plant Pending v 1.0 · The plants remain safely theoretical.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Attribution modal */}
+      {showAttribution && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 p-6" onClick={() => setShowAttribution(false)}>
+          <div className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-700 bg-slate-950 p-6 text-slate-100 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-300">Plant Pending</div>
+                <h2 className="mt-1 text-2xl font-black text-white">Attribution</h2>
+                <p className="mt-2 text-sm text-slate-400">Credit where credit is due. Also where the rocks demanded legal representation.</p>
+              </div>
+              <button type="button" onClick={() => setShowAttribution(false)} className="rounded-xl border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800">Close</button>
+            </div>
+            <div className="mt-5 space-y-4 text-sm leading-6 text-slate-300">
+              <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+                <h3 className="font-semibold text-white">Plant and rock planning icons</h3>
+                <p className="mt-1">Top-down plant symbols and rock SVGs are bundled project assets used by Plant Pending for plan visualization.</p>
+              </section>
+              <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+                <h3 className="font-semibold text-white">App interface icons</h3>
+                <div className="mt-2 space-y-3">
+                  <p>
+                    <span className="font-semibold text-slate-100">Canvas icon:</span>{' '}
+                    canvas by Dwi ridwanto from{' '}
+                    <a className="text-emerald-300 underline underline-offset-2 hover:text-emerald-200" href="https://thenounproject.com/browse/icons/term/canvas/" target="_blank" rel="noreferrer" title="canvas Icons">Noun Project</a>{' '}
+                    (CC BY 3.0).
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-100">Zones icon:</span>{' '}
+                    Screenshot by Rolas Design from{' '}
+                    <a className="text-emerald-300 underline underline-offset-2 hover:text-emerald-200" href="https://thenounproject.com/browse/icons/term/screenshot/" target="_blank" rel="noreferrer" title="Screenshot Icons">Noun Project</a>{' '}
+                    (CC BY 3.0).
+                  </p>
+                </div>
+              </section>
+              <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+                <h3 className="font-semibold text-white">Plant catalog and photos</h3>
+                <p className="mt-1">Plant data and catalog links are based on Green Acres Nursery &amp; Supply catalog fields where available. Product photos may be hotlinked from Green Acres catalog image URLs when the source provides them.</p>
+              </section>
+              <p className="text-xs text-slate-500">If you add a new icon pack or image source, add the license text here before publishing. Future you will forget. Future you is unreliable.</p>
             </div>
           </div>
         </div>
