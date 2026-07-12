@@ -1,6 +1,6 @@
 // PrintView component - printable plan set for Plant Pending
 
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Plant, PlacedPlant, GardenZone, PlantLabelMode, PlantClumpStrength } from '../types/plant';
 import { getPlantImageUrl, getPlantCategoryColor, getPlacedPlantColor, getPlantSymbolColor, hasPlantImage, hasPlantSymbol } from '../utils/imageUtils';
 import { TopDownPlantSymbol } from './TopDownPlantSymbol';
@@ -35,6 +35,8 @@ interface PriceRange {
 }
 
 type Point = { x: number; y: number };
+
+type PrintPaperSize = 'letter' | 'tabloid';
 
 type MapBounds = { minX: number; minY: number; maxX: number; maxY: number };
 
@@ -370,6 +372,29 @@ export function PrintView({
   onClose,
 }: PrintViewProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [printPaperSize, setPrintPaperSize] = useState<PrintPaperSize>('letter');
+
+  const paperSettings = printPaperSize === 'tabloid'
+    ? {
+        label: '11×17 tabloid landscape',
+        pageCss: '17in 11in',
+        contentWidthIn: 16.3,
+        contentMinHeightIn: 10.25,
+        masterMapHeight: 690,
+        zoneMapHeight: 550,
+        masterSideWidth: '3.8in',
+        zoneSideWidth: '5in',
+      }
+    : {
+        label: 'Letter landscape',
+        pageCss: 'letter landscape',
+        contentWidthIn: 10.4,
+        contentMinHeightIn: 7.9,
+        masterMapHeight: 430,
+        zoneMapHeight: 360,
+        masterSideWidth: '3in',
+        zoneSideWidth: '3.5in',
+      };
 
   const plantCounts = useMemo(() => {
     const groups: PlantCountGroup[] = [];
@@ -421,14 +446,76 @@ export function PrintView({
   const handlePrint = () => window.print();
 
   return (
-    <div className="fixed inset-0 z-[80] flex flex-col bg-black/60">
+    <div className="print-shell fixed inset-0 z-[80] flex flex-col bg-black/60">
       <style>{`
-        @page { size: 17in 11in; margin: 0.35in; }
+        @page { size: ${paperSettings.pageCss}; margin: 0.3in; }
+
         @media print {
+          html, body, #root {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: auto !important;
+            height: auto !important;
+            overflow: visible !important;
+            background: white !important;
+          }
+
           body * { visibility: hidden; }
-          #print-content, #print-content * { visibility: visible; }
-          #print-content { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; overflow: visible !important; }
-          .print-page { page-break-after: always; break-after: page; box-shadow: none !important; margin: 0 !important; width: 16.3in !important; min-height: 10.25in !important; }
+
+          .print-shell,
+          .print-shell *,
+          #print-content,
+          #print-content * {
+            visibility: visible !important;
+          }
+
+          .print-shell {
+            position: static !important;
+            inset: auto !important;
+            display: block !important;
+            width: auto !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            background: white !important;
+          }
+
+          #print-content {
+            position: static !important;
+            display: block !important;
+            width: auto !important;
+            height: auto !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: white !important;
+          }
+
+          #print-content > div {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          .print-page {
+            display: block !important;
+            width: ${paperSettings.contentWidthIn}in !important;
+            min-height: ${paperSettings.contentMinHeightIn}in !important;
+            height: auto !important;
+            margin: 0 auto !important;
+            box-shadow: none !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid-page !important;
+            overflow: hidden !important;
+          }
+
+          .print-page:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+
           .print-hidden { display: none !important; }
         }
       `}</style>
@@ -438,15 +525,26 @@ export function PrintView({
           <h2 className="text-base font-semibold">Print Plan Builder</h2>
           <p className="text-xs text-slate-400">Master plan, zone sheets, plant schedule, costs, and photo sheet.</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={handlePrint} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Print</button>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-wide text-slate-500">Paper</span>
+            <select
+              value={printPaperSize}
+              onChange={(e) => setPrintPaperSize(e.target.value as PrintPaperSize)}
+              className="bg-transparent text-sm font-semibold text-white focus:outline-none"
+            >
+              <option className="bg-slate-900" value="letter">Letter</option>
+              <option className="bg-slate-900" value="tabloid">11×17</option>
+            </select>
+          </label>
+          <button onClick={handlePrint} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Print {paperSettings.label}</button>
           <button onClick={onClose} className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800">Close</button>
         </div>
       </div>
 
       <div ref={printRef} id="print-content" className="flex-1 overflow-auto bg-slate-200 p-6">
         <div className="mx-auto space-y-6">
-          <section className="print-page mx-auto min-h-[10.25in] w-[16.3in] bg-white p-8 text-slate-950 shadow-2xl">
+          <section className="print-page mx-auto bg-white p-6 text-slate-950 shadow-2xl" style={{ width: `${paperSettings.contentWidthIn}in`, minHeight: `${paperSettings.contentMinHeightIn}in` }}>
             <div className="mb-5 flex items-start justify-between border-b border-slate-300 pb-4">
               <div className="flex items-start gap-4">
                 <img src={`${import.meta.env.BASE_URL}brand/logo.svg`} alt="Plant Pending" className="h-16 w-auto" />
@@ -463,7 +561,7 @@ export function PrintView({
               </div>
             </div>
 
-            <div className="grid grid-cols-[minmax(0,1fr)_3.8in] gap-5">
+            <div className="grid gap-5" style={{ gridTemplateColumns: `minmax(0,1fr) ${paperSettings.masterSideWidth}` }}>
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <h2 className="text-lg font-bold">Overall plan</h2>
@@ -479,7 +577,7 @@ export function PrintView({
                   canvasSize={canvasSize}
                   plantCircleOpacity={plantCircleOpacity}
                   legendNumbers={legendNumbers}
-                  height={690}
+                  height={paperSettings.masterMapHeight}
                 />
               </div>
 
@@ -526,7 +624,7 @@ export function PrintView({
           {zoneSummaries.map(({ zone, plantGroups, zonePlants, zoneRocks, cost }, zoneIndex) => {
             const zoneBounds = inflateBounds(getBounds(zone.points), 80, canvasSize.width || 900, canvasSize.height || 650);
             return (
-              <section key={zone.id} className="print-page mx-auto min-h-[10.25in] w-[16.3in] bg-white p-8 text-slate-950 shadow-2xl">
+              <section key={zone.id} className="print-page mx-auto bg-white p-6 text-slate-950 shadow-2xl" style={{ width: `${paperSettings.contentWidthIn}in`, minHeight: `${paperSettings.contentMinHeightIn}in` }}>
                 <div className="mb-5 flex items-start justify-between border-b border-slate-300 pb-4">
                   <div>
                     <div className="text-xs uppercase tracking-[0.22em] text-emerald-700">Zone detail sheet</div>
@@ -538,7 +636,7 @@ export function PrintView({
                     <div className="mt-1 text-2xl font-black text-emerald-700">{formatTotal(cost)}</div>
                   </div>
                 </div>
-                <div className="grid grid-cols-[1fr_5in] gap-6">
+                <div className="grid gap-5" style={{ gridTemplateColumns: `1fr ${paperSettings.zoneSideWidth}` }}>
                   <div>
                     <h2 className="mb-2 text-lg font-bold">Mini map</h2>
                     <PlanMap
@@ -553,7 +651,7 @@ export function PrintView({
                       legendNumbers={legendNumbers}
                       cropBounds={zoneBounds}
                       showOnlyZoneId={zone.id}
-                      height={550}
+                      height={paperSettings.zoneMapHeight}
                     />
                     <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Sun</div><div className="font-bold">{zone.sunExposure || 'Unknown'}</div></div>
@@ -598,7 +696,7 @@ export function PrintView({
             );
           })}
 
-          <section className="print-page mx-auto min-h-[10.25in] w-[16.3in] bg-white p-8 text-slate-950 shadow-2xl">
+          <section className="print-page mx-auto bg-white p-6 text-slate-950 shadow-2xl" style={{ width: `${paperSettings.contentWidthIn}in`, minHeight: `${paperSettings.contentMinHeightIn}in` }}>
             <div className="mb-5 flex items-start justify-between border-b border-slate-300 pb-4">
               <div>
                 <div className="text-xs uppercase tracking-[0.22em] text-emerald-700">Plant Pending plant schedule</div>
@@ -646,7 +744,7 @@ export function PrintView({
           </section>
 
           {(notes || unassignedPlants.length > 0) && (
-            <section className="print-page mx-auto min-h-[10.25in] w-[16.3in] bg-white p-8 text-slate-950 shadow-2xl">
+            <section className="print-page mx-auto bg-white p-6 text-slate-950 shadow-2xl" style={{ width: `${paperSettings.contentWidthIn}in`, minHeight: `${paperSettings.contentMinHeightIn}in` }}>
               <div className="mb-5 flex items-start justify-between border-b border-slate-300 pb-4">
                 <div>
                   <div className="text-xs uppercase tracking-[0.22em] text-emerald-700">Plant Pending plan notes</div>
