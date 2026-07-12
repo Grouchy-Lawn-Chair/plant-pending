@@ -6,6 +6,8 @@ import { Plant, PlacedPlant } from '../types/plant';
 const loadedImages = new Set<string>();
 const failedImages = new Set<string>();
 
+const publicAssetUrl = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+
 // Get the image URL for a plant.
 // Green Acres hotlinked product images are preferred for catalog-matched plants.
 // Existing local/remote thumbnails remain as fallbacks.
@@ -14,7 +16,7 @@ export function getPlantImageUrl(plant: Plant): string | null {
     return plant.greenAcresImageUrl;
   }
   if (plant.thumbnailLocalPath) {
-    return plant.thumbnailLocalPath;
+    return plant.thumbnailLocalPath.startsWith('/') ? publicAssetUrl(plant.thumbnailLocalPath) : plant.thumbnailLocalPath;
   }
   if (plant.thumbnailUrl) {
     return plant.thumbnailUrl;
@@ -289,14 +291,14 @@ function getStableIconIndex(plant: Plant, family: PlantIconFamily, listLength: n
 
 export function getPlantSymbolUrl(plant: Plant): string | null {
   const family = getPlantIconFamily(plant);
-  return `/top_down_plant_icons/${ICON_FAMILY_FILES[family][0]}`;
+  return publicAssetUrl(`top_down_plant_icons/${ICON_FAMILY_FILES[family][0]}`);
 }
 
 export function getPlacedPlantSymbolUrl(plant: Plant, _placed: Pick<PlacedPlant, 'instanceId' | 'plantId'>): string {
   const family = getPlantIconFamily(plant);
   const files = ICON_FAMILY_FILES[family];
   const index = getStableIconIndex(plant, family, files.length);
-  return `/top_down_plant_icons/${files[index]}`;
+  return publicAssetUrl(`top_down_plant_icons/${files[index]}`);
 }
 
 export function getPlacedPlantSilhouetteUrl(plant: Plant, placed: Pick<PlacedPlant, 'instanceId' | 'plantId'>): string | null {
@@ -306,7 +308,7 @@ export function getPlacedPlantSilhouetteUrl(plant: Plant, placed: Pick<PlacedPla
   const iconUrl = getPlacedPlantSymbolUrl(plant, placed);
   const iconFile = iconUrl.split('/').pop() || '';
   const silhouetteFile = iconFile.replace(/\.svg$/i, '-s.svg');
-  return `/top_down_plant_icons/${silhouetteFile}`;
+  return publicAssetUrl(`top_down_plant_icons/${silhouetteFile}`);
 }
 
 function palettePlantColor(plant: Plant): string {

@@ -6,6 +6,8 @@ import { importPlanFromJSON } from '../utils/storage';
 import { hasPlantImage, getPlantImageUrl, getPlantCategoryColor, getPlantSymbolColor } from '../utils/imageUtils';
 import { PlanIconSvg } from './PlanIconSvg';
 
+const publicAssetUrl = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+
 
 const ZONE_LAYOUT_OPTIONS: { value: ZoneLayoutMode; label: string; helper: string }[] = [
   { value: 'fill', label: 'Fill zone', helper: 'Scatter plants throughout the zone' },
@@ -409,7 +411,7 @@ export function PlanDetails({
                         style={{ color: selectedPlaced.rockColor || '#8f8f8f' }}
                       >
                         <PlanIconSvg
-                          src={selectedPlaced.rockSvg || '/rocks-icons/rock1.svg'}
+                          src={selectedPlaced.rockSvg ? (selectedPlaced.rockSvg.startsWith('/') ? publicAssetUrl(selectedPlaced.rockSvg) : selectedPlaced.rockSvg) : publicAssetUrl('rocks-icons/rock1.svg')}
                           color={selectedPlaced.rockColor || '#8f8f8f'}
                           opacity={0.9}
                           className="rock-plan-icon w-20 h-20"
