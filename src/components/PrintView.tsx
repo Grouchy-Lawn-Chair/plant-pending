@@ -1,6 +1,6 @@
 // PrintView component - printable plan set for Plant Pending
 
-import { useMemo, useRef, useState } from 'react';
+import { Fragment, useMemo, useRef, useState } from 'react';
 import { Plant, PlacedPlant, GardenZone, PlantLabelMode, PlantClumpStrength } from '../types/plant';
 import { getPlantImageUrl, getPlantCategoryColor, getPlacedPlantColor, getPlantSymbolColor, hasPlantImage, hasPlantSymbol } from '../utils/imageUtils';
 import { TopDownPlantSymbol } from './TopDownPlantSymbol';
@@ -154,10 +154,12 @@ function getFooterMessage(pageIndex: number): string {
 
 function PrintFooter({ pageIndex }: { pageIndex: number }) {
   return (
-    <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-3 text-[11px] text-slate-500">
-      <div className="font-bold tracking-wide text-slate-700">Plant Pending</div>
-      <div className="italic">{getFooterMessage(pageIndex)}</div>
-      <div>Probably needs a shrub.</div>
+    <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-200 pt-2 text-[10px] text-slate-500">
+      <div className="flex items-center gap-2 text-slate-700">
+        <img src={`${import.meta.env.BASE_URL}brand/logo.svg`} alt="Plant Pending" className="h-5 w-auto" />
+      </div>
+      <div className="flex-1 text-center italic">{getFooterMessage(pageIndex)}</div>
+      <div className="shrink-0">Probably needs a shrub.</div>
     </div>
   );
 }
@@ -165,14 +167,14 @@ function PrintFooter({ pageIndex }: { pageIndex: number }) {
 function ZonePhotoGrid({ plantGroups, legendNumbers }: { plantGroups: PlantCountGroup[]; legendNumbers: Map<number, number> }) {
   if (plantGroups.length === 0) return null;
   return (
-    <div className="mt-4">
-      <h2 className="mb-2 text-lg font-bold">Plant images in this zone</h2>
+    <div className="mt-0">
+      <h2 className="mb-2 text-base font-bold">Plant images in this zone</h2>
       <div className="grid grid-cols-4 gap-3">
         {plantGroups.slice(0, 12).map(group => {
           const image = getPlantImageUrl(group.plant);
           return (
             <div key={group.plant.id} className="break-inside-avoid overflow-hidden rounded-xl border border-slate-300 bg-slate-50">
-              <div className="h-20 bg-slate-200">
+              <div className="h-28 bg-slate-200">
                 {image ? <img src={image} alt={group.plant.commonName || group.plant.botanicalName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-slate-500">No image</div>}
               </div>
               <div className="p-2 text-[11px] leading-tight">
@@ -251,7 +253,9 @@ function PlanMap({
   const bounds = cropBounds || { minX: 0, minY: 0, maxX: liveWidth, maxY: liveHeight };
   const boundsWidth = Math.max(bounds.maxX - bounds.minX, 1);
   const boundsHeight = Math.max(bounds.maxY - bounds.minY, 1);
-  const mapWidth = Math.min(920, Math.max(420, (boundsWidth / boundsHeight) * height));
+  const maxMapWidth = showOnlyZoneId ? 560 : 920;
+  const minMapWidth = showOnlyZoneId ? 260 : 420;
+  const mapWidth = Math.min(maxMapWidth, Math.max(minMapWidth, (boundsWidth / boundsHeight) * height));
   const scale = Math.min(mapWidth / boundsWidth, height / boundsHeight);
   const frameWidth = boundsWidth * scale;
   const frameHeight = boundsHeight * scale;
@@ -378,23 +382,36 @@ export function PrintView({
     ? {
         label: '11×17 tabloid landscape',
         pageCss: '17in 11in',
-        contentWidthIn: 16.3,
-        contentMinHeightIn: 10.25,
+        pageWidthIn: 16.4,
+        pageHeightIn: 10.4,
+        pagePaddingIn: 0.32,
         masterMapHeight: 690,
-        zoneMapHeight: 550,
-        masterSideWidth: '3.8in',
-        zoneSideWidth: '5in',
+        zoneMapHeight: 520,
+        masterSideWidth: '4.15in',
+        zoneSideWidth: '5.35in',
+        zonePhotoLimit: 999,
       }
     : {
         label: 'Letter landscape',
         pageCss: 'letter landscape',
-        contentWidthIn: 10.4,
-        contentMinHeightIn: 7.9,
-        masterMapHeight: 430,
-        zoneMapHeight: 360,
-        masterSideWidth: '3in',
-        zoneSideWidth: '3.5in',
+        pageWidthIn: 10.5,
+        pageHeightIn: 8.0,
+        pagePaddingIn: 0.22,
+        masterMapHeight: 485,
+        zoneMapHeight: 385,
+        masterSideWidth: '3.25in',
+        zoneSideWidth: '3.75in',
+        zonePhotoLimit: 999,
       };
+
+  const pageStyle = {
+    width: `${paperSettings.pageWidthIn}in`,
+    minHeight: `${paperSettings.pageHeightIn}in`,
+    height: `${paperSettings.pageHeightIn}in`,
+    maxHeight: `${paperSettings.pageHeightIn}in`,
+    padding: `${paperSettings.pagePaddingIn}in`,
+    boxSizing: 'border-box' as const,
+  };
 
   const plantCounts = useMemo(() => {
     const groups: PlantCountGroup[] = [];
@@ -448,16 +465,19 @@ export function PrintView({
   return (
     <div className="print-shell fixed inset-0 z-[80] flex flex-col bg-black/60">
       <style>{`
-        @page { size: ${paperSettings.pageCss}; margin: 0.3in; }
+        @page { size: ${paperSettings.pageCss}; margin: 0.25in; }
 
         @media print {
           html, body, #root {
             margin: 0 !important;
             padding: 0 !important;
             width: auto !important;
+            min-height: 0 !important;
             height: auto !important;
             overflow: visible !important;
             background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
 
           body * { visibility: hidden; }
@@ -470,7 +490,9 @@ export function PrintView({
           }
 
           .print-shell {
-            position: static !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             inset: auto !important;
             display: block !important;
             width: auto !important;
@@ -487,6 +509,7 @@ export function PrintView({
             height: auto !important;
             min-height: 0 !important;
             padding: 0 !important;
+            margin: 0 !important;
             overflow: visible !important;
             background: white !important;
           }
@@ -499,9 +522,12 @@ export function PrintView({
 
           .print-page {
             display: block !important;
-            width: ${paperSettings.contentWidthIn}in !important;
-            min-height: ${paperSettings.contentMinHeightIn}in !important;
-            height: auto !important;
+            width: ${paperSettings.pageWidthIn}in !important;
+            height: ${paperSettings.pageHeightIn}in !important;
+            min-height: ${paperSettings.pageHeightIn}in !important;
+            max-height: ${paperSettings.pageHeightIn}in !important;
+            padding: ${paperSettings.pagePaddingIn}in !important;
+            box-sizing: border-box !important;
             margin: 0 auto !important;
             box-shadow: none !important;
             page-break-after: always !important;
@@ -537,26 +563,26 @@ export function PrintView({
               <option className="bg-slate-900" value="tabloid">11×17</option>
             </select>
           </label>
-          <button onClick={handlePrint} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Print {paperSettings.label}</button>
+          <button onClick={handlePrint} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Print</button>
           <button onClick={onClose} className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800">Close</button>
         </div>
       </div>
 
       <div ref={printRef} id="print-content" className="flex-1 overflow-auto bg-slate-200 p-6">
         <div className="mx-auto space-y-6">
-          <section className="print-page mx-auto bg-white p-6 text-slate-950 shadow-2xl" style={{ width: `${paperSettings.contentWidthIn}in`, minHeight: `${paperSettings.contentMinHeightIn}in` }}>
-            <div className="mb-5 flex items-start justify-between border-b border-slate-300 pb-4">
+          <section className="print-page mx-auto bg-white text-slate-950 shadow-2xl" style={pageStyle}>
+            <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
               <div className="flex items-start gap-4">
                 <img src={`${import.meta.env.BASE_URL}brand/logo.svg`} alt="Plant Pending" className="h-16 w-auto" />
                 <div>
                   <div className="text-xs uppercase tracking-[0.22em] text-emerald-700">Plant Pending master plan</div>
-                  <h1 className="mt-1 text-3xl font-black">{planName || 'Untitled Planting Plan'}</h1>
+                  <h1 className="mt-1 text-xl font-black">{planName || 'Untitled Planting Plan'}</h1>
                   <p className="mt-1 text-sm text-slate-600">Generated {dated} · {placedPlants.length} placed items · {zoneSummaries.length} planting zones</p>
                 </div>
               </div>
-              <div className="rounded-2xl border border-slate-300 bg-slate-50 px-5 py-4 text-right">
+              <div className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-right">
                 <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Estimated plant total</div>
-                <div className="mt-1 text-2xl font-black text-emerald-700">{formatTotal(totalCost)}</div>
+                <div className="mt-1 text-xl font-black text-emerald-700">{formatTotal(totalCost)}</div>
                 <div className="mt-1 text-xs text-slate-500">Known priced items: {totalCost.known}</div>
               </div>
             </div>
@@ -584,10 +610,10 @@ export function PrintView({
               <div className="space-y-4">
                 <div>
                   <h2 className="mb-2 text-lg font-bold">Zones</h2>
-                  <div className="space-y-2.5">
+                  <div className="space-y-1.5">
                     {zoneSummaries.length === 0 && <p className="text-sm text-slate-500">No zones drawn yet.</p>}
                     {zoneSummaries.map(({ zone, zonePlants, zoneRocks, cost }) => (
-                      <div key={zone.id} className="rounded-xl border border-slate-300 p-3 text-sm">
+                      <div key={zone.id} className="rounded-xl border border-slate-300 p-2 text-xs">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 font-bold">
                             <span className="h-3 w-3 rounded-full" style={{ backgroundColor: zone.color }} />
@@ -595,7 +621,7 @@ export function PrintView({
                           </div>
                           <div className="text-xs text-slate-500">{getZoneArea(zone.points, pixelsPerFoot)}</div>
                         </div>
-                        <div className="mt-1 text-xs text-slate-600">{zonePlants.length} plants · {zoneRocks.length} rocks · {formatTotal(cost)}</div>
+                        <div className="mt-0.5 text-[10px] text-slate-600">{zonePlants.length} plants · {zoneRocks.length} rocks · {formatTotal(cost)}</div>
                       </div>
                     ))}
                   </div>
@@ -604,7 +630,7 @@ export function PrintView({
                 <div>
                   <h2 className="mb-2 text-lg font-bold">Plant legend</h2>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    {plantCounts.slice(0, 18).map((group) => (
+                    {plantCounts.slice(0, printPaperSize === 'tabloid' ? 24 : 14).map((group) => (
                       <div key={group.plant.id} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
                         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">{legendNumbers.get(group.plant.id)}</div>
                         <div className="min-w-0 flex-1">
@@ -614,7 +640,7 @@ export function PrintView({
                       </div>
                     ))}
                   </div>
-                  {plantCounts.length > 18 && <p className="mt-2 text-xs text-slate-500">Full schedule continues on later pages.</p>}
+                  {plantCounts.length > (printPaperSize === 'tabloid' ? 24 : 14) && <p className="mt-2 text-xs text-slate-500">Full schedule continues on later pages.</p>}
                 </div>
               </div>
             </div>
@@ -624,16 +650,17 @@ export function PrintView({
           {zoneSummaries.map(({ zone, plantGroups, zonePlants, zoneRocks, cost }, zoneIndex) => {
             const zoneBounds = inflateBounds(getBounds(zone.points), 80, canvasSize.width || 900, canvasSize.height || 650);
             return (
-              <section key={zone.id} className="print-page mx-auto bg-white p-6 text-slate-950 shadow-2xl" style={{ width: `${paperSettings.contentWidthIn}in`, minHeight: `${paperSettings.contentMinHeightIn}in` }}>
-                <div className="mb-5 flex items-start justify-between border-b border-slate-300 pb-4">
+            <Fragment key={zone.id}>
+              <section className="print-page mx-auto bg-white text-slate-950 shadow-2xl" style={pageStyle}>
+                <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
                   <div>
                     <div className="text-xs uppercase tracking-[0.22em] text-emerald-700">Zone detail sheet</div>
-                    <h1 className="mt-1 text-3xl font-black">{zone.name}</h1>
+                    <h1 className="mt-1 text-xl font-black">{zone.name}</h1>
                     <p className="mt-1 text-sm text-slate-600">{zonePlants.length} plants · {zoneRocks.length} rocks · {getZoneArea(zone.points, pixelsPerFoot)}</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-300 bg-slate-50 px-5 py-4 text-right">
+                  <div className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-right">
                     <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Zone plant cost</div>
-                    <div className="mt-1 text-2xl font-black text-emerald-700">{formatTotal(cost)}</div>
+                    <div className="mt-1 text-xl font-black text-emerald-700">{formatTotal(cost)}</div>
                   </div>
                 </div>
                 <div className="grid gap-5" style={{ gridTemplateColumns: `1fr ${paperSettings.zoneSideWidth}` }}>
@@ -653,10 +680,10 @@ export function PrintView({
                       showOnlyZoneId={zone.id}
                       height={paperSettings.zoneMapHeight}
                     />
-                    <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Sun</div><div className="font-bold">{zone.sunExposure || 'Unknown'}</div></div>
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Water</div><div className="font-bold">{zone.waterNeed || 'No preference'}</div></div>
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">Fullness</div><div className="font-bold">{zone.density ?? 50}%</div></div>
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="text-[10px] uppercase text-slate-500">Sun</div><div className="font-bold">{zone.sunExposure || 'Unknown'}</div></div>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="text-[10px] uppercase text-slate-500">Water</div><div className="font-bold">{zone.waterNeed || 'No preference'}</div></div>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="text-[10px] uppercase text-slate-500">Fullness</div><div className="font-bold">{zone.density ?? 50}%</div></div>
                     </div>
                     {zone.notes && <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">{zone.notes}</p>}
                   </div>
@@ -665,96 +692,110 @@ export function PrintView({
                     {plantGroups.length === 0 ? (
                       <p className="text-sm text-slate-500">No plants in this zone.</p>
                     ) : (
-                      <table className="w-full border-collapse text-sm">
+                      <table className="w-full border-collapse text-xs">
                         <thead>
-                          <tr className="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600">
-                            <th className="border border-slate-300 p-2">No.</th>
-                            <th className="border border-slate-300 p-2">Plant</th>
-                            <th className="border border-slate-300 p-2">Qty</th>
-                            <th className="border border-slate-300 p-2">Size</th>
-                            <th className="border border-slate-300 p-2">Cost</th>
+                          <tr className="bg-slate-100 text-left text-[10px] uppercase tracking-wide text-slate-600">
+                            <th className="border border-slate-300 p-1.5">No.</th>
+                            <th className="border border-slate-300 p-1.5">Plant</th>
+                            <th className="border border-slate-300 p-1.5">Qty</th>
+                            <th className="border border-slate-300 p-1.5">Size</th>
+                            <th className="border border-slate-300 p-1.5">Cost</th>
                           </tr>
                         </thead>
                         <tbody>
                           {plantGroups.map(group => (
                             <tr key={group.plant.id} className="break-inside-avoid">
-                              <td className="border border-slate-300 p-2 text-center font-bold">{legendNumbers.get(group.plant.id)}</td>
-                              <td className="border border-slate-300 p-2"><div className="font-semibold">{group.plant.commonName || group.plant.botanicalName}</div><div className="text-xs italic text-slate-500">{group.plant.botanicalName}</div></td>
-                              <td className="border border-slate-300 p-2 text-center">{group.count}</td>
-                              <td className="border border-slate-300 p-2">{getSizeText(group.plant)}</td>
-                              <td className="border border-slate-300 p-2">{formatPrice(getPlantSubtotal(group.plant, group.count))}</td>
+                              <td className="border border-slate-300 p-1.5 text-center font-bold">{legendNumbers.get(group.plant.id)}</td>
+                              <td className="border border-slate-300 p-1.5"><div className="font-semibold">{group.plant.commonName || group.plant.botanicalName}</div><div className="text-xs italic text-slate-500">{group.plant.botanicalName}</div></td>
+                              <td className="border border-slate-300 p-1.5 text-center">{group.count}</td>
+                              <td className="border border-slate-300 p-1.5">{getSizeText(group.plant)}</td>
+                              <td className="border border-slate-300 p-1.5">{formatPrice(getPlantSubtotal(group.plant, group.count))}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     )}
-                    <ZonePhotoGrid plantGroups={plantGroups} legendNumbers={legendNumbers} />
                   </div>
                 </div>
-                <PrintFooter pageIndex={zoneIndex + 1} />
+                <PrintFooter pageIndex={zoneIndex * 2 + 1} />
               </section>
+              {plantGroups.length > 0 && (
+                <section className="print-page mx-auto bg-white text-slate-950 shadow-2xl" style={pageStyle}>
+                  <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.22em] text-emerald-700">Zone plant photo sheet</div>
+                      <h1 className="mt-1 text-xl font-black">{zone.name}</h1>
+                      <p className="mt-1 text-sm text-slate-600">{plantGroups.length} unique plant types · {zonePlants.length} placed plants</p>
+                    </div>
+                    <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
+                  </div>
+                  <ZonePhotoGrid plantGroups={plantGroups.slice(0, paperSettings.zonePhotoLimit)} legendNumbers={legendNumbers} />
+                  <PrintFooter pageIndex={zoneIndex * 2 + 2} />
+                </section>
+              )}
+            </Fragment>
             );
           })}
 
-          <section className="print-page mx-auto bg-white p-6 text-slate-950 shadow-2xl" style={{ width: `${paperSettings.contentWidthIn}in`, minHeight: `${paperSettings.contentMinHeightIn}in` }}>
-            <div className="mb-5 flex items-start justify-between border-b border-slate-300 pb-4">
+          <section className="print-page mx-auto bg-white text-slate-950 shadow-2xl" style={pageStyle}>
+            <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
               <div>
                 <div className="text-xs uppercase tracking-[0.22em] text-emerald-700">Plant Pending plant schedule</div>
-                <h1 className="mt-1 text-3xl font-black">Shopping list and cost estimate</h1>
+                <h1 className="mt-1 text-xl font-black">Shopping list and cost estimate</h1>
               </div>
               <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
             </div>
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600">
-                  <th className="border border-slate-300 p-2">No.</th>
-                  <th className="border border-slate-300 p-2">Symbol</th>
-                  <th className="border border-slate-300 p-2">Qty</th>
-                  <th className="border border-slate-300 p-2">Plant</th>
-                  <th className="border border-slate-300 p-2">Size</th>
-                  <th className="border border-slate-300 p-2">Sun</th>
-                  <th className="border border-slate-300 p-2">Water</th>
-                  <th className="border border-slate-300 p-2">Unit price</th>
-                  <th className="border border-slate-300 p-2">Subtotal</th>
+                <tr className="bg-slate-100 text-left text-[10px] uppercase tracking-wide text-slate-600">
+                  <th className="border border-slate-300 p-1.5">No.</th>
+                  <th className="border border-slate-300 p-1.5">Symbol</th>
+                  <th className="border border-slate-300 p-1.5">Qty</th>
+                  <th className="border border-slate-300 p-1.5">Plant</th>
+                  <th className="border border-slate-300 p-1.5">Size</th>
+                  <th className="border border-slate-300 p-1.5">Sun</th>
+                  <th className="border border-slate-300 p-1.5">Water</th>
+                  <th className="border border-slate-300 p-1.5">Unit price</th>
+                  <th className="border border-slate-300 p-1.5">Subtotal</th>
                 </tr>
               </thead>
               <tbody>
                 {plantCounts.map(group => (
                   <tr key={group.plant.id} className="break-inside-avoid">
-                    <td className="border border-slate-300 p-2 text-center font-bold">{legendNumbers.get(group.plant.id)}</td>
-                    <td className="border border-slate-300 p-2"><PlantSymbol plant={group.plant} placed={group.instances[0]} legendNumber={legendNumbers.get(group.plant.id)} placementIndex={Math.max(0, (legendNumbers.get(group.plant.id) || 1) - 1)} /></td>
-                    <td className="border border-slate-300 p-2 text-center font-bold">{group.count}</td>
-                    <td className="border border-slate-300 p-2"><div className="font-semibold">{group.plant.commonName || group.plant.botanicalName}</div><div className="text-xs italic text-slate-500">{group.plant.botanicalName}</div></td>
-                    <td className="border border-slate-300 p-2">{getSizeText(group.plant)}</td>
-                    <td className="border border-slate-300 p-2">{getSunText(group.plant)}</td>
-                    <td className="border border-slate-300 p-2">{getWaterText(group.plant)}</td>
-                    <td className="border border-slate-300 p-2">{formatPrice(getPlantUnitPrice(group.plant))}</td>
-                    <td className="border border-slate-300 p-2 font-semibold">{formatPrice(getPlantSubtotal(group.plant, group.count))}</td>
+                    <td className="border border-slate-300 p-1.5 text-center font-bold">{legendNumbers.get(group.plant.id)}</td>
+                    <td className="border border-slate-300 p-1.5"><PlantSymbol plant={group.plant} placed={group.instances[0]} legendNumber={legendNumbers.get(group.plant.id)} placementIndex={Math.max(0, (legendNumbers.get(group.plant.id) || 1) - 1)} /></td>
+                    <td className="border border-slate-300 p-1.5 text-center font-bold">{group.count}</td>
+                    <td className="border border-slate-300 p-1.5"><div className="font-semibold">{group.plant.commonName || group.plant.botanicalName}</div><div className="text-xs italic text-slate-500">{group.plant.botanicalName}</div></td>
+                    <td className="border border-slate-300 p-1.5">{getSizeText(group.plant)}</td>
+                    <td className="border border-slate-300 p-1.5">{getSunText(group.plant)}</td>
+                    <td className="border border-slate-300 p-1.5">{getWaterText(group.plant)}</td>
+                    <td className="border border-slate-300 p-1.5">{formatPrice(getPlantUnitPrice(group.plant))}</td>
+                    <td className="border border-slate-300 p-1.5 font-semibold">{formatPrice(getPlantSubtotal(group.plant, group.count))}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div className="mt-5 grid grid-cols-3 gap-4">
-              <div className="rounded-xl border border-slate-300 bg-slate-50 p-4"><div className="text-xs uppercase tracking-wide text-slate-500">Total plant estimate</div><div className="mt-1 text-2xl font-black text-emerald-700">{formatTotal(totalCost)}</div></div>
-              <div className="rounded-xl border border-slate-300 bg-slate-50 p-4"><div className="text-xs uppercase tracking-wide text-slate-500">Unique plants</div><div className="mt-1 text-2xl font-black">{plantCounts.length}</div></div>
-              <div className="rounded-xl border border-slate-300 bg-slate-50 p-4"><div className="text-xs uppercase tracking-wide text-slate-500">Total plant count</div><div className="mt-1 text-2xl font-black">{plantCounts.reduce((sum, group) => sum + group.count, 0)}</div></div>
+            <div className="mt-3 grid grid-cols-3 gap-3">
+              <div className="rounded-xl border border-slate-300 bg-slate-50 p-3"><div className="text-xs uppercase tracking-wide text-slate-500">Total plant estimate</div><div className="mt-1 text-xl font-black text-emerald-700">{formatTotal(totalCost)}</div></div>
+              <div className="rounded-xl border border-slate-300 bg-slate-50 p-3"><div className="text-xs uppercase tracking-wide text-slate-500">Unique plants</div><div className="mt-1 text-xl font-black">{plantCounts.length}</div></div>
+              <div className="rounded-xl border border-slate-300 bg-slate-50 p-3"><div className="text-xs uppercase tracking-wide text-slate-500">Total plant count</div><div className="mt-1 text-xl font-black">{plantCounts.reduce((sum, group) => sum + group.count, 0)}</div></div>
             </div>
             <p className="mt-4 text-xs text-slate-500">Prices are planning estimates from the catalog where available. Call the nursery to confirm current inventory, price, and container size.</p>
-            <PrintFooter pageIndex={zoneSummaries.length + 1} />
+            <PrintFooter pageIndex={zoneSummaries.length * 2 + 1} />
           </section>
 
           {(notes || unassignedPlants.length > 0) && (
-            <section className="print-page mx-auto bg-white p-6 text-slate-950 shadow-2xl" style={{ width: `${paperSettings.contentWidthIn}in`, minHeight: `${paperSettings.contentMinHeightIn}in` }}>
-              <div className="mb-5 flex items-start justify-between border-b border-slate-300 pb-4">
+            <section className="print-page mx-auto bg-white text-slate-950 shadow-2xl" style={pageStyle}>
+              <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
                 <div>
                   <div className="text-xs uppercase tracking-[0.22em] text-emerald-700">Plant Pending plan notes</div>
-                  <h1 className="mt-1 text-3xl font-black">Notes and loose ends</h1>
+                  <h1 className="mt-1 text-xl font-black">Notes and loose ends</h1>
                 </div>
                 <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
               </div>
               {unassignedPlants.length > 0 && <div className="mb-5"><h2 className="mb-2 text-lg font-bold">Unassigned plants</h2><p className="text-sm text-slate-600">{unassignedPlants.length} placed plants are not assigned to a zone.</p></div>}
               {notes && <div><h2 className="mb-2 text-lg font-bold">General notes</h2><p className="whitespace-pre-wrap rounded-xl border border-slate-300 bg-slate-50 p-4 text-sm text-slate-700">{notes}</p></div>}
-              <PrintFooter pageIndex={zoneSummaries.length + 2} />
+              <PrintFooter pageIndex={zoneSummaries.length * 2 + 2} />
             </section>
           )}
         </div>
