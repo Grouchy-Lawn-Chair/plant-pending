@@ -410,6 +410,24 @@ export function PlanDetails({
             <p className="text-xs text-sky-300 mb-3">
               {selectedInstanceIds.length} items selected{selectedPlantCount !== selectedInstanceIds.length ? `, ${selectedPlantCount} plants` : ''}. Drag any selected item to move the group, or press Delete to remove it.
             </p>
+            <div className="mb-3 rounded-xl border border-slate-700 bg-slate-950 p-2">
+              <label className="text-xs text-slate-400 block mb-1">Assign selected to zone</label>
+              <select
+                value=""
+                onChange={(e) => {
+                  const nextZoneId = e.target.value;
+                  selectedInstanceIds.forEach(id => onUpdatePlacedPlant(id, { zone: nextZoneId }));
+                }}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-slate-100"
+              >
+                <option value="">No zone assigned</option>
+                {zones.filter(zone => zone.zoneType !== 'exclusion').map(zone => (
+                  <option key={zone.id} value={zone.id}>{zone.name}</option>
+                ))}
+              </select>
+              <p className="mt-1 text-[11px] text-slate-500">Applies to all selected plants/rocks. Exclusion zones are intentionally not listed.</p>
+            </div>
+
             <button
               type="button"
               onClick={() => {
@@ -1326,6 +1344,20 @@ export function PlanDetails({
                       />
                     </div>
                   </div>
+
+                  <label className="flex items-start gap-3 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={editingZone.plantingType === 'rockGarden' || editingZone.includeRocks === true}
+                      disabled={editingZone.plantingType === 'rockGarden'}
+                      onChange={(e) => onUpdateZone(editingZone.id, { includeRocks: e.target.checked })}
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="block font-medium text-white">Include rocks in generated mix</span>
+                      <span className="block text-xs text-slate-400">Adds a few tasteful boulders before plants. Rock gardens always include rocks.</span>
+                    </span>
+                  </label>
 
                   <div className="rounded-2xl border border-sky-900/70 bg-sky-950/30 p-3 space-y-3">
                     <div>

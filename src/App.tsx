@@ -458,10 +458,11 @@ function getPlantVarietySettings(zone: GardenZone): PlantVarietySettings {
 }
 
 function getDensityVisualMultiplier(density: number): number {
-  if (density >= 95) return 1.55;
-  if (density >= 85) return 1.38;
-  if (density >= 70) return 1.22;
-  if (density >= 50) return 1.10;
+  if (density >= 98) return 2.15;
+  if (density >= 95) return 1.95;
+  if (density >= 85) return 1.62;
+  if (density >= 70) return 1.34;
+  if (density >= 50) return 1.14;
   return 1;
 }
 
@@ -497,7 +498,8 @@ function clampByRecipe(baseTargetCount: number, zone: GardenZone, usableZoneArea
   const areaSqFt = usableZoneAreaPx / Math.max(1, pixelsPerFoot * pixelsPerFoot);
   // Large zones can use extra plants, especially at high density. Variety also nudges the total count.
   const sizeBonus = Math.max(0, Math.min(32, Math.floor((areaSqFt - 120) / 38)));
-  const recipeMax = recipe.maxPlants + (zone.plantingType === 'flowerBed' ? sizeBonus * 2 : sizeBonus);
+  const densityBonus = (zone.density || 50) >= 95 ? 1.45 : (zone.density || 50) >= 85 ? 1.22 : 1;
+  const recipeMax = Math.round((recipe.maxPlants + (zone.plantingType === 'flowerBed' ? sizeBonus * 2 : sizeBonus)) * densityBonus);
   const maxPlants = Math.max(recipe.minPlants, Math.round(recipeMax * variety.targetScale));
   const minPlants = Math.min(Math.max(1, Math.round(recipe.minPlants * Math.min(1.15, variety.targetScale))), maxPlants);
   return Math.max(minPlants, Math.min(maxPlants, baseTargetCount));
@@ -2537,6 +2539,7 @@ function App() {
         plantVariety: zone.plantVariety || 'medium',
         layoutMode: zone.layoutMode,
         plantingType: zone.plantingType || 'mixedBorder',
+        includeRocks: zone.includeRocks === true || zone.plantingType === 'rockGarden',
         edgeRoles: zone.edgeRoles || { front: [], back: [] },
         plantingSeed: zone.plantingSeed,
         plantingStyles: zone.plantingStyles,
@@ -2866,10 +2869,12 @@ function App() {
     }
 
 
-    if (zone.plantingType === 'rockGarden') {
+    if (zone.plantingType === 'rockGarden' || zone.includeRocks === true) {
       const rockRecipe = getPlantingRecipe('rockGarden');
       const existingRockCount = placedPlants.filter(item => item.itemType === 'rock').length;
-      const rockTarget = Math.max(rockRecipe?.rockMin ?? 2, Math.min(rockRecipe?.rockMax ?? 5, Math.round(2 + densityFactor * 2 + Math.sqrt(usableZoneAreaPx) / Math.max(260, defaultPixelsPerFoot * 22))));
+      const defaultRockMin = zone.plantingType === 'rockGarden' ? (rockRecipe?.rockMin ?? 2) : 1;
+      const defaultRockMax = zone.plantingType === 'rockGarden' ? (rockRecipe?.rockMax ?? 5) : (density >= 85 ? 4 : 3);
+      const rockTarget = Math.max(defaultRockMin, Math.min(defaultRockMax, Math.round((zone.plantingType === 'rockGarden' ? 2 : 1) + densityFactor * (zone.plantingType === 'rockGarden' ? 2 : 1.5) + Math.sqrt(usableZoneAreaPx) / Math.max(zone.plantingType === 'rockGarden' ? 260 : 520, defaultPixelsPerFoot * 32))));
       const rockCandidates = [...latestCandidatePoints]
         .sort((a, b) => distanceToPolygonEdge(b, zone.points) - distanceToPolygonEdge(a, zone.points));
       for (let i = 0; i < rockCandidates.length && generated.filter(item => item.itemType === 'rock').length < rockTarget; i += Math.max(1, Math.floor(rockCandidates.length / (rockTarget * 4)))) {

@@ -150,6 +150,7 @@ export interface GardenZone {
   layoutMode?: ZoneLayoutMode;
   plantingType?: ZonePlantingType;
   plantVariety?: ZonePlantVariety;
+  includeRocks?: boolean;
   edgeRoles?: {
     front?: number[];
     back?: number[];

@@ -996,17 +996,22 @@ export function GardenCanvas({
 
           {zoneShapesVisible && visibleZones.length > 0 && (
             <svg className="absolute inset-0 w-full h-full z-[5]" style={{ pointerEvents: isDrawingZone ? 'none' : 'auto' }}>
+              <defs>
+                <pattern id="exclusion-zone-hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                  <line x1="0" y1="0" x2="0" y2="10" stroke="#991b1b" strokeWidth="2" opacity="0.55" />
+                </pattern>
+              </defs>
               {visibleZones.map(zone => {
                 const isSelectedZone = zone.id === selectedZoneId;
                 return (
                   <g key={zone.id}>
                     <polygon
                       points={zonePointsToString(zone.points)}
-                      fill={zone.color}
-                      fillOpacity={zone.zoneType === 'exclusion' ? Math.max(0.16, zone.opacity ?? 0.28) : zone.opacity ?? 0.28}
-                      stroke={zone.color}
-                      strokeWidth={isSelectedZone ? 4 : 2}
-                      strokeDasharray={zone.zoneType === 'exclusion' ? '3 4' : isSelectedZone ? '0' : '6 5'}
+                      fill={zone.zoneType === 'exclusion' ? 'url(#exclusion-zone-hatch)' : zone.color}
+                      fillOpacity={zone.zoneType === 'exclusion' ? 0.28 : zone.opacity ?? 0.28}
+                      stroke={zone.zoneType === 'exclusion' ? '#991b1b' : zone.color}
+                      strokeWidth={zone.zoneType === 'exclusion' ? (isSelectedZone ? 3 : 2) : (isSelectedZone ? 4 : 2)}
+                      strokeDasharray={zone.zoneType === 'exclusion' ? '7 5' : isSelectedZone ? '0' : '6 5'}
                       className={isSelectedZone ? "cursor-move" : "cursor-pointer"}
                       onMouseDown={(event) => {
                         if (isDrawingZone || event.button !== 0) return;
@@ -1097,7 +1102,7 @@ export function GardenCanvas({
                         no plants
                       </text>
                     )}
-                    {zone.points.length > 0 && (
+                    {zone.points.length > 0 && zone.zoneType !== 'exclusion' && (
                       <text
                         x={zone.points.reduce((sum, point) => sum + point.x, 0) / zone.points.length}
                         y={zone.points.reduce((sum, point) => sum + point.y, 0) / zone.points.length}

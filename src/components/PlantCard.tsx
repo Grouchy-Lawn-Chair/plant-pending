@@ -100,7 +100,7 @@ function ImagePanel({ plant, isSelected }: { plant: Plant; isSelected: boolean }
   const showBotanical = botanicalName && botanicalName !== commonName && isSelected;
 
   const titleOverlay = (
-    <div className="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] rounded-xl bg-black/38 px-2.5 py-1.5 text-white shadow-sm backdrop-blur-[1px]">
+    <div className="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] rounded-lg bg-black/42 px-2 py-1 text-white shadow-sm backdrop-blur-[1px]">
       <div className="truncate text-left text-sm font-extrabold leading-tight drop-shadow" title={commonName}>
         {commonName}
       </div>
@@ -176,12 +176,17 @@ function waterIconFor(level: 'low' | 'medium' | 'high' | 'unknown') {
 function sunIconFor(level: 'full' | 'partial' | 'shade' | 'mixed') {
   if (level === 'shade') {
     return (
-      <LineIcon>
-        <path d="M5 17c2.5-3.7 5.5-5.7 9-6" />
-        <path d="M11 18c1.7-3.1 3.8-5 6.5-5.7" />
-        <path d="M7 10c2.5-.4 5.1.1 7.8 1.4" />
-        <path d="M4 19h16" />
-      </LineIcon>
+      <svg viewBox="0 0 24 24" className="h-10 w-10 text-slate-800" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="5.2" fill="currentColor" opacity="0.92" />
+        <path d="M12 2v2.7" />
+        <path d="M12 19.3V22" />
+        <path d="M2 12h2.7" />
+        <path d="M19.3 12H22" />
+        <path d="m4.8 4.8 1.9 1.9" />
+        <path d="m17.3 17.3 1.9 1.9" />
+        <path d="m17.3 6.7 1.9-1.9" />
+        <path d="m4.8 19.2 1.9-1.9" />
+      </svg>
     );
   }
   if (level === 'partial') {
