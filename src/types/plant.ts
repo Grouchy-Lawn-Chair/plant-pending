@@ -90,6 +90,12 @@ export interface Plant {
   greenAcresMatchConfidence: string | null;
   greenAcresLastChecked: string | null;
   greenAcresNotes: string | null;
+  greenAcresRawTags?: string[];
+  greenAcresFilterData?: Record<string, string[]>;
+  greenAcresProductHandle?: string | null;
+  greenAcresSourceCategories?: string[];
+  greenAcresPriceMinCents?: number | null;
+  greenAcresPriceMaxCents?: number | null;
   // Green Acres v82/v83 design-score fields, loaded from green_acres_design_scores.json when available.
   greenAcresDesignScores?: {
     poolSafeScore?: number;
@@ -208,6 +214,29 @@ export interface GardenPlan {
 }
 
 // Filter state for the plant library
+
+export interface GreenAcresFilterValue {
+  label: string;
+  value: string;
+  count?: number;
+  section?: string;
+  matchMode?: 'filterData' | 'collectionSlug' | 'priceRange';
+}
+
+export interface GreenAcresFilterGroup {
+  key: string;
+  label: string;
+  kind?: 'category' | 'tag' | 'shopping' | 'price';
+  values: GreenAcresFilterValue[];
+}
+
+export interface GreenAcresFilterIndex {
+  generatedAt?: string;
+  source?: Record<string, unknown>;
+  matching?: Record<string, unknown>;
+  groups: GreenAcresFilterGroup[];
+}
+
 export interface FilterState {
   search: string;
   category: string;
@@ -235,6 +264,7 @@ export interface FilterState {
   under6FeetWide: boolean;
   greenAcresOnly: boolean;
   greenAcresMissingOnly: boolean;
+  greenAcresFilters: Record<string, string[]>;
 }
 
 // Sort options for the plant library
@@ -334,4 +364,5 @@ export const DEFAULT_FILTERS: FilterState = {
   under6FeetWide: false,
   greenAcresOnly: false,
   greenAcresMissingOnly: false,
+  greenAcresFilters: {},
 };

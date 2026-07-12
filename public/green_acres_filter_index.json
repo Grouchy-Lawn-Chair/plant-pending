@@ -1,0 +1,3725 @@
+{
+  "generatedAt": "2026-07-12T18:05:56.876Z",
+  "source": {
+    "plantCatalog": "public/green_acres_catalog.csv",
+    "har": "idiggreenacres2.com(2).har",
+    "boostFilterApiRequestsSeen": 100,
+    "collectionUrlsSeen": 260,
+    "uniqueCollectionSlugsSeen": 40
+  },
+  "matching": {
+    "semantics": "Within each group, multiple selected values use OR. Across groups, selected groups stack with AND.",
+    "plantFields": [
+      "Green_Acres_Filter_Data_JSON",
+      "Green_Acres_Tags",
+      "Green_Acres_Product_Handle",
+      "Green_Acres_Source_Categories"
+    ]
+  },
+  "groups": [
+    {
+      "key": "plantCategories",
+      "label": "Category / Mega menu",
+      "kind": "category",
+      "values": [
+        {
+          "label": "Plants",
+          "value": "plants",
+          "count": 54,
+          "section": "Collections",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Trees",
+          "value": "trees",
+          "count": 13,
+          "section": "Trees",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Roses",
+          "value": "roses",
+          "count": 12,
+          "section": "Roses",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Shrubs",
+          "value": "shrubs",
+          "count": 12,
+          "section": "Shrubs",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Veggies and Herbs",
+          "value": "veggies-and-herbs",
+          "count": 12,
+          "section": "Veggies & Herbs",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Citrus and Fruit",
+          "value": "citrus-and-fruit",
+          "count": 10,
+          "section": "Collections",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Perennials",
+          "value": "perennials",
+          "count": 10,
+          "section": "Perennials",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Vines",
+          "value": "vines",
+          "count": 10,
+          "section": "Vines",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Annuals",
+          "value": "annuals",
+          "count": 9,
+          "section": "Annuals",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Fruiting Vines",
+          "value": "fruiting-vines",
+          "count": 8,
+          "section": "Vines",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Herbs",
+          "value": "herbs",
+          "count": 7,
+          "section": "Veggies & Herbs",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Floribunda Roses",
+          "value": "floribunda-roses",
+          "count": 6,
+          "section": "Roses",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Fruit Trees",
+          "value": "fruit-trees",
+          "count": 6,
+          "section": "Trees",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Citrus",
+          "value": "citrus",
+          "count": 5,
+          "section": "Trees",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Fruiting Trees",
+          "value": "fruiting-trees",
+          "count": 5,
+          "section": "Trees",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Shrubs 6' and Taller",
+          "value": "shrubs-6-and-taller",
+          "count": 5,
+          "section": "Shrubs",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Deciduous Vines",
+          "value": "deciduous-vines",
+          "count": 4,
+          "section": "Vines",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Evergreen Trees",
+          "value": "evergreen-trees",
+          "count": 4,
+          "section": "Trees",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Evergreen Vines",
+          "value": "evergreen-vines",
+          "count": 4,
+          "section": "Vines",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Fruiting Shrubs",
+          "value": "fruiting-shrubs",
+          "count": 4,
+          "section": "Shrubs",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Groundcover",
+          "value": "groundcover",
+          "count": 4,
+          "section": "Perennials",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Ornamental Grass",
+          "value": "ornamental-grass",
+          "count": 4,
+          "section": "Perennials",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Palms",
+          "value": "palms",
+          "count": 4,
+          "section": "Trees",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Shrubs Under 2' Tall",
+          "value": "shrubs-under-2-tall",
+          "count": 4,
+          "section": "Shrubs",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Spring Blooming",
+          "value": "spring-blooming",
+          "count": 4,
+          "section": "Perennials",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Climbing Roses",
+          "value": "climbing-roses",
+          "count": 3,
+          "section": "Roses",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Deciduous Trees",
+          "value": "deciduous-trees",
+          "count": 3,
+          "section": "Trees",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Fall Blooming",
+          "value": "fall-blooming",
+          "count": 3,
+          "section": "Perennials",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Grandiflora Roses",
+          "value": "grandiflora-roses",
+          "count": 3,
+          "section": "Roses",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Hybrid Tea Roses",
+          "value": "hybrid-tea-roses",
+          "count": 3,
+          "section": "Roses",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Mini Roses",
+          "value": "mini-roses",
+          "count": 3,
+          "section": "Roses",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Shrubs 2'-4' Tall",
+          "value": "shrubs-2-4-tall",
+          "count": 3,
+          "section": "Shrubs",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Shrubs 4'-6' Tall",
+          "value": "shrubs-4-6-tall",
+          "count": 3,
+          "section": "Shrubs",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Succulents",
+          "value": "succulents",
+          "count": 3,
+          "section": "Perennials",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Summer Blooming",
+          "value": "summer-blooming",
+          "count": 3,
+          "section": "Perennials",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Topiary",
+          "value": "topiary",
+          "count": 3,
+          "section": "Shrubs",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Veggies",
+          "value": "veggies",
+          "count": 3,
+          "section": "Veggies & Herbs",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Supply",
+          "value": "supply",
+          "count": 2,
+          "section": "Collections",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Outdoor Living",
+          "value": "outdoor-living",
+          "count": 1,
+          "section": "Collections",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Purchase For Pickup",
+          "value": "purchase-for-pickup",
+          "count": 1,
+          "section": "Collections",
+          "matchMode": "collectionSlug"
+        },
+        {
+          "label": "Annuals & Perennials",
+          "value": "Annuals & Perennials",
+          "count": 399,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Veggies & Herbs",
+          "value": "Veggies & Herbs",
+          "count": 214,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Fruiting",
+          "value": "Fruiting",
+          "count": 208,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2'-4' Tall",
+          "value": "2'-4' Tall",
+          "count": 159,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6' and Taller",
+          "value": "6' and Taller",
+          "count": 113,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Deciduous",
+          "value": "Deciduous",
+          "count": 106,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4'-6' Tall",
+          "value": "4'-6' Tall",
+          "count": 102,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Evergreen",
+          "value": "Evergreen",
+          "count": 66,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Under 2' Tall",
+          "value": "Under 2' Tall",
+          "count": 47,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Warm Season",
+          "value": "Warm Season",
+          "count": 39,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Succulent",
+          "value": "Succulent",
+          "count": 20,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Winter Blooming",
+          "value": "Winter Blooming",
+          "count": 10,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Houseplants",
+          "value": "Houseplants",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Cool Season",
+          "value": "Cool Season",
+          "count": 1,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "attributes",
+      "label": "Attributes",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "Deer Resistant",
+          "value": "Deer Resistant",
+          "count": 540,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Deciduous",
+          "value": "Deciduous",
+          "count": 459,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Evergreen",
+          "value": "Evergreen",
+          "count": 430,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Attracts Birds",
+          "value": "Attracts Birds",
+          "count": 372,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Flowers for Cutting",
+          "value": "Flowers for Cutting",
+          "count": 357,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Long Bloom Season",
+          "value": "Long Bloom Season",
+          "count": 349,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Waterwise",
+          "value": "Waterwise",
+          "count": 338,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Attracts Butterflies",
+          "value": "Attracts Butterflies",
+          "count": 301,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Fragrant",
+          "value": "Fragrant",
+          "count": 286,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Showy Flowers",
+          "value": "Showy Flowers",
+          "count": 258,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Edible",
+          "value": "Edible",
+          "count": 232,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Edible Fruit",
+          "value": "Edible Fruit",
+          "count": 232,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Attracts Bees",
+          "value": "Attracts Bees",
+          "count": 213,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Fruiting",
+          "value": "Fruiting",
+          "count": 203,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Pollinator Attracting",
+          "value": "Pollinator Attracting",
+          "count": 189,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Attracts Hummingbirds",
+          "value": "Attracts Hummingbirds",
+          "count": 188,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Cold Hardy",
+          "value": "Cold Hardy",
+          "count": 156,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Fall Color",
+          "value": "Fall Color",
+          "count": 116,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Pet Friendly",
+          "value": "Pet Friendly",
+          "count": 56,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Herb",
+          "value": "Herb",
+          "count": 53,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Ornamental Grass",
+          "value": "Ornamental Grass",
+          "count": 27,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Texas Native",
+          "value": "Texas Native",
+          "count": 24,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Edible Flower",
+          "value": "Edible Flower",
+          "count": 18,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Air Purifier",
+          "value": "Air Purifier",
+          "count": 13,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "landscapeUses",
+      "label": "Landscape Use",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "Container",
+          "value": "Container",
+          "count": 1046,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Accent",
+          "value": "Accent",
+          "count": 606,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Border",
+          "value": "Border",
+          "count": 527,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Groundcover",
+          "value": "Groundcover",
+          "count": 196,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Hedge",
+          "value": "Hedge",
+          "count": 185,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Poolside",
+          "value": "Poolside",
+          "count": 161,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Hanging Basket",
+          "value": "Hanging Basket",
+          "count": 122,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Screening",
+          "value": "Screening",
+          "count": 109,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Lawn Tree",
+          "value": "Lawn Tree",
+          "count": 101,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Erosion Control",
+          "value": "Erosion Control",
+          "count": 62,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Firescaping",
+          "value": "Firescaping",
+          "count": 58,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Espalier",
+          "value": "Espalier",
+          "count": 56,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Shade Tree",
+          "value": "Shade Tree",
+          "count": 40,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Small Space Tree",
+          "value": "Small Space Tree",
+          "count": 38,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Vine",
+          "value": "Vine",
+          "count": 35,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Climbing",
+          "value": "Climbing",
+          "count": 33,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Topiary",
+          "value": "Topiary",
+          "count": 32,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Houseplant",
+          "value": "Houseplant",
+          "count": 29,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Windbreak",
+          "value": "Windbreak",
+          "count": 24,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Bonsai",
+          "value": "Bonsai",
+          "count": 21,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Edging",
+          "value": "Edging",
+          "count": 21,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "bloomSeasons",
+      "label": "Bloom Time",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "Spring",
+          "value": "Spring",
+          "count": 751,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Summer",
+          "value": "Summer",
+          "count": 559,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Fall",
+          "value": "Fall",
+          "count": 295,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Winter",
+          "value": "Winter",
+          "count": 68,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "flowerColors",
+      "label": "Flower Color",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "White",
+          "value": "White",
+          "count": 414,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Pink",
+          "value": "Pink",
+          "count": 356,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Purple",
+          "value": "Purple",
+          "count": 227,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Yellow",
+          "value": "Yellow",
+          "count": 203,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Red",
+          "value": "Red",
+          "count": 200,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Orange",
+          "value": "Orange",
+          "count": 128,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Blue",
+          "value": "Blue",
+          "count": 85,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Multicolored",
+          "value": "Multicolored",
+          "count": 82,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Green",
+          "value": "Green",
+          "count": 29,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Coral",
+          "value": "Coral",
+          "count": 21,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Brown",
+          "value": "Brown",
+          "count": 8,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Various",
+          "value": "Various",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Black",
+          "value": "Black",
+          "count": 3,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "foliageColors",
+      "label": "Foliage Color",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "Green",
+          "value": "Green",
+          "count": 1361,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Red",
+          "value": "Red",
+          "count": 146,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Gray",
+          "value": "Gray",
+          "count": 129,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Yellow",
+          "value": "Yellow",
+          "count": 84,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Variegated",
+          "value": "Variegated",
+          "count": 69,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Orange",
+          "value": "Orange",
+          "count": 68,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Blue",
+          "value": "Blue",
+          "count": 61,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Purple",
+          "value": "Purple",
+          "count": 54,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Pink",
+          "value": "Pink",
+          "count": 38,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "White",
+          "value": "White",
+          "count": 27,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Brown",
+          "value": "Brown",
+          "count": 13,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Chartreuse",
+          "value": "Chartreuse",
+          "count": 13,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Black",
+          "value": "Black",
+          "count": 9,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "fallColors",
+      "label": "Fall Color",
+      "kind": "tag",
+      "values": []
+    },
+    {
+      "key": "lightRequirements",
+      "label": "Light Requirement",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "Full Sun",
+          "value": "Full Sun",
+          "count": 1159,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Morning Sun",
+          "value": "Morning Sun",
+          "count": 611,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Filtered Sun",
+          "value": "Filtered Sun",
+          "count": 84,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Full Shade",
+          "value": "Full Shade",
+          "count": 80,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Full Sun or Morning Sun/Afternoon Shade",
+          "value": "Full Sun or Morning Sun/Afternoon Shade",
+          "count": 34,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Bright Light",
+          "value": "Bright Light",
+          "count": 28,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Morning Sun/Afternoon Shade",
+          "value": "Morning Sun/Afternoon Shade",
+          "count": 15,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Morning Sun/Afternoon Shade or Full Shade",
+          "value": "Morning Sun/Afternoon Shade or Full Shade",
+          "count": 8,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Medium Light",
+          "value": "Medium Light",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "morning sun",
+          "value": "morning sun",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Morning Sun/Afternoon Shade or Bright Light",
+          "value": "Morning Sun/Afternoon Shade or Bright Light",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Bright Indirect Light",
+          "value": "Bright Indirect Light",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Filtered Sun, Full Sun",
+          "value": "Filtered Sun, Full Sun",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Full or Sun Morning Sun/Afternoon Shade",
+          "value": "Full or Sun Morning Sun/Afternoon Shade",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Full Sun to Morning Sun/Afternoon Shade",
+          "value": "Full Sun to Morning Sun/Afternoon Shade",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Full to Morning Sun/Afternoon Shade",
+          "value": "Full to Morning Sun/Afternoon Shade",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Morning Sun/Afternoon Shade, Full Sun",
+          "value": "Morning Sun/Afternoon Shade, Full Sun",
+          "count": 1,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "waterNeeds",
+      "label": "Water Needs",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "Moderate",
+          "value": "Moderate",
+          "count": 1095,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Low",
+          "value": "Low",
+          "count": 365,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "High",
+          "value": "High",
+          "count": 119,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Moderate to High",
+          "value": "Moderate to High",
+          "count": 63,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "High to Moderate",
+          "value": "High to Moderate",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Low to Moderate",
+          "value": "Low to Moderate",
+          "count": 1,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "growthHabits",
+      "label": "Habit",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "Upright",
+          "value": "Upright",
+          "count": 663,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Compact",
+          "value": "Compact",
+          "count": 221,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Mounding",
+          "value": "Mounding",
+          "count": 196,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Columnar",
+          "value": "Columnar",
+          "count": 187,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Rounded",
+          "value": "Rounded",
+          "count": 184,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Trailing",
+          "value": "Trailing",
+          "count": 182,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Spreading",
+          "value": "Spreading",
+          "count": 171,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Clumping",
+          "value": "Clumping",
+          "count": 124,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Arching",
+          "value": "Arching",
+          "count": 62,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Climbing",
+          "value": "Climbing",
+          "count": 42,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Rosette",
+          "value": "Rosette",
+          "count": 35,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Pyramidal",
+          "value": "Pyramidal",
+          "count": 33,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Weeping",
+          "value": "Weeping",
+          "count": 25,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Narrow",
+          "value": "Narrow",
+          "count": 20,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Spreading, Climbing",
+          "value": "Spreading, Climbing",
+          "count": 7,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Oval",
+          "value": "Oval",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Trailing, Climbing",
+          "value": "Trailing, Climbing",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Compact",
+          "value": "Upright, Compact",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Arching",
+          "value": "Upright, Arching",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Rounded",
+          "value": "Upright, Rounded",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Spreading",
+          "value": "Upright, Spreading",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Compact, Spreading",
+          "value": "Compact, Spreading",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Spreading, Vining",
+          "value": "Spreading, Vining",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Narrow",
+          "value": "Upright, Narrow",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Compact, Trailing",
+          "value": "Compact, Trailing",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Mounding, Climbing",
+          "value": "Mounding, Climbing",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Mounding, Spreading",
+          "value": "Mounding, Spreading",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Mounding, Trailing",
+          "value": "Mounding, Trailing",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Spreading, Clumping",
+          "value": "Spreading, Clumping",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Trailing, Upright",
+          "value": "Trailing, Upright",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Clumping",
+          "value": "Upright, Clumping",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Arching, Clumping",
+          "value": "Arching, Clumping",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Climbing, Upright",
+          "value": "Climbing, Upright",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Clumping, Rosette",
+          "value": "Clumping, Rosette",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Clumping, Trailing",
+          "value": "Clumping, Trailing",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Mounding, Rosette",
+          "value": "Mounding, Rosette",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Open, Upright",
+          "value": "Open, Upright",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Rounded, Mounding",
+          "value": "Rounded, Mounding",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Spreading, Trailing",
+          "value": "Spreading, Trailing",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Trailing, Spreading",
+          "value": "Trailing, Spreading",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Umbrella",
+          "value": "Umbrella",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Climbing",
+          "value": "Upright, Climbing",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Columnar",
+          "value": "Upright, Columnar",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Open",
+          "value": "Upright, Open",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Oval",
+          "value": "Upright, Oval",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Upright, Trailing",
+          "value": "Upright, Trailing",
+          "count": 1,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "heightTags",
+      "label": "Height",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "2-3ft",
+          "value": "2-3ft",
+          "count": 126,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-2ft",
+          "value": "1-2ft",
+          "count": 86,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2ft",
+          "value": "2ft",
+          "count": 70,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-4ft",
+          "value": "3-4ft",
+          "count": 63,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-8ft",
+          "value": "5-8ft",
+          "count": 61,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-14ft",
+          "value": "8-14ft",
+          "count": 58,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8ft",
+          "value": "8ft",
+          "count": 56,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3ft",
+          "value": "3ft",
+          "count": 53,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-3ft",
+          "value": "1-3ft",
+          "count": 40,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-25ft",
+          "value": "15-25ft",
+          "count": 39,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-6ft",
+          "value": "4-6ft",
+          "count": 39,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-10ft",
+          "value": "8-10ft",
+          "count": 36,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-18ft",
+          "value": "12-18ft",
+          "count": 34,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-5ft",
+          "value": "4-5ft",
+          "count": 33,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-24in",
+          "value": "18-24in",
+          "count": 32,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-8ft",
+          "value": "6-8ft",
+          "count": 31,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1ft",
+          "value": "1ft",
+          "count": 30,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-20ft",
+          "value": "15-20ft",
+          "count": 26,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "24in",
+          "value": "24in",
+          "count": 25,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-8in",
+          "value": "6-8in",
+          "count": 25,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4ft",
+          "value": "4ft",
+          "count": 24,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-6ft",
+          "value": "5-6ft",
+          "count": 24,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "25ft",
+          "value": "25ft",
+          "count": 22,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5ft",
+          "value": "5ft",
+          "count": 22,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-5ft",
+          "value": "3-5ft",
+          "count": 21,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-6in",
+          "value": "4-6in",
+          "count": 21,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-4ft",
+          "value": "2-4ft",
+          "count": 20,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-12in",
+          "value": "6-12in",
+          "count": 20,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8in",
+          "value": "8in",
+          "count": 18,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-25ft",
+          "value": "20-25ft",
+          "count": 17,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-30ft",
+          "value": "20-30ft",
+          "count": 17,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18in",
+          "value": "18in",
+          "count": 16,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30ft",
+          "value": "30ft",
+          "count": 15,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-12in",
+          "value": "10-12in",
+          "count": 14,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-15ft",
+          "value": "10-15ft",
+          "count": 14,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-10in",
+          "value": "8-10in",
+          "count": 14,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-18in",
+          "value": "12-18in",
+          "count": 13,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-10ft",
+          "value": "6-10ft",
+          "count": 13,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6in",
+          "value": "6in",
+          "count": 13,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-12ft",
+          "value": "10-12ft",
+          "count": 11,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-30ft",
+          "value": "15-30ft",
+          "count": 11,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15ft",
+          "value": "15ft",
+          "count": 11,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-12in",
+          "value": "8-12in",
+          "count": 11,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10in",
+          "value": "10in",
+          "count": 10,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-40ft",
+          "value": "30-40ft",
+          "count": 10,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-8in",
+          "value": "4-8in",
+          "count": 10,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10ft",
+          "value": "10ft",
+          "count": 9,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12in",
+          "value": "12in",
+          "count": 9,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20ft",
+          "value": "20ft",
+          "count": 9,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-6ft",
+          "value": "3-6ft",
+          "count": 9,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6ft",
+          "value": "6ft",
+          "count": 9,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-12ft",
+          "value": "8-12ft",
+          "count": 9,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-8ft",
+          "value": "4-8ft",
+          "count": 8,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-15ft",
+          "value": "12-15ft",
+          "count": 7,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-16in",
+          "value": "12-16in",
+          "count": 7,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12ft",
+          "value": "12ft",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-18in",
+          "value": "15-18in",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-15ft",
+          "value": "8-15ft",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Various",
+          "value": "Various",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-3in",
+          "value": "1-3in",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-14in",
+          "value": "12-14in",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-4in",
+          "value": "2-4in",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2in",
+          "value": "2in",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-5in",
+          "value": "3-5in",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-60ft",
+          "value": "20-60ft",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30in",
+          "value": "30in",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3in",
+          "value": "3in",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "40-50ft",
+          "value": "40-50ft",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "50-90ft",
+          "value": "50-90ft",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-10in",
+          "value": "6-10in",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-9ft",
+          "value": "6-9ft",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1.5ft",
+          "value": "1.5ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-20ft",
+          "value": "10-20ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "14-18in",
+          "value": "14-18in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "14ft",
+          "value": "14ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-30in",
+          "value": "18-30in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1in",
+          "value": "1in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-3in",
+          "value": "2-3in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "24-30in",
+          "value": "24-30in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "25-30ft",
+          "value": "25-30ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-4in",
+          "value": "3-4in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-6in",
+          "value": "3-6in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-60ft",
+          "value": "30-60ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "40ft",
+          "value": "40ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-7ft",
+          "value": "5-7ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5in",
+          "value": "5in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-12ft",
+          "value": "6-12ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-15ft",
+          "value": "6-15ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "60ft",
+          "value": "60ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-2in",
+          "value": "1-2in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-4ft",
+          "value": "1-4ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-14in",
+          "value": "10-14in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-16ft",
+          "value": "10-16ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-18ft",
+          "value": "10-18ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-20ft",
+          "value": "12-20ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-40ft",
+          "value": "12-40ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-40ft",
+          "value": "15-40ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-25ft",
+          "value": "18-25ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-35ft",
+          "value": "20-35ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-70ft",
+          "value": "20-70ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "25-40ft",
+          "value": "25-40ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-50ft",
+          "value": "30-50ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "40-60ft",
+          "value": "40-60ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4in",
+          "value": "4in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-10ft",
+          "value": "5-10ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "50ft",
+          "value": "50ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-16in",
+          "value": "6-16in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-14in",
+          "value": "8-14in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "9ft",
+          "value": "9ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-1.5ft",
+          "value": "1-1.5ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-5ft",
+          "value": "1-5ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1.5-3.5in",
+          "value": "1.5-3.5in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-13ft",
+          "value": "10-13ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-16in",
+          "value": "10-16in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-18in",
+          "value": "10-18in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-14ft",
+          "value": "12-14ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-15in",
+          "value": "12-15in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "14-20in",
+          "value": "14-20in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-20in",
+          "value": "15-20in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-22ft",
+          "value": "15-22ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-35ft",
+          "value": "15-35ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15in",
+          "value": "15in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "16-20ft",
+          "value": "16-20ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "16-22in",
+          "value": "16-22in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "16in",
+          "value": "16in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-20ft",
+          "value": "18-20ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-36in",
+          "value": "18-36in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-48in",
+          "value": "18-48in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-10ft",
+          "value": "2-10ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-10in",
+          "value": "2-10in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-12ft",
+          "value": "2-12ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-5ft",
+          "value": "2-5ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-8in",
+          "value": "2-8in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2.5ft",
+          "value": "2.5ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-24in",
+          "value": "20-24in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "25-35ft",
+          "value": "25-35ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-10in",
+          "value": "3-10in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-5 ft",
+          "value": "3-5 ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-8ft",
+          "value": "3-8ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-35ft",
+          "value": "30-35ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-35in",
+          "value": "30-35in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-48in",
+          "value": "30-48in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-75ft",
+          "value": "30-75ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "35-50ft",
+          "value": "35-50ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "35ft",
+          "value": "35ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "35in",
+          "value": "35in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-10ft",
+          "value": "4-10ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-10in",
+          "value": "4-10in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "40-80ft",
+          "value": "40-80ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "45-50ft",
+          "value": "45-50ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "48in",
+          "value": "48in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-18ft",
+          "value": "5-18ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-20ft",
+          "value": "5-20ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-8in",
+          "value": "5-8in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "50-60ft",
+          "value": "50-60ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "50-65ft",
+          "value": "50-65ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-14in",
+          "value": "6-14in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-16ft",
+          "value": "6-16ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-18in",
+          "value": "6-18in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-7ft",
+          "value": "6-7ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "60-75ft",
+          "value": "60-75ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "60-80ft",
+          "value": "60-80ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "7-15ft",
+          "value": "7-15ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "7-8ft",
+          "value": "7-8ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "70ft",
+          "value": "70ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "7ft",
+          "value": "7ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "9-12ft",
+          "value": "9-12ft",
+          "count": 1,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "widthTags",
+      "label": "Width",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "1-2ft",
+          "value": "1-2ft",
+          "count": 168,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-3ft",
+          "value": "2-3ft",
+          "count": 145,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2ft",
+          "value": "2ft",
+          "count": 124,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-4ft",
+          "value": "3-4ft",
+          "count": 84,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3ft",
+          "value": "3ft",
+          "count": 83,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-14ft",
+          "value": "8-14ft",
+          "count": 57,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Various",
+          "value": "Various",
+          "count": 54,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-6ft",
+          "value": "4-6ft",
+          "count": 43,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-3ft",
+          "value": "1-3ft",
+          "count": 35,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-8ft",
+          "value": "6-8ft",
+          "count": 34,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-18ft",
+          "value": "12-18ft",
+          "count": 33,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4ft",
+          "value": "4ft",
+          "count": 31,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-10ft",
+          "value": "8-10ft",
+          "count": 30,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-25ft",
+          "value": "15-25ft",
+          "count": 29,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-5ft",
+          "value": "4-5ft",
+          "count": 27,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6ft",
+          "value": "6ft",
+          "count": 26,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-6ft",
+          "value": "5-6ft",
+          "count": 23,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-20ft",
+          "value": "15-20ft",
+          "count": 22,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-4ft",
+          "value": "2-4ft",
+          "count": 20,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-5ft",
+          "value": "3-5ft",
+          "count": 18,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1ft",
+          "value": "1ft",
+          "count": 17,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-15ft",
+          "value": "10-15ft",
+          "count": 16,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-18in",
+          "value": "12-18in",
+          "count": 16,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12in",
+          "value": "12in",
+          "count": 16,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15ft",
+          "value": "15ft",
+          "count": 15,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-24in",
+          "value": "18-24in",
+          "count": 15,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-6ft",
+          "value": "3-6ft",
+          "count": 15,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "16in",
+          "value": "16in",
+          "count": 14,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5ft",
+          "value": "5ft",
+          "count": 14,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-10ft",
+          "value": "6-10ft",
+          "count": 14,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8ft",
+          "value": "8ft",
+          "count": 14,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-12in",
+          "value": "10-12in",
+          "count": 13,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-30ft",
+          "value": "15-30ft",
+          "count": 13,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18in",
+          "value": "18in",
+          "count": 12,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "25ft",
+          "value": "25ft",
+          "count": 12,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10ft",
+          "value": "10ft",
+          "count": 10,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-30ft",
+          "value": "20-30ft",
+          "count": 10,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12ft",
+          "value": "12ft",
+          "count": 9,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-25ft",
+          "value": "20-25ft",
+          "count": 9,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-12ft",
+          "value": "10-12ft",
+          "count": 8,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-40ft",
+          "value": "30-40ft",
+          "count": 8,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-8ft",
+          "value": "4-8ft",
+          "count": 8,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-8in",
+          "value": "6-8in",
+          "count": 8,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6in",
+          "value": "6in",
+          "count": 8,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-12in",
+          "value": "8-12in",
+          "count": 8,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-12in",
+          "value": "6-12in",
+          "count": 7,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8in",
+          "value": "8in",
+          "count": 7,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10in",
+          "value": "10in",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-15ft",
+          "value": "12-15ft",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "16-20in",
+          "value": "16-20in",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30ft",
+          "value": "30ft",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-8ft",
+          "value": "5-8ft",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-10in",
+          "value": "8-10in",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-12ft",
+          "value": "8-12ft",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20ft",
+          "value": "20ft",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-6in",
+          "value": "4-6in",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-6in",
+          "value": "5-6in",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-14in",
+          "value": "10-14in",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-20ft",
+          "value": "10-20ft",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "24in",
+          "value": "24in",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-4in",
+          "value": "3-4in",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4in",
+          "value": "4in",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-25ft",
+          "value": "10-25ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-14in",
+          "value": "12-14in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-15in",
+          "value": "12-15in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "14in",
+          "value": "14in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-30in",
+          "value": "18-30in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-60ft",
+          "value": "20-60ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20in",
+          "value": "20in",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "25-35ft",
+          "value": "25-35ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "7ft",
+          "value": "7ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-15ft",
+          "value": "8-15ft",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-4ft",
+          "value": "1-4ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-16in",
+          "value": "10-16in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10-18ft",
+          "value": "10-18ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-14ft",
+          "value": "12-14ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-40ft",
+          "value": "12-40ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "14ft",
+          "value": "14ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-18in",
+          "value": "15-18in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-22in",
+          "value": "18-22in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-25ft",
+          "value": "18-25ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-5ft",
+          "value": "2-5ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2.5ft",
+          "value": "2.5ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-24in",
+          "value": "20-24in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-70ft",
+          "value": "20-70ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "24-30in",
+          "value": "24-30in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "25-30ft",
+          "value": "25-30ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "25-40ft",
+          "value": "25-40ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-35ft",
+          "value": "30-35ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-50ft",
+          "value": "30-50ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30in",
+          "value": "30in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-7ft",
+          "value": "4-7ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-8in",
+          "value": "4-8in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "40-60ft",
+          "value": "40-60ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-15ft",
+          "value": "5-15ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-7ft",
+          "value": "5-7ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "50ft",
+          "value": "50ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-14ft",
+          "value": "6-14ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "9-12in",
+          "value": "9-12in",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "9ft",
+          "value": "9ft",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-1.5ft",
+          "value": "1-1.5ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1-5ft",
+          "value": "1-5ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1.5ft",
+          "value": "1.5ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-16in",
+          "value": "12-16in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-20ft",
+          "value": "12-20ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-24in",
+          "value": "12-24in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12-36in",
+          "value": "12-36in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-20in",
+          "value": "15-20in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-35ft",
+          "value": "15-35ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15-45ft",
+          "value": "15-45ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18-20in",
+          "value": "18-20in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "1in",
+          "value": "1in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-10ft",
+          "value": "2-10ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-12ft",
+          "value": "2-12ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2-6ft",
+          "value": "2-6ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20-40ft",
+          "value": "20-40ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "24-28in",
+          "value": "24-28in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "24-36in",
+          "value": "24-36in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "28in",
+          "value": "28in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3-10ft",
+          "value": "3-10ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-36in",
+          "value": "30-36in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30-60ft",
+          "value": "30-60ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "36in",
+          "value": "36in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-10ft",
+          "value": "4-10ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-10in",
+          "value": "4-10in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "40ft",
+          "value": "40ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-10ft",
+          "value": "5-10ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5-12ft",
+          "value": "5-12ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "50-60ft",
+          "value": "50-60ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "50-70ft",
+          "value": "50-70ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-14in",
+          "value": "6-14in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-15ft",
+          "value": "6-15ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-16ft",
+          "value": "6-16ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-7ft",
+          "value": "6-7ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "7-15ft",
+          "value": "7-15ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "70ft",
+          "value": "70ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8-14in",
+          "value": "8-14in",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "9-10ft",
+          "value": "9-10ft",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "9in",
+          "value": "9in",
+          "count": 1,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "growthRates",
+      "label": "Growth Rate",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "Moderate",
+          "value": "Moderate",
+          "count": 850,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Fast",
+          "value": "Fast",
+          "count": 272,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Slow",
+          "value": "Slow",
+          "count": 115,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "usdaZones",
+      "label": "USDA Zones",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "9b",
+          "value": "9b",
+          "count": 1061,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "9a",
+          "value": "9a",
+          "count": 1032,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8b",
+          "value": "8b",
+          "count": 985,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8a",
+          "value": "8a",
+          "count": 973,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "7b",
+          "value": "7b",
+          "count": 814,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "7a",
+          "value": "7a",
+          "count": 801,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10b",
+          "value": "10b",
+          "count": 704,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10a",
+          "value": "10a",
+          "count": 703,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6b",
+          "value": "6b",
+          "count": 655,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6a",
+          "value": "6a",
+          "count": 649,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "11a",
+          "value": "11a",
+          "count": 506,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "11b",
+          "value": "11b",
+          "count": 506,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5b",
+          "value": "5b",
+          "count": 495,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5a",
+          "value": "5a",
+          "count": 494,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12b",
+          "value": "12b",
+          "count": 316,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12a",
+          "value": "12a",
+          "count": 314,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "13a",
+          "value": "13a",
+          "count": 292,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "13b",
+          "value": "13b",
+          "count": 292,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4a",
+          "value": "4a",
+          "count": 223,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4b",
+          "value": "4b",
+          "count": 220,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3a",
+          "value": "3a",
+          "count": 84,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3b",
+          "value": "3b",
+          "count": 83,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2a",
+          "value": "2a",
+          "count": 25,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2b",
+          "value": "2b",
+          "count": 25,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "9a or All as Annual",
+          "value": "9a or All as Annual",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Varies or All as Annual",
+          "value": "Varies or All as Annual",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10, or All as Annual",
+          "value": "10, or All as Annual",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "11A or All as Annual",
+          "value": "11A or All as Annual",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "7",
+          "value": "7",
+          "count": 1,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "availableSeasons",
+      "label": "Available In",
+      "kind": "tag",
+      "values": [
+        {
+          "label": "Spring",
+          "value": "Spring",
+          "count": 1299,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Summer",
+          "value": "Summer",
+          "count": 1170,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Fall",
+          "value": "Fall",
+          "count": 965,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Winter",
+          "value": "Winter",
+          "count": 855,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Depends on Availability",
+          "value": "Depends on Availability",
+          "count": 5,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "nurserySizes",
+      "label": "Container Size",
+      "kind": "shopping",
+      "values": [
+        {
+          "label": "1 gal",
+          "value": "1 gal",
+          "count": 444,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5 gal",
+          "value": "5 gal",
+          "count": 406,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4\"",
+          "value": "4\"",
+          "count": 355,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2 gal",
+          "value": "2 gal",
+          "count": 179,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15 gal",
+          "value": "15 gal",
+          "count": 142,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3 gal",
+          "value": "3 gal",
+          "count": 109,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12\" fiber",
+          "value": "12\" fiber",
+          "count": 82,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6-pack",
+          "value": "6-pack",
+          "count": 76,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "7 gal",
+          "value": "7 gal",
+          "count": 55,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "3.25\"",
+          "value": "3.25\"",
+          "count": 48,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "02T",
+          "value": "02T",
+          "count": 47,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "01T",
+          "value": "01T",
+          "count": 29,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "03T",
+          "value": "03T",
+          "count": 24,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "24\" Box",
+          "value": "24\" Box",
+          "count": 23,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10 gal",
+          "value": "10 gal",
+          "count": 17,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "Flat",
+          "value": "Flat",
+          "count": 15,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "5\"",
+          "value": "5\"",
+          "count": 13,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "2.5\"",
+          "value": "2.5\"",
+          "count": 12,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15\" fiber",
+          "value": "15\" fiber",
+          "count": 10,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "30 gal",
+          "value": "30 gal",
+          "count": 9,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4\" Sleeve",
+          "value": "4\" Sleeve",
+          "count": 9,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6\"",
+          "value": "6\"",
+          "count": 7,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "8\"",
+          "value": "8\"",
+          "count": 7,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "18 count flat",
+          "value": "18 count flat",
+          "count": 6,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10\"",
+          "value": "10\"",
+          "count": 5,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "25 gal",
+          "value": "25 gal",
+          "count": 4,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10\" Cache",
+          "value": "10\" Cache",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10\" Hanging Basket",
+          "value": "10\" Hanging Basket",
+          "count": 3,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "11\" fiber",
+          "value": "11\" fiber",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12\"",
+          "value": "12\"",
+          "count": 2,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "10\" Fiber",
+          "value": "10\" Fiber",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "11\"",
+          "value": "11\"",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "11\" Fiber Patio Tree - 36\" tall",
+          "value": "11\" Fiber Patio Tree - 36\" tall",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12\" cache",
+          "value": "12\" cache",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "12\" Hanging Basket",
+          "value": "12\" Hanging Basket",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "13\" cache",
+          "value": "13\" cache",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "14\"",
+          "value": "14\"",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "15\" box",
+          "value": "15\" box",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "17\"",
+          "value": "17\"",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "20 gal",
+          "value": "20 gal",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "4-pack",
+          "value": "4-pack",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "45 gal",
+          "value": "45 gal",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6.5\"",
+          "value": "6.5\"",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "6\" hanging basket",
+          "value": "6\" hanging basket",
+          "count": 1,
+          "matchMode": "filterData"
+        },
+        {
+          "label": "7\" Cache",
+          "value": "7\" Cache",
+          "count": 1,
+          "matchMode": "filterData"
+        }
+      ]
+    },
+    {
+      "key": "priceRanges",
+      "label": "Price",
+      "kind": "price",
+      "values": [
+        {
+          "label": "Under $10",
+          "value": "0-999",
+          "count": 637,
+          "matchMode": "priceRange"
+        },
+        {
+          "label": "$10-$25",
+          "value": "1000-2500",
+          "count": 468,
+          "matchMode": "priceRange"
+        },
+        {
+          "label": "$25-$50",
+          "value": "2500-5000",
+          "count": 573,
+          "matchMode": "priceRange"
+        },
+        {
+          "label": "$50-$100",
+          "value": "5000-10000",
+          "count": 214,
+          "matchMode": "priceRange"
+        },
+        {
+          "label": "$100+",
+          "value": "10000-up",
+          "count": 4,
+          "matchMode": "priceRange"
+        }
+      ]
+    }
+  ]
+}

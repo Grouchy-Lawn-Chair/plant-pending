@@ -2,7 +2,7 @@
 // This is the entry point for the entire app
 
 import { useState, useEffect, useCallback, useRef, useMemo, type ChangeEvent } from 'react';
-import { Plant, PlacedPlant, FilterState, SortOption, GardenPlan, PlantLabelMode, PlantClumpStrength, DisplayMode, GardenZone, PlantingGroup, ZoneLayoutMode, ZonePlantVariety, TestLogEntry, TestSnapshot, ShrubScoreState } from './types/plant';
+import { Plant, PlacedPlant, FilterState, SortOption, GardenPlan, PlantLabelMode, PlantClumpStrength, DisplayMode, GardenZone, PlantingGroup, ZoneLayoutMode, ZonePlantVariety, TestLogEntry, TestSnapshot, ShrubScoreState, GreenAcresFilterIndex } from './types/plant';
 import { loadPlantsFromCSV } from './utils/csvParser';
 import { generateWarnings } from './utils/warnings';
 import { filterPlants, sortPlants, getCategories } from './utils/filtering';
@@ -1240,6 +1240,7 @@ function App() {
   const [searchInput, setSearchInput] = useState(DEFAULT_FILTERS.search || '');
   const [visiblePlantLimit, setVisiblePlantLimit] = useState(120);
   const [sortBy, setSortBy] = useState<SortOption>('commonName');
+  const [greenAcresFilterIndex, setGreenAcresFilterIndex] = useState<GreenAcresFilterIndex | null>(null);
   const [leftPanelMode, setLeftPanelMode] = useState<'library' | 'filters' | 'closed'>('library');
   const [rightInspectorSection, setRightInspectorSection] = useState<'item' | 'canvas' | 'zones' | 'groups' | 'legend' | 'debug' | null>('zones');
   const categories = useMemo(() => getCategories(plants), [plants]);
@@ -1671,6 +1672,26 @@ function App() {
       });
     };
     loadPlants();
+  }, [addTestLog]);
+
+  // Load real Green Acres filter index on mount
+  useEffect(() => {
+    const loadGreenAcresFilterIndex = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL}green_acres_filter_index.json`);
+        if (!response.ok) throw new Error(`Filter index failed to load: ${response.status}`);
+        const index = await response.json() as GreenAcresFilterIndex;
+        setGreenAcresFilterIndex(index);
+        addTestLog('filters.greenAcresIndexLoaded', {
+          groups: index.groups?.length || 0,
+          values: (index.groups || []).reduce((total, group) => total + (group.values?.length || 0), 0),
+        });
+      } catch (error) {
+        console.warn('Could not load Green Acres filter index', error);
+        addTestLog('filters.greenAcresIndexLoadFailed', { message: error instanceof Error ? error.message : String(error) });
+      }
+    };
+    loadGreenAcresFilterIndex();
   }, [addTestLog]);
 
   // Load saved plans on mount
@@ -3171,6 +3192,7 @@ function App() {
     try {
       const plan = await importPlanFromJSON(file);
       handleImportPlan(plan);
+      setShowOpenPlanModal(false);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to import plan');
     }
@@ -3315,8 +3337,8 @@ function App() {
                 <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Saved plans</div>
-                    <h2 className="mt-1 text-lg font-semibold">Open / load plan</h2>
-                    <p className="mt-1 text-xs text-slate-400">Saved in this browser on this computer.</p>
+                    <h2 className="mt-1 text-lg font-semibold">Open browser plan</h2>
+                    <p className="mt-1 text-xs text-slate-400">Plans saved in this browser on this computer. To bring in a file, import a plan JSON.</p>
                   </div>
                   <button
                     type="button"
@@ -3327,10 +3349,53 @@ function App() {
                   </button>
                 </div>
 
+                <div className="border-b border-slate-800 p-4">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => appFileInputRef.current?.click()}
+                      className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+                    >
+                      Import plan JSON
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleLoadExamplePlan();
+                        setShowOpenPlanModal(false);
+                      }}
+                      className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                    >
+                      Load example plan
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">Importing JSON also saves that plan into this browser.</p>
+                </div>
+
                 <div className="max-h-[60vh] overflow-y-auto p-4">
                   {sortedSavedPlans.length === 0 ? (
-                    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-400">
-                      No saved plans yet. Use File → Save plan first.
+                    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-300">
+                      <div className="font-semibold text-white">No browser-saved plans yet.</div>
+                      <p className="mt-1 text-slate-400">Saved plans are stored separately for localhost and GitHub Pages. Import a JSON file to bring a plan into this browser.</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => appFileInputRef.current?.click()}
+                          className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+                        >
+                          Import plan JSON
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleLoadExamplePlan();
+                            setShowOpenPlanModal(false);
+                          }}
+                          className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                        >
+                          Load example plan
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -3496,6 +3561,7 @@ function App() {
                   filters={filters}
                   sortBy={sortBy}
                   categories={categories}
+                  greenAcresFilterIndex={greenAcresFilterIndex}
                   onFiltersChange={handleFiltersChange}
                   onSortChange={handleSortChange}
                 />

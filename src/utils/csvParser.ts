@@ -194,6 +194,37 @@ function gardenNumberIncludes(gardenNumbers: number[], num: number): boolean {
 }
 
 // Parse the full CSV and return normalized Plant objects
+
+function parseJsonObjectOrNull(value: string): Record<string, string[]> | undefined {
+  const clean = (value || '').trim();
+  if (!clean) return undefined;
+  try {
+    const parsed = JSON.parse(clean);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined;
+    const normalized: Record<string, string[]> = {};
+    Object.entries(parsed).forEach(([key, rawValue]) => {
+      if (Array.isArray(rawValue)) {
+        normalized[key] = rawValue.map(item => String(item).trim()).filter(Boolean);
+      }
+    });
+    return normalized;
+  } catch {
+    return undefined;
+  }
+}
+
+function parseSemiList(value: string): string[] {
+  return (value || '')
+    .split(';')
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+function parseIntegerOrNull(value: string): number | null {
+  const parsed = parseInt((value || '').trim(), 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export async function loadPlantsFromCSV(onProgress?: (progress: number, stage: string) => void): Promise<{ plants: Plant[]; error: string | null }> {
   try {
     // Load the local Green Acres catalog first, then fall back to older CSVs.
@@ -311,6 +342,12 @@ export async function loadPlantsFromCSV(onProgress?: (progress: number, stage: s
       if (isNaN(parsedId)) continue;
 
       const greenAcresMatchRaw = getValue('Green_Acres_Match');
+      const greenAcresRawTags = parseSemiList(getValue('Green_Acres_Tags'));
+      const greenAcresFilterData = parseJsonObjectOrNull(getValue('Green_Acres_Filter_Data_JSON'));
+      const greenAcresProductHandle = parseStringOrNull(getValue('Green_Acres_Product_Handle'));
+      const greenAcresSourceCategories = parseSemiList(getValue('Green_Acres_Source_Categories'));
+      const greenAcresPriceMinCents = parseIntegerOrNull(getValue('Green_Acres_Price_Min_Cents'));
+      const greenAcresPriceMaxCents = parseIntegerOrNull(getValue('Green_Acres_Price_Max_Cents'));
       const designScoreRecord = designScoresByPlantId.get(parsedId);
       const researchRecord = researchByPlantId.get(parsedId);
       const plant: Plant = {
@@ -363,6 +400,12 @@ export async function loadPlantsFromCSV(onProgress?: (progress: number, stage: s
         greenAcresMatchConfidence: parseStringOrNull(getValue('Green_Acres_Match_Confidence')),
         greenAcresLastChecked: parseStringOrNull(getValue('Green_Acres_Last_Checked')),
         greenAcresNotes: parseStringOrNull(decodeHtmlEntities(getValue('Green_Acres_Notes'))),
+        greenAcresRawTags,
+        greenAcresFilterData,
+        greenAcresProductHandle,
+        greenAcresSourceCategories,
+        greenAcresPriceMinCents,
+        greenAcresPriceMaxCents,
         greenAcresDesignScores: designScoreRecord?.scores,
         greenAcresBestUses: designScoreRecord?.bestUses || [],
         greenAcresScoreFlags: designScoreRecord?.flags || [],

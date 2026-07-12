@@ -2,6 +2,56 @@
 
 import { Plant, FilterState, SortOption } from '../types/plant';
 
+function normalizeFilterText(value: string | null | undefined): string {
+  return (value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function valueMatchesSelected(value: string, selectedValues: string[]): boolean {
+  const normalizedValue = normalizeFilterText(value);
+  return selectedValues.some(selected => {
+    const normalizedSelected = normalizeFilterText(selected);
+    return normalizedValue === normalizedSelected || normalizedValue.includes(normalizedSelected);
+  });
+}
+
+function plantMatchesGreenAcresFilter(plant: Plant, groupKey: string, selectedValues: string[]): boolean {
+  if (!selectedValues.length) return true;
+
+  if (groupKey === 'priceRanges') {
+    const min = plant.greenAcresPriceMinCents ?? null;
+    const max = plant.greenAcresPriceMaxCents ?? min;
+    if (min === null || max === null) return false;
+    return selectedValues.some(range => {
+      const [lowRaw, highRaw] = range.split('-');
+      const low = Number(lowRaw);
+      const high = highRaw === 'up' ? Number.POSITIVE_INFINITY : Number(highRaw);
+      return Number.isFinite(low) && max >= low && min <= high;
+    });
+  }
+
+  const filterValues = plant.greenAcresFilterData?.[groupKey] || [];
+  const rawTags = plant.greenAcresRawTags || [];
+  const sourceCategories = plant.greenAcresSourceCategories || [];
+  const handle = plant.greenAcresProductHandle || '';
+
+  if (filterValues.some(value => valueMatchesSelected(value, selectedValues))) return true;
+
+  if (groupKey === 'plantCategories') {
+    const haystack = [
+      plant.category,
+      plant.greenAcresProductName || '',
+      handle,
+      ...sourceCategories,
+      ...rawTags,
+      ...(plant.greenAcresFilterData?.plantCategories || []),
+    ];
+    return haystack.some(value => valueMatchesSelected(value, selectedValues));
+  }
+
+  return rawTags.some(value => valueMatchesSelected(value, selectedValues));
+}
+
+
 // Filter plants based on the current filter state
 export function filterPlants(plants: Plant[], filters: FilterState): Plant[] {
   return plants.filter(plant => {
@@ -105,6 +155,15 @@ export function filterPlants(plants: Plant[], filters: FilterState): Plant[] {
     // Green Acres catalog filters
     if (filters.greenAcresOnly && !plant.greenAcresMatch) return false;
     if (filters.greenAcresMissingOnly && plant.greenAcresMatch) return false;
+
+    // Real Green Acres filters from product tags/filter data.
+    const selectedGreenAcresFilters = filters.greenAcresFilters || {};
+    for (const [groupKey, selectedValues] of Object.entries(selectedGreenAcresFilters)) {
+      if (Array.isArray(selectedValues) && selectedValues.length > 0) {
+        if (!plantMatchesGreenAcresFilter(plant, groupKey, selectedValues)) return false;
+      }
+    }
+
 
     return true;
   });
