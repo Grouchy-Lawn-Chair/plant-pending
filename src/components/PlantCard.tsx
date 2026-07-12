@@ -94,18 +94,18 @@ function ImagePanel({ plant, isSelected }: { plant: Plant; isSelected: boolean }
   const imageUrl = getPlantImageUrl(plant);
   const categoryColor = getPlantCategoryColor(plant);
   const hasImage = hasPlantImage(plant);
-  const imageHeight = isSelected ? 'h-36' : 'h-28';
+  const imageHeight = isSelected ? 'h-44' : 'h-36';
   const commonName = plant.commonName || plant.botanicalName || 'Plant';
   const botanicalName = (plant.botanicalName || '').trim();
   const showBotanical = botanicalName && botanicalName !== commonName && isSelected;
 
   const titleOverlay = (
-    <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-black/55 px-3 py-2 text-white shadow-sm backdrop-blur-[1px]">
-      <div className="truncate text-left text-lg font-extrabold leading-tight" title={commonName}>
+    <div className="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] rounded-xl bg-black/38 px-2.5 py-1.5 text-white shadow-sm backdrop-blur-[1px]">
+      <div className="truncate text-left text-sm font-extrabold leading-tight drop-shadow" title={commonName}>
         {commonName}
       </div>
       {showBotanical && (
-        <div className="mt-0.5 truncate text-left text-xs italic text-white/85" title={botanicalName}>
+        <div className="mt-0.5 truncate text-left text-[10px] italic leading-tight text-white/80" title={botanicalName}>
           {botanicalName}
         </div>
       )}
@@ -142,7 +142,7 @@ function ImagePanel({ plant, isSelected }: { plant: Plant; isSelected: boolean }
         className="h-full w-full object-cover"
       />
       <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/45 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 h-20 w-3/4 bg-gradient-to-tr from-black/35 via-black/10 to-transparent" />
       <div className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white shadow-sm">
         {plant.category || 'Plant'}
       </div>
@@ -237,7 +237,7 @@ export function PlantCard({ plant, isSelected, onClick }: PlantCardProps) {
       <div className="p-3">
         <ImagePanel plant={plant} isSelected={isSelected} />
 
-        <div className="mt-3 grid grid-cols-3 gap-2.5">
+        <div className="mt-2.5 grid grid-cols-3 gap-2.5">
           <MetricTile value={sizeText} title={`Mature size: ${sizeText}`} />
           <MetricTile value="" accent="text-sky-700" icon={waterIconFor(waterIconType)} title={`Water need: ${waterText}`} />
           <MetricTile value="" accent="text-orange-700" icon={sunIconFor(sunIconType)} title={`Sun requirement: ${sunText}`} />
