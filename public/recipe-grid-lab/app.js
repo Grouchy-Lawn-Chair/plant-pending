@@ -1,415 +1,117 @@
 const svgNS = 'http://www.w3.org/2000/svg';
-const LAB_VERSION = '11.1.0';
+const LAB_VERSION = '12.0.0';
 if (!window.Matter) throw new Error('Matter.js did not load. Check the network connection and refresh.');
 
 const { Engine, Composite, Composites, Bodies, Body } = window.Matter;
 const CANVAS = { width: 560, height: 472 };
-const PATIO = { x: 20, y: 202, width: 270, height: 270 };
-const DIVIDER_X = 420;
-const STORAGE_KEY = 'plant-pending-recipe-lab-v11';
+const STORAGE_KEY = 'plant-pending-recipe-lab-v12';
 
 const DEFAULT_PLANTS = [
-  { id: 'bloodstone', name: 'Bloodstone Thrift', diameter: 34, percentage: 50, mode: 'front-fill', color: '#e88bb8' },
-  { id: 'hydrangea', name: 'Early Evolution Hydrangea', diameter: 62, percentage: 30, mode: 'scatter', color: '#eadfcd' },
-  { id: 'rose', name: 'Eau de Parfum Blush Rose', diameter: 95, percentage: 13, mode: 'scatter', color: '#e11be4' },
-  { id: 'arborvitae', name: 'UpStanding Emerald Arborvitae', diameter: 140, percentage: 7, mode: 'back-attract', color: '#b9d2b4' },
+  { id: 'bloodstone-thrift', name: 'Bloodstone Thrift', diameter: 34, percentage: 50, mode: 'front-fill', color: '#e88bb8' },
+  { id: 'early-evolution-hydrangea', name: 'Early Evolution Hydrangea', diameter: 62, percentage: 30, mode: 'scatter', color: '#eadfcd' },
+  { id: 'eau-de-parfum-blush-rose', name: 'Eau de Parfum Blush Rose', diameter: 80, percentage: 13, mode: 'scatter', color: '#e11be4' },
+  { id: 'upstanding-emerald-arborvitae', name: 'UpStanding Emerald Arborvitae', diameter: 140, percentage: 7, mode: 'back-attract', color: '#b9d2b4' },
 ];
 
+const ZONE_PRESETS = {
+  'reference-l': { name: 'Reference L-shape', points: [{x:18,y:18},{x:420,y:18},{x:420,y:454},{x:290,y:454},{x:290,y:202},{x:18,y:202}], frontEdge: 4, backEdge: 1 },
+  rectangle: { name: 'Rectangle', points: [{x:45,y:45},{x:515,y:45},{x:515,y:427},{x:45,y:427}], frontEdge: 2, backEdge: 0 },
+  strip: { name: 'Long narrow strip', points: [{x:35,y:145},{x:525,y:145},{x:525,y:327},{x:35,y:327}], frontEdge: 2, backEdge: 0 },
+  trapezoid: { name: 'Trapezoid', points: [{x:100,y:55},{x:485,y:90},{x:525,y:420},{x:45,y:420}], frontEdge: 2, backEdge: 0 },
+  irregular: { name: 'Irregular polygon', points: [{x:70,y:55},{x:350,y:35},{x:505,y:130},{x:470,y:365},{x:300,y:440},{x:95,y:400},{x:35,y:215}], frontEdge: 4, backEdge: 1 },
+};
+
 const els = {
-  svg: document.querySelector('#recipe-canvas'),
-  seed: document.querySelector('#seed'),
-  seedValue: document.querySelector('#seed-value'),
-  totalPlants: document.querySelector('#total-plants'),
-  frontDirection: document.querySelector('#front-direction'),
-  dropOrder: document.querySelector('#drop-order'),
-  physicsPercent: document.querySelector('#physics-percent'),
-  spacingPad: document.querySelector('#spacing-pad'),
-  editor: document.querySelector('#plant-editor'),
-  percentageTotal: document.querySelector('#percentage-total'),
-  percentageMessage: document.querySelector('#percentage-message'),
-  title: document.querySelector('#view-title'),
-  metrics: document.querySelector('#metrics'),
-  summary: document.querySelector('#test-summary'),
-  debugSummary: document.querySelector('#debug-summary'),
-  grid: document.querySelector('#show-grid'),
-  centers: document.querySelector('#show-centers'),
-  debugOverlay: document.querySelector('#show-debug-overlay'),
-  version: document.querySelector('#lab-version'),
+  svg: document.querySelector('#recipe-canvas'), seed: document.querySelector('#seed'), seedValue: document.querySelector('#seed-value'),
+  totalPlants: document.querySelector('#total-plants'), dropOrder: document.querySelector('#drop-order'), physicsPercent: document.querySelector('#physics-percent'), spacingPad: document.querySelector('#spacing-pad'),
+  editor: document.querySelector('#plant-editor'), percentageTotal: document.querySelector('#percentage-total'), percentageMessage: document.querySelector('#percentage-message'),
+  title: document.querySelector('#view-title'), metrics: document.querySelector('#metrics'), summary: document.querySelector('#test-summary'), debugSummary: document.querySelector('#debug-summary'),
+  grid: document.querySelector('#show-grid'), centers: document.querySelector('#show-centers'), debugOverlay: document.querySelector('#show-debug-overlay'), version: document.querySelector('#lab-version'),
+  zonePreset: document.querySelector('#zone-preset'), zoneStatus: document.querySelector('#zone-status'),
 };
 
 let state = loadState();
 let lastRun = null;
+let interactionMode = 'none';
+let draftPoints = [];
 
-if (els.version) els.version.textContent = `Lab version ${LAB_VERSION} · mixed drop order`;
-document.querySelector('#recipe-description').textContent = 'Tune plant sizes, percentages, placement modes, and drop order, then export the settled pattern for reuse in a real zone.';
+if (els.version) els.version.textContent = `Lab version ${LAB_VERSION} · drawable zone physics`;
+document.querySelector('#recipe-description').textContent = 'Tune a reusable recipe, draw a zone, choose front and back edges, then test the same planting logic in different shapes.';
 
+function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function cloneDefaults() {
-  return {
-    totalPlants: 60,
-    frontDirection: 'bottom',
-    dropOrder: 'random',
-    physicsPercent: 90,
-    spacingPad: 5,
-    plants: DEFAULT_PLANTS.map(plant => ({ ...plant })),
-  };
+  const preset = ZONE_PRESETS['reference-l'];
+  return { totalPlants: 40, dropOrder: 'random', physicsPercent: 100, spacingPad: 0, plants: clone(DEFAULT_PLANTS), zone: { points: clone(preset.points), frontEdge: preset.frontEdge, backEdge: preset.backEdge, preset: 'reference-l' }, exclusions: [] };
 }
-
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (parsed?.plants?.length) return { ...cloneDefaults(), ...parsed, dropOrder: parsed.dropOrder || 'random' };
+    if (parsed?.plants?.length && parsed?.zone?.points?.length >= 3) return { ...cloneDefaults(), ...parsed };
   } catch {}
   return cloneDefaults();
 }
-
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function slugify(value) {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `plant-${Date.now()}`;
-}
-
-function rng(seed) {
-  let value = seed >>> 0;
-  return () => {
-    value += 0x6D2B79F5;
-    let t = value;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function shuffle(items, rand) {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(rand() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function slugify(value) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `plant-${Date.now()}`; }
+function rng(seed) { let value = seed >>> 0; return () => { value += 0x6D2B79F5; let t = value; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function shuffle(items, rand) { const copy = [...items]; for (let i = copy.length - 1; i > 0; i -= 1) { const j = Math.floor(rand() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; }
+function polygonArea(points) { let area = 0; for (let i = 0; i < points.length; i += 1) { const a = points[i], b = points[(i + 1) % points.length]; area += a.x * b.y - b.x * a.y; } return Math.abs(area) / 2; }
+function polygonCentroid(points) { let x = 0, y = 0, crossSum = 0; for (let i = 0; i < points.length; i += 1) { const a = points[i], b = points[(i + 1) % points.length]; const cross = a.x * b.y - b.x * a.y; x += (a.x + b.x) * cross; y += (a.y + b.y) * cross; crossSum += cross; } if (Math.abs(crossSum) < 0.001) return points.reduce((acc,p)=>({x:acc.x+p.x/points.length,y:acc.y+p.y/points.length}),{x:0,y:0}); return { x: x / (3 * crossSum), y: y / (3 * crossSum) }; }
+function pointInPolygon(point, polygon) { let inside = false; for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) { const a = polygon[i], b = polygon[j]; const hit = ((a.y > point.y) !== (b.y > point.y)) && (point.x < (b.x - a.x) * (point.y - a.y) / ((b.y - a.y) || 1e-9) + a.x); if (hit) inside = !inside; } return inside; }
+function distanceToSegment(point, a, b) { const dx = b.x - a.x, dy = b.y - a.y; const length2 = dx * dx + dy * dy || 1; const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / length2)); const x = a.x + t * dx, y = a.y + t * dy; return Math.hypot(point.x - x, point.y - y); }
+function nearestEdgeIndex(point, points) { let best = 0, bestDistance = Infinity; points.forEach((a, index) => { const distance = distanceToSegment(point, a, points[(index + 1) % points.length]); if (distance < bestDistance) { bestDistance = distance; best = index; } }); return bestDistance <= 22 ? best : -1; }
+function inwardNormal(points, edgeIndex) { const a = points[edgeIndex], b = points[(edgeIndex + 1) % points.length]; const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; const centroid = polygonCentroid(points); const dx = b.x - a.x, dy = b.y - a.y; const length = Math.hypot(dx, dy) || 1; const n1 = { x: -dy / length, y: dx / length }; const n2 = { x: dy / length, y: -dx / length }; const toward = { x: centroid.x - midpoint.x, y: centroid.y - midpoint.y }; return (n1.x * toward.x + n1.y * toward.y) > 0 ? n1 : n2; }
+function boundsOf(points) { const xs = points.map(p => p.x), ys = points.map(p => p.y); return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }; }
+function randomPointInZone(rand, radius = 0) { const box = boundsOf(state.zone.points); for (let tries = 0; tries < 500; tries += 1) { const point = { x: box.minX + radius + rand() * Math.max(1, box.maxX - box.minX - radius * 2), y: box.minY + radius + rand() * Math.max(1, box.maxY - box.minY - radius * 2) }; if (pointInPolygon(point, state.zone.points) && !state.exclusions.some(poly => pointInPolygon(point, poly))) return point; } return polygonCentroid(state.zone.points); }
 
 function renderEditor() {
-  els.totalPlants.value = state.totalPlants;
-  els.frontDirection.value = state.frontDirection;
-  els.dropOrder.value = state.dropOrder;
-  els.physicsPercent.value = state.physicsPercent;
-  els.spacingPad.value = state.spacingPad;
-  els.editor.innerHTML = state.plants.map((plant, index) => `
-    <article class="plant-row" data-index="${index}">
-      <div class="plant-row-top">
-        <input class="plant-name" value="${plant.name.replaceAll('"', '&quot;')}" aria-label="Plant name" />
-        <input class="plant-color" type="color" value="${plant.color}" aria-label="Plant color" />
-        <button class="remove-plant icon-button" title="Remove plant" ${state.plants.length <= 1 ? 'disabled' : ''}>×</button>
-      </div>
-      <div class="plant-row-grid">
-        <label>Diameter<input class="plant-diameter" type="number" min="8" max="300" value="${plant.diameter}" /><span>px</span></label>
-        <label>Mix<input class="plant-percentage" type="number" min="0" max="100" value="${plant.percentage}" /><span>%</span></label>
-      </div>
-      <label>Placement
-        <select class="plant-mode">
-          ${['scatter','stack','line','front-fill','back-attract'].map(mode => `<option value="${mode}" ${plant.mode === mode ? 'selected' : ''}>${mode.replace('-', ' ')}</option>`).join('')}
-        </select>
-      </label>
-    </article>
-  `).join('');
-  updatePercentageDisplay();
+  els.totalPlants.value = state.totalPlants; els.dropOrder.value = state.dropOrder; els.physicsPercent.value = state.physicsPercent; els.spacingPad.value = state.spacingPad; els.zonePreset.value = state.zone.preset || 'custom';
+  els.editor.innerHTML = state.plants.map((plant, index) => `<article class="plant-row" data-index="${index}"><div class="plant-row-top"><input class="plant-name" value="${plant.name.replaceAll('"', '&quot;')}" aria-label="Plant name" /><input class="plant-color" type="color" value="${plant.color}" aria-label="Plant color" /><button class="remove-plant icon-button" title="Remove plant" ${state.plants.length <= 1 ? 'disabled' : ''}>×</button></div><div class="plant-row-grid"><label>Diameter<input class="plant-diameter" type="number" min="8" max="300" value="${plant.diameter}" /><span>px</span></label><label>Mix<input class="plant-percentage" type="number" min="0" max="100" value="${plant.percentage}" /><span>%</span></label></div><label>Placement<select class="plant-mode">${['scatter','stack','front-fill','back-attract'].map(mode => `<option value="${mode}" ${plant.mode === mode ? 'selected' : ''}>${mode.replace('-', ' ')}</option>`).join('')}</select></label></article>`).join('');
+  updatePercentageDisplay(); updateZoneStatus();
 }
-
-function readEditor() {
-  state.totalPlants = Math.max(1, Number(els.totalPlants.value) || 1);
-  state.frontDirection = els.frontDirection.value;
-  state.dropOrder = els.dropOrder.value;
-  state.physicsPercent = Math.max(50, Math.min(100, Number(els.physicsPercent.value) || 90));
-  state.spacingPad = Math.max(0, Math.min(20, Number(els.spacingPad.value) || 0));
-  [...els.editor.querySelectorAll('.plant-row')].forEach((row, index) => {
-    const plant = state.plants[index];
-    plant.name = row.querySelector('.plant-name').value.trim() || `Plant ${index + 1}`;
-    plant.id = slugify(plant.name);
-    plant.color = row.querySelector('.plant-color').value;
-    plant.diameter = Math.max(8, Number(row.querySelector('.plant-diameter').value) || 8);
-    plant.percentage = Math.max(0, Number(row.querySelector('.plant-percentage').value) || 0);
-    plant.mode = row.querySelector('.plant-mode').value;
-  });
-  saveState();
-  updatePercentageDisplay();
-}
-
-function updatePercentageDisplay() {
-  const total = state.plants.reduce((sum, plant) => sum + Number(plant.percentage || 0), 0);
-  els.percentageTotal.textContent = `${total}%`;
-  els.percentageMessage.textContent = total === 100 ? 'Ready to generate' : 'Percentages are normalized during generation';
-  els.percentageTotal.classList.toggle('warning', total !== 100);
-}
-
-function allocateCounts(plants, totalPlants) {
-  const percentageTotal = plants.reduce((sum, plant) => sum + Math.max(0, Number(plant.percentage || 0)), 0) || 1;
-  const raw = plants.map(plant => totalPlants * Math.max(0, plant.percentage) / percentageTotal);
-  const counts = raw.map(Math.floor);
-  let remaining = totalPlants - counts.reduce((sum, count) => sum + count, 0);
-  const order = raw.map((value, index) => ({ index, remainder: value - Math.floor(value) })).sort((a, b) => b.remainder - a.remainder);
-  for (let i = 0; i < remaining; i += 1) counts[order[i % order.length].index] += 1;
-  return counts;
-}
-
-function gravityVector(direction) {
-  return {
-    bottom: { x: 0, y: 1 },
-    top: { x: 0, y: -1 },
-    left: { x: -1, y: 0 },
-    right: { x: 1, y: 0 },
-  }[direction];
-}
-
-function isCenterInZone(record) {
-  const { x, y } = record;
-  if (x < 0 || x > CANVAS.width || y < 0 || y > CANVAS.height) return false;
-  if (record.mode === 'back-attract') return x >= DIVIDER_X;
-  const inPatio = x >= PATIO.x && x <= PATIO.x + PATIO.width && y >= PATIO.y && y <= PATIO.y + PATIO.height;
-  return x <= DIVIDER_X && !inPatio;
-}
-
-function settle(engine, maxSteps = 2600) {
-  let quietFrames = 0;
-  for (let step = 0; step < maxSteps; step += 1) {
-    Engine.update(engine, 1000 / 120);
-    const dynamic = Composite.allBodies(engine.world).filter(body => !body.isStatic);
-    const quiet = dynamic.every(body => body.speed < 0.05 && body.angularSpeed < 0.05);
-    quietFrames = quiet ? quietFrames + 1 : 0;
-    if (quietFrames > 100) return step;
-  }
-  return maxSteps;
-}
-
+function readEditor() { state.totalPlants = Math.max(1, Number(els.totalPlants.value) || 1); state.dropOrder = els.dropOrder.value; state.physicsPercent = Math.max(50, Math.min(110, Number(els.physicsPercent.value) || 100)); state.spacingPad = Math.max(0, Math.min(20, Number(els.spacingPad.value) || 0)); [...els.editor.querySelectorAll('.plant-row')].forEach((row, index) => { const plant = state.plants[index]; plant.name = row.querySelector('.plant-name').value.trim() || `Plant ${index + 1}`; plant.id = slugify(plant.name); plant.color = row.querySelector('.plant-color').value; plant.diameter = Math.max(8, Number(row.querySelector('.plant-diameter').value) || 8); plant.percentage = Math.max(0, Number(row.querySelector('.plant-percentage').value) || 0); plant.mode = row.querySelector('.plant-mode').value; }); saveState(); updatePercentageDisplay(); }
+function updatePercentageDisplay() { const total = state.plants.reduce((sum, plant) => sum + Number(plant.percentage || 0), 0); els.percentageTotal.textContent = `${total}%`; els.percentageMessage.textContent = total === 100 ? 'Ready to generate' : 'Percentages normalize during generation'; els.percentageTotal.classList.toggle('warning', total !== 100); }
+function updateZoneStatus() { const name = state.zone.preset && ZONE_PRESETS[state.zone.preset] ? ZONE_PRESETS[state.zone.preset].name : 'Custom zone'; els.zoneStatus.innerHTML = `<strong>${name}</strong><br><span class="muted">${state.zone.points.length} points · ${Math.round(polygonArea(state.zone.points)).toLocaleString()} px² · front edge ${state.zone.frontEdge + 1} · back edge ${state.zone.backEdge + 1}</span>`; }
+function allocateCounts(plants, totalPlants) { const total = plants.reduce((sum, plant) => sum + Math.max(0, Number(plant.percentage || 0)), 0) || 1; const raw = plants.map(plant => totalPlants * Math.max(0, plant.percentage) / total); const counts = raw.map(Math.floor); let remaining = totalPlants - counts.reduce((sum, count) => sum + count, 0); const order = raw.map((value, index) => ({ index, remainder: value - Math.floor(value) })).sort((a,b)=>b.remainder-a.remainder); for (let i = 0; i < remaining; i += 1) counts[order[i % order.length].index] += 1; return counts; }
+function addWall(engine, a, b, thickness = 10) { const dx = b.x - a.x, dy = b.y - a.y; const length = Math.hypot(dx, dy); const angle = Math.atan2(dy, dx); Composite.add(engine.world, Bodies.rectangle((a.x+b.x)/2, (a.y+b.y)/2, length, thickness, { isStatic:true, angle, friction:0.5, restitution:0, slop:0.05 })); }
+function settle(engine, maxSteps = 2200) { let quietFrames = 0; for (let step = 0; step < maxSteps; step += 1) { Engine.update(engine, 1000/120); const dynamic = Composite.allBodies(engine.world).filter(body => !body.isStatic); const quiet = dynamic.every(body => body.speed < 0.05 && body.angularSpeed < 0.05); quietFrames = quiet ? quietFrames + 1 : 0; if (quietFrames > 90) return step; } return maxSteps; }
 function generate() {
-  readEditor();
-  const seed = Number(els.seed.value);
-  const rand = rng(seed * 7919 + 17);
-  const gravity = gravityVector(state.frontDirection);
-  const engine = Engine.create({
-    gravity: { ...gravity, scale: 0.0017 },
-    positionIterations: 18,
-    velocityIterations: 14,
-    constraintIterations: 6,
-    enableSleeping: true,
-  });
-
-  const wallOptions = { isStatic: true, friction: 0.45, restitution: 0, slop: 0.1 };
-  Composite.add(engine.world, [
-    Bodies.rectangle(5, CANVAS.height / 2, 10, CANVAS.height, wallOptions),
-    Bodies.rectangle(CANVAS.width - 5, CANVAS.height / 2, 10, CANVAS.height, wallOptions),
-    Bodies.rectangle(CANVAS.width / 2, 5, CANVAS.width, 10, wallOptions),
-    Bodies.rectangle(CANVAS.width / 2, CANVAS.height - 5, CANVAS.width, 10, wallOptions),
-    Bodies.rectangle(PATIO.x + PATIO.width / 2, PATIO.y + PATIO.height / 2, PATIO.width, PATIO.height, wallOptions),
-    Bodies.rectangle(DIVIDER_X, CANVAS.height / 2, 8, CANVAS.height, wallOptions),
-  ]);
-
-  const counts = allocateCounts(state.plants, state.totalPlants);
-  const records = [];
-  const pruned = [];
-  const attempts = [];
-  const dropQueue = [];
-  const bodyOptions = { restitution: 0.015, friction: 0.3, frictionStatic: 0.55, frictionAir: 0.02, density: 0.0015, sleepThreshold: 45, slop: 0.05 };
-
-  function physicsRadiusFor(plant) {
-    return plant.diameter * (state.physicsPercent / 100) / 2 + rand() * state.spacingPad / 2;
-  }
-
-  function spawnPoint(plant, index, count, mode) {
-    const radius = plant.diameter / 2;
-    const fraction = (index + 1) / (count + 1);
-    if (mode === 'front-fill') {
-      if (state.frontDirection === 'bottom') return { x: 25 + fraction * (DIVIDER_X - 50), y: 18 + radius };
-      if (state.frontDirection === 'top') return { x: 25 + fraction * (DIVIDER_X - 50), y: CANVAS.height - 18 - radius };
-      if (state.frontDirection === 'left') return { x: CANVAS.width - 18 - radius, y: 25 + fraction * (CANVAS.height - 50) };
-      return { x: 18 + radius, y: 25 + fraction * (CANVAS.height - 50) };
-    }
-    return { x: 25 + rand() * (DIVIDER_X - 50), y: 18 + radius + rand() * 28 };
-  }
-
-  function addDynamic(job, dropIndex) {
-    const { plant, mode, index, count } = job;
-    const visualRadius = plant.diameter / 2;
-    const physicsRadius = physicsRadiusFor(plant);
-    const spawn = spawnPoint(plant, index, count, mode);
-    const body = Bodies.circle(spawn.x, spawn.y, physicsRadius, { ...bodyOptions, label: plant.id });
-    Body.setVelocity(body, { x: (rand() - 0.5) * 0.75, y: (rand() - 0.5) * 0.25 });
-    Composite.add(engine.world, body);
-    const steps = settle(engine, 1600);
-    records.push({ id: `${plant.id}-${index + 1}`, plantId: plant.id, name: plant.name, color: plant.color, diameter: plant.diameter, visualRadius, physicsRadius, x: body.position.x, y: body.position.y, mode, body, fixed: false, dropIndex });
-    attempts.push({ dropIndex, plantId: plant.id, mode, spawn, final: { x: body.position.x, y: body.position.y }, visualDiameter: plant.diameter, physicsDiameter: physicsRadius * 2, steps });
-  }
-
+  readEditor(); if (state.zone.points.length < 3) return;
+  const seed = Number(els.seed.value); const rand = rng(seed * 7919 + 17); const gravity = inwardNormal(state.zone.points, state.zone.frontEdge);
+  const engine = Engine.create({ gravity: { ...gravity, scale: 0.0017 }, positionIterations: 20, velocityIterations: 16, constraintIterations: 8, enableSleeping: true });
+  state.zone.points.forEach((a, i) => addWall(engine, a, state.zone.points[(i+1)%state.zone.points.length], 10)); state.exclusions.forEach(poly => poly.forEach((a,i)=>addWall(engine,a,poly[(i+1)%poly.length],8)));
+  const counts = allocateCounts(state.plants, state.totalPlants); const records = []; const attempts = []; const pruned = []; const dropQueue = [];
+  const bodyOptions = { restitution:0.01, friction:0.32, frictionStatic:0.6, frictionAir:0.025, density:0.0015, sleepThreshold:45, slop:0.04 };
+  const physicsRadiusFor = plant => plant.diameter * (state.physicsPercent/100) / 2 + rand() * state.spacingPad / 2;
   state.plants.forEach((plant, plantIndex) => {
-    const count = counts[plantIndex];
-    if (!count) return;
-
-    if (plant.mode === 'back-attract') {
-      for (let i = 0; i < count; i += 1) {
-        const y = ((i + 1) / (count + 1)) * CANVAS.height;
-        records.push({ id: `${plant.id}-${i + 1}`, plantId: plant.id, name: plant.name, color: plant.color, diameter: plant.diameter, visualRadius: plant.diameter / 2, physicsRadius: plant.diameter * state.physicsPercent / 200, x: DIVIDER_X + (CANVAS.width - DIVIDER_X) / 2, y, mode: plant.mode, fixed: true });
-      }
-      return;
-    }
-
-    if (plant.mode === 'line') {
-      const available = DIVIDER_X - 30;
-      for (let i = 0; i < count; i += 1) {
-        const x = 15 + ((i + 1) / (count + 1)) * available;
-        const y = Math.max(plant.diameter / 2 + 8, PATIO.y - plant.diameter / 2 - 4);
-        records.push({ id: `${plant.id}-${i + 1}`, plantId: plant.id, name: plant.name, color: plant.color, diameter: plant.diameter, visualRadius: plant.diameter / 2, physicsRadius: plant.diameter * state.physicsPercent / 200, x, y, mode: plant.mode, fixed: true });
-      }
-      return;
-    }
-
-    if (plant.mode === 'stack') {
-      const columns = Math.max(1, Math.ceil(Math.sqrt(count)));
-      const rows = Math.ceil(count / columns);
-      let created = 0;
-      const stack = Composites.stack(35, 24, columns, rows, 8, 8, (x, y) => {
-        if (created >= count) return null;
-        const visualRadius = plant.diameter / 2;
-        const physicsRadius = physicsRadiusFor(plant);
-        const body = Bodies.circle(x, y, physicsRadius, { ...bodyOptions, label: plant.id });
-        records.push({ id: `${plant.id}-${created + 1}`, plantId: plant.id, name: plant.name, color: plant.color, diameter: plant.diameter, visualRadius, physicsRadius, x, y, mode: plant.mode, body, fixed: false, dropIndex: null });
-        created += 1;
-        return body;
-      });
-      Composite.add(engine.world, stack);
-      settle(engine, 2200);
-      return;
-    }
-
-    for (let i = 0; i < count; i += 1) dropQueue.push({ plant, mode: plant.mode, index: i, count });
+    const count = counts[plantIndex]; if (!count) return;
+    if (plant.mode === 'back-attract') { const a = state.zone.points[state.zone.backEdge], b = state.zone.points[(state.zone.backEdge+1)%state.zone.points.length]; const normal = inwardNormal(state.zone.points, state.zone.backEdge); for (let i=0;i<count;i+=1) { const t = (i+1)/(count+1); const radius = plant.diameter/2; records.push({ id:`${plant.id}-${i+1}`, plantId:plant.id, name:plant.name, color:plant.color, diameter:plant.diameter, visualRadius:radius, physicsRadius:radius, x:a.x+(b.x-a.x)*t+normal.x*radius*0.85, y:a.y+(b.y-a.y)*t+normal.y*radius*0.85, mode:plant.mode, fixed:true, dropIndex:null }); } return; }
+    if (plant.mode === 'stack') { const box = boundsOf(state.zone.points); const columns = Math.max(1, Math.ceil(Math.sqrt(count))); const rows = Math.ceil(count/columns); let created = 0; const stack = Composites.stack(box.minX+30, box.minY+30, columns, rows, 8, 8, (x,y)=>{ if (created>=count) return null; const visualRadius=plant.diameter/2, physicsRadius=physicsRadiusFor(plant); const body=Bodies.circle(x,y,physicsRadius,{...bodyOptions,label:plant.id}); records.push({id:`${plant.id}-${created+1}`,plantId:plant.id,name:plant.name,color:plant.color,diameter:plant.diameter,visualRadius,physicsRadius,x,y,mode:plant.mode,body,fixed:false,dropIndex:null}); created+=1; return body; }); Composite.add(engine.world,stack); settle(engine,1800); return; }
+    for(let i=0;i<count;i+=1) dropQueue.push({plant,index:i,count,mode:plant.mode});
   });
-
-  const orderedQueue = state.dropOrder === 'random' ? shuffle(dropQueue, rand) : dropQueue;
-  orderedQueue.forEach((job, index) => addDynamic(job, index + 1));
-
-  settle(engine, 2600);
-  records.filter(record => record.body).forEach(record => {
-    record.x = record.body.position.x;
-    record.y = record.body.position.y;
-    delete record.body;
-  });
-
-  const kept = records.filter(record => {
-    const keep = isCenterInZone(record);
-    if (!keep) pruned.push({ id: record.id, plantId: record.plantId, reason: 'center-outside-zone', center: { x: record.x, y: record.y } });
-    return keep;
-  });
-
-  const normalizedPlants = kept.map(record => ({ ...record, nx: record.x / CANVAS.width, ny: record.y / CANVAS.height }));
-  const countByPlant = Object.fromEntries(state.plants.map(plant => [plant.id, kept.filter(record => record.plantId === plant.id).length]));
-
-  lastRun = {
-    recipeVersion: `recipe-mix-builder-v${LAB_VERSION}`,
-    generatedAt: new Date().toISOString(),
-    settings: { seed, totalPlants: state.totalPlants, frontDirection: state.frontDirection, dropOrder: state.dropOrder, physicsPercent: state.physicsPercent, spacingPad: state.spacingPad, canvas: CANVAS, patio: PATIO, dividerX: DIVIDER_X },
-    plants: state.plants,
-    allocatedCounts: Object.fromEntries(state.plants.map((plant, index) => [plant.id, counts[index]])),
-    placementModes: Object.fromEntries(state.plants.map(plant => [plant.id, plant.mode])),
-    dropSequence: attempts.map(attempt => ({ dropIndex: attempt.dropIndex, plantId: attempt.plantId, mode: attempt.mode })),
-    zoneFitRules: { centerMustBeInsideZone: true, centerMustBeOutsideExclusions: true, pruneInvalidPlants: true },
-    normalizedPlants,
-    pruned,
-    attempts,
-    summary: { requested: state.totalPlants, kept: kept.length, pruned: pruned.length, countByPlant },
-  };
-
-  render(kept, seed, pruned.length, countByPlant);
+  const ordered = state.dropOrder === 'random' ? shuffle(dropQueue,rand) : dropQueue;
+  ordered.forEach((job, dropIndex) => { const {plant,index,mode}=job; const visualRadius=plant.diameter/2, physicsRadius=physicsRadiusFor(plant); let spawn = randomPointInZone(rand, physicsRadius+4); if (mode === 'front-fill') { const frontA=state.zone.points[state.zone.frontEdge], frontB=state.zone.points[(state.zone.frontEdge+1)%state.zone.points.length]; const normal=inwardNormal(state.zone.points,state.zone.frontEdge); const t=(index+1)/(job.count+1); const target={x:frontA.x+(frontB.x-frontA.x)*t+normal.x*(physicsRadius+8),y:frontA.y+(frontB.y-frontA.y)*t+normal.y*(physicsRadius+8)}; const box=boundsOf(state.zone.points); spawn={x:Math.max(box.minX+physicsRadius,Math.min(box.maxX-physicsRadius,target.x-normal.x*Math.min(180,box.maxY-box.minY)*0.7)),y:Math.max(box.minY+physicsRadius,Math.min(box.maxY-physicsRadius,target.y-normal.y*Math.min(180,box.maxX-box.minX)*0.7))}; if(!pointInPolygon(spawn,state.zone.points)) spawn=randomPointInZone(rand,physicsRadius+4); }
+    const body=Bodies.circle(spawn.x,spawn.y,physicsRadius,{...bodyOptions,label:plant.id}); Body.setVelocity(body,{x:(rand()-0.5)*0.65,y:(rand()-0.5)*0.65}); Composite.add(engine.world,body); const steps=settle(engine,1400); records.push({id:`${plant.id}-${index+1}`,plantId:plant.id,name:plant.name,color:plant.color,diameter:plant.diameter,visualRadius,physicsRadius,x:body.position.x,y:body.position.y,mode,body,fixed:false,dropIndex:dropIndex+1}); attempts.push({dropIndex:dropIndex+1,plantId:plant.id,mode,spawn,final:{x:body.position.x,y:body.position.y},visualDiameter:plant.diameter,physicsDiameter:physicsRadius*2,steps}); });
+  settle(engine,2600); records.filter(r=>r.body).forEach(r=>{r.x=r.body.position.x;r.y=r.body.position.y;delete r.body;});
+  const kept=records.filter(record=>{ const keep=pointInPolygon(record,state.zone.points)&&!state.exclusions.some(poly=>pointInPolygon(record,poly)); if(!keep) pruned.push({id:record.id,plantId:record.plantId,reason:'center-outside-zone-or-in-exclusion',center:{x:record.x,y:record.y}}); return keep; });
+  const countByPlant=Object.fromEntries(state.plants.map(p=>[p.id,kept.filter(r=>r.plantId===p.id).length]));
+  lastRun={recipeVersion:`drawable-zone-v${LAB_VERSION}`,generatedAt:new Date().toISOString(),settings:{seed,totalPlants:state.totalPlants,dropOrder:state.dropOrder,physicsPercent:state.physicsPercent,spacingPad:state.spacingPad,canvas:CANVAS},zone:clone(state.zone),exclusions:clone(state.exclusions),plants:clone(state.plants),allocatedCounts:Object.fromEntries(state.plants.map((p,i)=>[p.id,counts[i]])),dropSequence:attempts.map(a=>({dropIndex:a.dropIndex,plantId:a.plantId,mode:a.mode})),normalizedPlants:kept.map(r=>({...r,nx:r.x/CANVAS.width,ny:r.y/CANVAS.height})),pruned,attempts,summary:{requested:state.totalPlants,kept:kept.length,pruned:pruned.length,countByPlant}};
+  render(kept,seed,pruned.length,countByPlant);
 }
-
-function line(x1, y1, x2, y2, stroke, width, dash = '') {
-  const element = document.createElementNS(svgNS, 'line');
-  Object.entries({ x1, y1, x2, y2, stroke, 'stroke-width': width }).forEach(([key, value]) => element.setAttribute(key, value));
-  if (dash) element.setAttribute('stroke-dasharray', dash);
-  els.svg.append(element);
-}
-
-function render(records, seed, prunedCount, countByPlant) {
-  els.svg.innerHTML = '';
-  els.svg.setAttribute('viewBox', `0 0 ${CANVAS.width} ${CANVAS.height}`);
-  if (els.grid.checked) {
-    for (let x = 0; x <= CANVAS.width; x += 25) line(x, 0, x, CANVAS.height, '#cfd4c7', '1');
-    for (let y = 0; y <= CANVAS.height; y += 25) line(0, y, CANVAS.width, y, '#cfd4c7', '1');
-  }
-
-  const patio = document.createElementNS(svgNS, 'rect');
-  Object.entries({ x: PATIO.x, y: PATIO.y, width: PATIO.width, height: PATIO.height, fill: '#f2eee6', stroke: '#8f8a80', 'stroke-width': '2' }).forEach(([key, value]) => patio.setAttribute(key, value));
-  els.svg.append(patio);
-  line(DIVIDER_X, 0, DIVIDER_X, CANVAS.height, '#f28c00', '6');
-  line(PATIO.x, PATIO.y, PATIO.x + PATIO.width, PATIO.y, '#22d52f', '6');
-  line(PATIO.x + PATIO.width, PATIO.y, PATIO.x + PATIO.width, CANVAS.height, '#22d52f', '6');
-
-  records.forEach(item => {
-    const circle = document.createElementNS(svgNS, 'circle');
-    Object.entries({ cx: item.x, cy: item.y, r: item.visualRadius, fill: item.color, 'fill-opacity': item.mode === 'back-attract' ? '.72' : '.84', stroke: '#fff', 'stroke-opacity': '.78', 'stroke-width': '2' }).forEach(([key, value]) => circle.setAttribute(key, value));
-    els.svg.append(circle);
-    if (els.centers.checked) {
-      const dot = document.createElementNS(svgNS, 'circle');
-      Object.entries({ cx: item.x, cy: item.y, r: '3', fill: '#111' }).forEach(([key, value]) => dot.setAttribute(key, value));
-      els.svg.append(dot);
-    }
-    if (els.debugOverlay.checked) {
-      const physics = document.createElementNS(svgNS, 'circle');
-      Object.entries({ cx: item.x, cy: item.y, r: item.physicsRadius, fill: 'none', stroke: '#222', 'stroke-width': '1', 'stroke-dasharray': '4 3' }).forEach(([key, value]) => physics.setAttribute(key, value));
-      els.svg.append(physics);
-    }
-  });
-
-  els.title.textContent = `560 × 472 reference pixels, seed ${seed}`;
-  els.seedValue.textContent = seed;
-  els.metrics.innerHTML = state.plants.map(plant => `<div class="metric"><strong>${countByPlant[plant.id] || 0}</strong><span>${plant.name}<br>${plant.percentage}% · ${plant.mode.replace('-', ' ')}</span></div>`).join('');
-  els.summary.innerHTML = `<strong>${records.length} plants kept</strong><br><span class="muted">${prunedCount} pruned by center point · ${state.totalPlants} requested</span>`;
-  els.debugSummary.innerHTML = `<strong>${state.plants.length} plant types</strong><br><span class="muted">${state.dropOrder} drop order · ${state.physicsPercent}% collision bodies · 0–${state.spacingPad}px random pad</span>`;
-}
-
-function downloadJson(filename, value) {
-  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-els.editor.addEventListener('input', readEditor);
-els.editor.addEventListener('change', readEditor);
-els.editor.addEventListener('click', event => {
-  const button = event.target.closest('.remove-plant');
-  if (!button) return;
-  const row = button.closest('.plant-row');
-  state.plants.splice(Number(row.dataset.index), 1);
-  saveState();
-  renderEditor();
-  generate();
-});
-
-document.querySelector('#add-plant').addEventListener('click', () => {
-  const index = state.plants.length + 1;
-  state.plants.push({ id: `plant-${index}`, name: `New Plant ${index}`, diameter: 50, percentage: 0, mode: 'scatter', color: '#9fc6a4' });
-  saveState();
-  renderEditor();
-});
-document.querySelector('#reset-defaults').addEventListener('click', () => { state = cloneDefaults(); saveState(); renderEditor(); generate(); });
-document.querySelector('#regenerate').addEventListener('click', generate);
-document.querySelector('#next-seed').addEventListener('click', () => { els.seed.value = (Number(els.seed.value) % 100) + 1; generate(); });
-[els.seed, els.grid, els.centers, els.debugOverlay].forEach(element => element.addEventListener('change', generate));
-[els.totalPlants, els.frontDirection, els.dropOrder, els.physicsPercent, els.spacingPad].forEach(element => element.addEventListener('change', generate));
-document.querySelector('#download-debug').addEventListener('click', () => lastRun && downloadJson(`plant-pending-recipe-debug-seed-${lastRun.settings.seed}.json`, lastRun));
-document.querySelector('#download-recipe').addEventListener('click', () => {
-  if (!lastRun) return;
-  downloadJson('plant-pending-zone-ready-recipe.json', {
-    recipeVersion: lastRun.recipeVersion,
-    plants: lastRun.plants,
-    settings: lastRun.settings,
-    zoneFitRules: lastRun.zoneFitRules,
-    normalizedPlants: lastRun.normalizedPlants,
-  });
-});
-
-renderEditor();
-generate();
+function svgElement(name, attrs={}) { const el=document.createElementNS(svgNS,name); Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v)); return el; }
+function line(a,b,stroke,width,dash='') { const el=svgElement('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke,'stroke-width':width}); if(dash) el.setAttribute('stroke-dasharray',dash); els.svg.append(el); }
+function render(records, seed, prunedCount, countByPlant) { els.svg.innerHTML=''; els.svg.setAttribute('viewBox',`0 0 ${CANVAS.width} ${CANVAS.height}`); if(els.grid.checked){for(let x=0;x<=CANVAS.width;x+=25)line({x,y:0},{x,y:CANVAS.height},'#cfd4c7','1');for(let y=0;y<=CANVAS.height;y+=25)line({x:0,y},{x:CANVAS.width,y},'#cfd4c7','1');} if(state.zone.points.length>=3){ els.svg.append(svgElement('polygon',{points:state.zone.points.map(p=>`${p.x},${p.y}`).join(' '),fill:'#eef0e5','fill-opacity':'.88',stroke:'#73808b','stroke-width':'3'})); state.zone.points.forEach((a,i)=>{const b=state.zone.points[(i+1)%state.zone.points.length];const color=i===state.zone.frontEdge?'#22d52f':i===state.zone.backEdge?'#f28c00':'#77838d';line(a,b,color,i===state.zone.frontEdge||i===state.zone.backEdge?'7':'3');}); } state.exclusions.forEach(poly=>els.svg.append(svgElement('polygon',{points:poly.map(p=>`${p.x},${p.y}`).join(' '),fill:'#6c2730','fill-opacity':'.25',stroke:'#d95663','stroke-width':'3','stroke-dasharray':'8 5'}))); records.forEach(item=>{ els.svg.append(svgElement('circle',{cx:item.x,cy:item.y,r:item.visualRadius,fill:item.color,'fill-opacity':item.mode==='back-attract'?'.72':'.84',stroke:'#fff','stroke-opacity':'.82','stroke-width':'2'})); if(els.centers.checked)els.svg.append(svgElement('circle',{cx:item.x,cy:item.y,r:'3',fill:'#111'})); if(els.debugOverlay.checked)els.svg.append(svgElement('circle',{cx:item.x,cy:item.y,r:item.physicsRadius,fill:'none',stroke:'#222','stroke-width':'1','stroke-dasharray':'4 3'})); }); if(draftPoints.length){const points=draftPoints.map(p=>`${p.x},${p.y}`).join(' ');els.svg.append(svgElement('polyline',{points,fill:'none',stroke:interactionMode==='draw-exclusion'?'#d95663':'#4bb8ff','stroke-width':'4','stroke-dasharray':'7 5'}));draftPoints.forEach(p=>els.svg.append(svgElement('circle',{cx:p.x,cy:p.y,r:5,fill:'#fff',stroke:'#111','stroke-width':2})));} els.title.textContent=`${state.zone.preset&&ZONE_PRESETS[state.zone.preset]?ZONE_PRESETS[state.zone.preset].name:'Custom zone'} · seed ${seed}`; els.seedValue.textContent=seed; els.metrics.innerHTML=state.plants.map(p=>`<div class="metric"><strong>${countByPlant[p.id]||0}</strong><span>${p.name}<br>${p.percentage}% · ${p.mode.replace('-',' ')}</span></div>`).join(''); els.summary.innerHTML=`<strong>${records.length} plants kept</strong><br><span class="muted">${prunedCount} pruned by center point · ${state.totalPlants} requested</span>`; els.debugSummary.innerHTML=`<strong>${state.zone.points.length}-point zone</strong><br><span class="muted">front edge ${state.zone.frontEdge+1} · back edge ${state.zone.backEdge+1} · ${state.dropOrder} order</span>`; updateZoneStatus(); }
+function downloadJson(filename,value){const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=filename;link.click();URL.revokeObjectURL(url);}
+function svgPoint(event){const rect=els.svg.getBoundingClientRect();return{x:(event.clientX-rect.left)*CANVAS.width/rect.width,y:(event.clientY-rect.top)*CANVAS.height/rect.height};}
+function setInteraction(mode){interactionMode=mode;draftPoints=[];document.querySelectorAll('[data-zone-action]').forEach(button=>button.classList.toggle('active',button.dataset.zoneAction===mode));render(lastRun?.normalizedPlants||[],Number(els.seed.value),lastRun?.pruned?.length||0,lastRun?.summary?.countByPlant||{});}
+els.svg.addEventListener('click',event=>{ const point=svgPoint(event); if(interactionMode==='draw-zone'||interactionMode==='draw-exclusion'){draftPoints.push(point);render(lastRun?.normalizedPlants||[],Number(els.seed.value),lastRun?.pruned?.length||0,lastRun?.summary?.countByPlant||{});return;} if(interactionMode==='select-front'||interactionMode==='select-back'){ const edge=nearestEdgeIndex(point,state.zone.points);if(edge<0)return; if(interactionMode==='select-front')state.zone.frontEdge=edge;else state.zone.backEdge=edge; saveState();setInteraction('none');generate(); } });
+document.querySelectorAll('[data-zone-action]').forEach(button=>button.addEventListener('click',()=>setInteraction(button.dataset.zoneAction)));
+document.querySelector('#finish-shape').addEventListener('click',()=>{ if(draftPoints.length<3)return; if(interactionMode==='draw-zone'){state.zone={points:clone(draftPoints),frontEdge:0,backEdge:Math.min(1,draftPoints.length-1),preset:'custom'};state.exclusions=[];} if(interactionMode==='draw-exclusion')state.exclusions.push(clone(draftPoints)); saveState();setInteraction('none');generate(); });
+document.querySelector('#clear-exclusions').addEventListener('click',()=>{state.exclusions=[];saveState();generate();});
+els.zonePreset.addEventListener('change',()=>{const key=els.zonePreset.value;if(!ZONE_PRESETS[key])return;const preset=ZONE_PRESETS[key];state.zone={points:clone(preset.points),frontEdge:preset.frontEdge,backEdge:preset.backEdge,preset:key};state.exclusions=[];saveState();generate();});
+els.editor.addEventListener('input',readEditor);els.editor.addEventListener('change',readEditor);els.editor.addEventListener('click',event=>{const button=event.target.closest('.remove-plant');if(!button)return;state.plants.splice(Number(button.closest('.plant-row').dataset.index),1);saveState();renderEditor();generate();});
+document.querySelector('#add-plant').addEventListener('click',()=>{const index=state.plants.length+1;state.plants.push({id:`plant-${index}`,name:`New Plant ${index}`,diameter:50,percentage:0,mode:'scatter',color:'#9fc6a4'});saveState();renderEditor();});
+document.querySelector('#reset-defaults').addEventListener('click',()=>{state=cloneDefaults();saveState();renderEditor();generate();});
+document.querySelector('#regenerate').addEventListener('click',generate);document.querySelector('#next-seed').addEventListener('click',()=>{els.seed.value=(Number(els.seed.value)%100)+1;generate();});
+[els.seed,els.grid,els.centers,els.debugOverlay].forEach(element=>element.addEventListener('change',generate));[els.totalPlants,els.dropOrder,els.physicsPercent,els.spacingPad].forEach(element=>element.addEventListener('change',generate));
+document.querySelector('#download-debug').addEventListener('click',()=>lastRun&&downloadJson(`plant-pending-zone-debug-seed-${lastRun.settings.seed}.json`,lastRun));document.querySelector('#download-recipe').addEventListener('click',()=>lastRun&&downloadJson('plant-pending-zone-ready-recipe.json',{recipeVersion:lastRun.recipeVersion,plants:lastRun.plants,settings:lastRun.settings,zone:lastRun.zone,exclusions:lastRun.exclusions,normalizedPlants:lastRun.normalizedPlants}));
+renderEditor();generate();
