@@ -1,0 +1,32 @@
+{
+  "id": "elegant-privacy-hedge-border",
+  "name": "Elegant Privacy Hedge Border",
+  "source": "Professional guide recipe 12",
+  "description": "A continuous privacy hedge with repeated flowering masses, an interlocking middle matrix, and a low foreground edge.",
+  "plants": [
+    { "id": 1, "name": "Bloodstone Thrift", "role": "foreground-edge", "color": "#d26d7f", "radius": 0.42 },
+    { "id": 2, "name": "Early Evolution Hydrangea", "role": "middle-matrix", "color": "#8facc7", "radius": 0.85 },
+    { "id": 3, "name": "Eau De Parfum Blush Rose", "role": "flowering-mass", "color": "#e49aab", "radius": 1.05 },
+    { "id": 4, "name": "UpStanding Emerald Arborvitae", "role": "privacy-hedge", "color": "#476f50", "radius": 0.72 }
+  ],
+  "rules": {
+    "privacyEdge": "top",
+    "hedgeSpacing": 1.55,
+    "roseMassSpacing": 7.2,
+    "roseMassSize": 3,
+    "hydrangeaSpacing": 2.65,
+    "foregroundSpacing": 1.35,
+    "edgeInset": 1.1,
+    "layerDepths": {
+      "hedge": 1.1,
+      "rose": 3.1,
+      "hydrangea": 5.25,
+      "foreground": 7.35
+    },
+    "seedVariation": {
+      "horizontalJitter": 0.35,
+      "verticalJitter": 0.22,
+      "massSizeVariation": 1
+    }
+  }
+}
