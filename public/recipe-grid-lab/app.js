@@ -62,13 +62,8 @@ function circleIntersectsRect(x, y, radius, rect) {
   return Math.hypot(x - nearestX, y - nearestY) < radius;
 }
 
-function shuffled(items, rand) {
-  const copy = [...items];
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(rand() * (index + 1));
-    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
-  }
-  return copy;
+function rotatePoint([x, y], angle) {
+  return [x * Math.cos(angle) - y * Math.sin(angle), x * Math.sin(angle) + y * Math.cos(angle)];
 }
 
 function generate() {
@@ -80,6 +75,7 @@ function generate() {
   const plants = [];
   const anchors = [];
   const attempts = [];
+  const modules = [];
   const plantById = id => recipe.plants.find(plant => plant.id === id);
 
   const patioStart = shapePoint(recipe.rules.patio.x, recipe.rules.patio.y, size, shape);
@@ -97,28 +93,22 @@ function generate() {
     if (point.x - radius < edgePadding || point.x + radius > size - edgePadding || point.y - radius < edgePadding || point.y + radius > size - edgePadding) {
       return { ok: false, reason: 'outside-canvas', radius };
     }
-    if (!options.allowPatioOverlap && circleIntersectsRect(point.x, point.y, radius + 0.04 * scale, patioRect)) {
+    if (!options.allowPatioOverlap && circleIntersectsRect(point.x, point.y, radius + 0.03 * scale, patioRect)) {
       return { ok: false, reason: 'patio-collision', radius };
     }
 
     for (const existing of plants) {
       const existingRadius = plantById(existing.plantId).radius * existing.scale;
       const combinedRadius = radius + existingRadius;
-      let minimumDistance = combinedRadius + (options.clearance ?? 0.04) * scale;
+      let minimumDistance = combinedRadius + (options.clearance ?? 0.02) * scale;
       let reason = 'plant-collision';
 
       if (plantId === 2 && existing.plantId === 2) {
-        if (existing.group === group) {
-          minimumDistance = combinedRadius * 0.9;
-          reason = 'hydrangea-overlap-too-large';
-        } else {
-          minimumDistance = combinedRadius + 0.22 * scale;
-          reason = 'hydrangea-clumps-too-close';
-        }
+        minimumDistance = existing.group === group ? combinedRadius * 0.9 : combinedRadius + 0.18 * scale;
+        reason = existing.group === group ? 'hydrangea-overlap-too-large' : 'hydrangea-clumps-too-close';
       }
-
       if (plantId === 1 && existing.plantId === 1) {
-        minimumDistance = existing.group === group ? combinedRadius * 0.84 : combinedRadius + 0.22 * scale;
+        minimumDistance = existing.group === group ? combinedRadius * 0.82 : combinedRadius + 0.16 * scale;
         reason = existing.group === group ? 'thrift-overlap-too-large' : 'thrift-clumps-too-close';
       }
 
@@ -138,27 +128,27 @@ function generate() {
     return { ok: true, radius };
   }
 
-  function addPlant(plantId, baseX, baseY, group, options = {}) {
-    const itemScale = scale * (options.scaleMultiplier ?? 1) * (1 + (rand() - 0.5) * (options.scaleJitter ?? 0.04));
-    const basePoint = shapePoint(baseX, baseY, size, shape);
-    const attemptsAllowed = options.attempts ?? 12;
-    const initialJitter = (options.jitter ?? 0.08) * scale;
-
-    for (let attempt = 0; attempt < attemptsAllowed; attempt += 1) {
-      const searchRadius = initialJitter + attempt * (options.retryStep ?? 0.05) * scale;
+  function placePlant(plantId, x, y, group, options = {}) {
+    const itemScale = scale * (options.scaleMultiplier ?? 1) * (1 + (rand() - 0.5) * (options.scaleJitter ?? 0.025));
+    const base = shapePoint(x, y, size, shape);
+    const jitter = (options.jitter ?? 0.03) * scale;
+    const candidates = [{ x: base.x, y: base.y }];
+    for (let index = 0; index < (options.retries ?? 4); index += 1) {
       const angle = rand() * Math.PI * 2;
-      const point = attempt === 0 ? basePoint : {
-        x: basePoint.x + Math.cos(angle) * searchRadius * (0.45 + rand() * 0.55),
-        y: basePoint.y + Math.sin(angle) * searchRadius * (0.45 + rand() * 0.55),
-      };
+      const radius = jitter * (1 + index * 0.8);
+      candidates.push({ x: base.x + Math.cos(angle) * radius, y: base.y + Math.sin(angle) * radius });
+    }
+
+    for (let attempt = 0; attempt < candidates.length; attempt += 1) {
+      const point = candidates[attempt];
       const result = testPlacement(plantId, point, itemScale, group, options);
       attempts.push({
         plantId,
         plantName: plantById(plantId).name,
         group,
         attempt,
-        baseX,
-        baseY,
+        baseX: x,
+        baseY: y,
         x: point.x,
         y: point.y,
         scale: itemScale,
@@ -173,145 +163,154 @@ function generate() {
     return null;
   }
 
-  function findValidAnchor(type, id, preferred, plantId, footprintRadius, options = {}) {
-    const candidates = [{ x: preferred.x, y: preferred.y }];
-    for (let ring = 1; ring <= 6; ring += 1) {
-      const radius = ring * (options.step ?? 0.45);
-      for (let slot = 0; slot < 12; slot += 1) {
-        const angle = (slot / 12) * Math.PI * 2 + rand() * 0.2;
-        candidates.push({ x: preferred.x + Math.cos(angle) * radius, y: preferred.y + Math.sin(angle) * radius });
-      }
-    }
-    for (const candidate of candidates) {
-      const point = shapePoint(candidate.x, candidate.y, size, shape);
-      const fakeScale = footprintRadius / plantById(plantId).radius;
-      const result = testPlacement(plantId, point, fakeScale, id, { clearance: options.clearance ?? 0.08 });
-      if (result.ok) {
-        const anchor = { type, id, axis: preferred.axis, x: candidate.x, y: candidate.y };
-        anchors.push(anchor);
-        return anchor;
-      }
-    }
-    anchors.push({ type, id, axis: preferred.axis, x: preferred.x, y: preferred.y, failed: true });
-    return null;
-  }
-
-  // 1. Hedge
-  const hedgeShift = (rand() - 0.5) * 0.45;
-  const hedgeStep = 3.95 + rand() * 0.25;
-  for (let index = 0; index < 5; index += 1) {
-    const anchor = { type: 'hedge', id: `hedge-${index + 1}`, x: 18.8, y: 3.0 + hedgeShift + index * hedgeStep };
+  function addModule(type, id, x, y, axis, variant, members) {
+    const anchor = { type, id, x, y, axis, variant };
     anchors.push(anchor);
-    addPlant(4, anchor.x, anchor.y, 'privacy-hedge', { jitter: 0.04, retryStep: 0.08, scaleJitter: 0.03, clearance: 0.06, attempts: 10 });
+    const before = plants.length;
+    for (const member of members) {
+      placePlant(member.plantId, x + member.x, y + member.y, id, member.options);
+    }
+    const placed = plants.length - before;
+    modules.push({ id, type, axis, variant, requested: members.length, placed });
+    if (placed < Math.min(2, members.length)) anchor.failed = true;
   }
 
-  // 2. Roses, with structural relocation rather than tiny repeated jitter.
-  const roseSlotSets = [
-    [[3.7, 4.1], [8.9, 5.0], [13.8, 4.1], [15.6, 8.1], [15.7, 17.1]],
-    [[4.7, 4.9], [9.7, 3.9], [13.1, 5.6], [15.9, 10.1], [15.0, 16.2]],
-    [[3.4, 5.5], [8.0, 3.8], [12.9, 4.6], [16.0, 7.0], [15.7, 15.8]],
-    [[5.0, 3.8], [9.7, 5.7], [13.2, 3.6], [15.0, 8.8], [15.5, 18.0]],
+  // Composition-first recipe. Seeds choose between designer-authored variants.
+  const compositionVariants = [
+    {
+      roses: [[3.8, 4.1], [8.9, 5.0], [13.5, 4.0], [15.5, 8.6], [15.6, 17.4]],
+      topHydrangeas: [[3.0, 6.7], [6.7, 6.8], [10.4, 6.9]],
+      rightHydrangeas: [[14.1, 11.8], [14.0, 15.0], [14.1, 19.0]],
+      topThrift: [[2.6, 8.45], [6.0, 8.35], [9.5, 8.45]],
+      rightThrift: [[12.55, 11.2], [12.55, 15.1], [12.55, 19.1]],
+    },
+    {
+      roses: [[4.5, 4.7], [9.5, 4.1], [13.3, 5.3], [15.7, 9.6], [15.3, 16.4]],
+      topHydrangeas: [[3.1, 6.9], [6.9, 6.5], [10.7, 7.0]],
+      rightHydrangeas: [[14.0, 11.5], [14.2, 14.8], [14.0, 18.5]],
+      topThrift: [[2.5, 8.45], [5.9, 8.3], [9.4, 8.45]],
+      rightThrift: [[12.55, 11.0], [12.55, 14.9], [12.55, 18.8]],
+    },
+    {
+      roses: [[3.6, 5.1], [8.1, 4.0], [12.8, 4.7], [15.8, 7.5], [15.7, 16.0]],
+      topHydrangeas: [[2.9, 6.8], [6.5, 6.9], [10.2, 6.7]],
+      rightHydrangeas: [[14.1, 11.6], [14.0, 15.2], [14.2, 18.9]],
+      topThrift: [[2.4, 8.45], [5.8, 8.35], [9.2, 8.4]],
+      rightThrift: [[12.55, 11.2], [12.55, 15.3], [12.55, 19.0]],
+    },
+    {
+      roses: [[4.8, 3.9], [9.6, 5.5], [13.1, 3.7], [15.1, 8.8], [15.4, 17.8]],
+      topHydrangeas: [[3.2, 6.8], [6.8, 6.6], [10.5, 6.9]],
+      rightHydrangeas: [[14.0, 11.7], [14.2, 15.1], [14.0, 18.8]],
+      topThrift: [[2.6, 8.4], [6.1, 8.35], [9.5, 8.4]],
+      rightThrift: [[12.55, 11.1], [12.55, 15.0], [12.55, 19.0]],
+    },
   ];
-  const roseSlots = roseSlotSets[(seed - 1) % roseSlotSets.length];
-  roseSlots.forEach(([x, y], index) => {
-    const anchor = findValidAnchor('rose', `rose-${index + 1}`, { x, y }, 3, 1.58 * scale, { step: 0.5, clearance: 0.12 });
-    if (anchor) addPlant(3, anchor.x, anchor.y, 'rose-mass', { jitter: 0.04, retryStep: 0.12, scaleJitter: 0.06, clearance: 0.12, attempts: 12 });
+
+  const variantIndex = (seed - 1) % compositionVariants.length;
+  const composition = compositionVariants[variantIndex];
+
+  // 1. Hedge module. Structure stays fixed, seed only alters its rhythm slightly.
+  const hedgeShift = (rand() - 0.5) * 0.22;
+  const hedgeStep = 4.0 + (rand() - 0.5) * 0.12;
+  for (let index = 0; index < 5; index += 1) {
+    addModule('hedge', `hedge-${index + 1}`, 18.8, 3.0 + hedgeShift + index * hedgeStep, 'right', 'upright-screen', [
+      { plantId: 4, x: 0, y: 0, options: { jitter: 0.015, retries: 2, scaleJitter: 0.02, clearance: 0.04 } },
+    ]);
+  }
+
+  // 2. Rose masses. These are authored composition slots, not random discoveries.
+  composition.roses.forEach(([x, y], index) => {
+    addModule('rose', `rose-${index + 1}`, x, y, index < 3 ? 'top' : 'right', `rose-slot-${variantIndex + 1}`, [
+      { plantId: 3, x: 0, y: 0, options: { jitter: 0.025, retries: 4, scaleJitter: 0.045, clearance: 0.08 } },
+    ]);
   });
 
-  // 3. Hydrangeas. Validate the entire clump footprint first, then use templates that already obey the 10% overlap rule.
-  const hydrangeaPreferred = [
-    { x: 3.5, y: 6.5, axis: 'top' },
-    { x: 7.0, y: 6.6, axis: 'top' },
-    { x: 10.6, y: 7.0, axis: 'top' },
-    { x: 14.1, y: 11.7, axis: 'right' },
-    { x: 14.2, y: 15.2, axis: 'right' },
-    { x: 14.0, y: 19.0, axis: 'right' },
+  const hydrangeaTemplates = [
+    [[-0.86, 0.12], [0.86, -0.12]],
+    [[-0.92, 0.48], [0.92, 0.44], [0, -0.92]],
+    [[-0.9, -0.52], [0.9, -0.48], [-0.9, 0.92], [0.9, 0.88]],
   ];
-  const hydrangeaTemplates = {
-    2: [[-0.84, 0], [0.84, 0]],
-    3: [[-0.86, 0.35], [0.86, 0.35], [0, -0.92]],
-    4: [[-0.86, -0.46], [0.86, -0.46], [-0.86, 0.82], [0.86, 0.82]],
-  };
 
-  hydrangeaPreferred.forEach((preferred, index) => {
-    const count = 2 + Math.floor(rand() * 3);
-    const footprint = count === 4 ? 2.15 * scale : 1.85 * scale;
-    const anchor = findValidAnchor('hydrangea', `hydrangea-clump-${index + 1}`, preferred, 2, footprint, { step: 0.5, clearance: 0.14 });
-    if (!anchor) return;
+  function hydrangeaMembers(axis, moduleIndex) {
+    const countPattern = [3, 2, 3, 3, 2, 3];
+    const count = countPattern[(moduleIndex + variantIndex) % countPattern.length];
+    const template = hydrangeaTemplates[count - 2];
+    const angle = axis === 'right' ? Math.PI / 2 : 0;
+    return template.map(offset => {
+      const [x, y] = rotatePoint(offset, angle);
+      return { plantId: 2, x, y, options: { jitter: 0.02, retries: 4, scaleJitter: 0.025, clearance: 0.02 } };
+    });
+  }
 
-    const rotation = (preferred.axis === 'right' ? Math.PI / 2 : 0) + (rand() - 0.5) * 0.3;
-    const template = hydrangeaTemplates[count];
-    for (const [offsetX, offsetY] of template) {
-      const rotatedX = offsetX * Math.cos(rotation) - offsetY * Math.sin(rotation);
-      const rotatedY = offsetX * Math.sin(rotation) + offsetY * Math.cos(rotation);
-      addPlant(2, anchor.x + rotatedX, anchor.y + rotatedY, anchor.id, {
-        jitter: 0.03,
-        retryStep: 0.07,
-        scaleJitter: 0.035,
-        clearance: 0.04,
-        attempts: 12,
-      });
-    }
+  composition.topHydrangeas.forEach(([x, y], index) => {
+    addModule('hydrangea', `hydrangea-top-${index + 1}`, x, y, 'top', `hydrangea-${variantIndex + 1}`, hydrangeaMembers('top', index));
+  });
+  composition.rightHydrangeas.forEach(([x, y], index) => {
+    addModule('hydrangea', `hydrangea-right-${index + 1}`, x, y, 'right', `hydrangea-${variantIndex + 1}`, hydrangeaMembers('right', index + 3));
   });
 
-  // 4. Bloodstone thrift. Use only a few real drift anchors, then place 3 to 6 plants inside each drift.
-  const thriftPreferred = [
-    { x: 2.7, y: 8.35, axis: 'top' },
-    { x: 6.0, y: 8.3, axis: 'top' },
-    { x: 9.4, y: 8.35, axis: 'top' },
-    { x: 12.55, y: 11.3, axis: 'right' },
-    { x: 12.55, y: 15.2, axis: 'right' },
-    { x: 12.55, y: 19.1, axis: 'right' },
-  ];
   const thriftTemplates = [
-    [[-0.72, 0], [0, 0.05], [0.72, 0], [-0.36, -0.68], [0.38, -0.64], [0.03, -1.27]],
-    [[-0.7, -0.12], [0, 0.08], [0.7, -0.08], [-0.48, -0.72], [0.46, -0.69], [0, -1.3]],
-    [[-0.68, 0.02], [0.02, -0.03], [0.7, 0.04], [-0.3, -0.7], [0.42, -0.74], [-0.76, -1.18]],
+    [[-0.78, 0.05], [0, -0.02], [0.78, 0.04], [-0.38, -0.76], [0.4, -0.72]],
+    [[-0.75, 0.06], [0.02, -0.06], [0.77, 0.03], [-0.52, -0.72], [0.28, -0.78], [0.72, -0.7]],
+    [[-0.8, 0.03], [-0.02, -0.02], [0.76, 0.05], [-0.56, -0.72], [0.18, -0.78]],
   ];
 
-  thriftPreferred.forEach((preferred, index) => {
-    const count = 3 + Math.floor(rand() * 4);
-    const anchor = findValidAnchor('thrift', `thrift-${preferred.axis}-${index + 1}`, preferred, 1, 1.35 * scale, { step: 0.4, clearance: 0.06 });
-    if (!anchor) return;
-    const template = thriftTemplates[(seed + index) % thriftTemplates.length];
-    const rotation = preferred.axis === 'right' ? Math.PI / 2 : 0;
-    for (const [offsetX, offsetY] of shuffled(template.slice(0, count), rand)) {
-      const rotatedX = offsetX * Math.cos(rotation) - offsetY * Math.sin(rotation);
-      const rotatedY = offsetX * Math.sin(rotation) + offsetY * Math.cos(rotation);
-      addPlant(1, anchor.x + rotatedX, anchor.y + rotatedY, anchor.id, {
-        jitter: 0.025,
-        retryStep: 0.06,
-        scaleJitter: 0.045,
-        clearance: 0.01,
-        attempts: 10,
-      });
-    }
+  function thriftMembers(axis, moduleIndex) {
+    const template = thriftTemplates[(variantIndex + moduleIndex) % thriftTemplates.length];
+    const countPattern = [5, 6, 5, 5, 6, 5];
+    const count = countPattern[(moduleIndex + seed) % countPattern.length];
+    const angle = axis === 'right' ? Math.PI / 2 : 0;
+    return template.slice(0, count).map(offset => {
+      const [x, y] = rotatePoint(offset, angle);
+      return { plantId: 1, x, y, options: { jitter: 0.018, retries: 4, scaleJitter: 0.035, clearance: 0 } };
+    });
+  }
+
+  composition.topThrift.forEach(([x, y], index) => {
+    addModule('thrift', `thrift-top-${index + 1}`, x, y, 'top', `thrift-${variantIndex + 1}`, thriftMembers('top', index));
+  });
+  composition.rightThrift.forEach(([x, y], index) => {
+    addModule('thrift', `thrift-right-${index + 1}`, x, y, 'right', `thrift-${variantIndex + 1}`, thriftMembers('right', index + 3));
   });
 
   const accepted = attempts.filter(attempt => attempt.ok).length;
   const rejected = attempts.length - accepted;
   const failedAnchors = anchors.filter(anchor => anchor.failed).length;
+  const successfulHydrangeaModules = modules.filter(module => module.type === 'hydrangea' && module.placed >= 2).length;
+  const successfulThriftModules = modules.filter(module => module.type === 'thrift' && module.placed >= 3).length;
+
   lastRun = {
     recipeId: recipe.id,
     recipeName: recipe.name,
-    recipeVersion: 'phase-1-layout-rules-v4',
+    recipeVersion: 'phase-1-composition-first-v5',
     generatedAt: new Date().toISOString(),
-    settings: { size, shape, seed, scale },
+    settings: { size, shape, seed, scale, compositionVariant: variantIndex + 1 },
     rules: {
+      generationMode: 'composition-first',
+      authoredCompositionVariants: compositionVariants.length,
+      seedControls: ['composition-variant', 'bounded-jitter', 'plant-scale', 'clump-member-count'],
+      seedDoesNotControl: ['recipe-layer-order', 'module-count', 'module-role', 'edge-assignment'],
       hydrangeaMaxOverlapFraction: 0.1,
-      hydrangeaClumpSize: [2, 4],
-      hydrangeaAnchorValidation: true,
-      thriftClumpSize: [3, 6],
-      thriftAnchorCount: 6,
-      progressiveRetrySearch: true,
+      hydrangeaTargetModules: 6,
+      thriftTargetModules: 6,
     },
+    composition,
+    modules,
     anchors,
     attempts,
     plants,
-    summary: { accepted, rejected, failedAnchors, acceptanceRate: attempts.length ? accepted / attempts.length : 0 },
+    summary: {
+      accepted,
+      rejected,
+      failedAnchors,
+      acceptanceRate: attempts.length ? accepted / attempts.length : 0,
+      successfulHydrangeaModules,
+      successfulThriftModules,
+    },
   };
 
-  render(plants, size, size, shape, seed, patioRect, anchors, attempts);
+  render(plants, size, size, shape, seed, patioRect, anchors, attempts, modules, variantIndex + 1);
 }
 
 function line(x1, y1, x2, y2, stroke, width, dash = '') {
@@ -326,7 +325,7 @@ function line(x1, y1, x2, y2, stroke, width, dash = '') {
   els.svg.append(element);
 }
 
-function render(plants, width, height, shape, seed, patioRect, anchors, attempts) {
+function render(plants, width, height, shape, seed, patioRect, anchors, attempts, modules, compositionVariant) {
   els.svg.innerHTML = '';
   els.svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
 
@@ -392,17 +391,17 @@ function render(plants, width, height, shape, seed, patioRect, anchors, attempts
   }
 
   const counts = recipe.plants.map(plant => ({ plant, count: plants.filter(item => item.plantId === plant.id).length }));
-  const hydrangeaClumps = new Set(plants.filter(item => item.plantId === 2).map(item => item.group)).size;
-  const thriftClumps = new Set(plants.filter(item => item.plantId === 1).map(item => item.group)).size;
+  const hydrangeaModules = modules.filter(module => module.type === 'hydrangea' && module.placed >= 2).length;
+  const thriftModules = modules.filter(module => module.type === 'thrift' && module.placed >= 3).length;
   const accepted = attempts.filter(attempt => attempt.ok).length;
   const rejected = attempts.length - accepted;
   const rate = attempts.length ? Math.round((accepted / attempts.length) * 100) : 0;
 
-  els.title.textContent = `${width} × ${height}, ${shape}, seed ${seed}`;
+  els.title.textContent = `${width} × ${height}, ${shape}, seed ${seed}, composition ${compositionVariant}`;
   els.seedValue.textContent = seed;
   els.metrics.innerHTML = counts.map(({ plant, count }) => `<div class="metric"><strong>${count}</strong><span>${plant.role.replaceAll('-', ' ')}</span></div>`).join('');
-  els.summary.innerHTML = `<strong>${plants.length} plant centers</strong><br><span class="muted">${hydrangeaClumps} hydrangea clumps · ${thriftClumps} thrift clumps · ${counts.map(value => `${value.count} ${value.plant.name}`).join(' · ')}</span>`;
-  els.debugSummary.innerHTML = `<strong>${accepted} accepted · ${rejected} rejected</strong><br><span class="muted">${rate}% acceptance rate · ${anchors.filter(anchor => anchor.failed).length} failed anchors</span>`;
+  els.summary.innerHTML = `<strong>${plants.length} plant centers</strong><br><span class="muted">Composition-first variant ${compositionVariant} · ${hydrangeaModules}/6 hydrangea modules · ${thriftModules}/6 thrift modules</span>`;
+  els.debugSummary.innerHTML = `<strong>${accepted} accepted · ${rejected} rejected</strong><br><span class="muted">${rate}% acceptance rate · ${anchors.filter(anchor => anchor.failed).length} failed modules</span>`;
 }
 
 ['change', 'input'].forEach(eventName => {
