@@ -12,7 +12,7 @@
       <p class="eyebrow">Plant Pending 2.0, Phase 1</p>
       <h1>Recipe Grid Laboratory</h1>
       <p>Prove the recipe before touching the yard.</p>
-      <p><strong id="lab-version">Lab version 8.0.0 · sequential marble packing</strong></p>
+      <p><strong id="lab-version">Lab version 9.0.0 · Matter.js rigid-body packing</strong></p>
     </div>
     <a href="../" class="back-link">Back to Plant Pending</a>
   </header>
@@ -82,7 +82,7 @@
         <svg id="recipe-canvas" role="img" aria-label="Generated recipe grid"></svg>
       </div>
       <div class="notes">
-        <strong>Phase 1 test:</strong> The pattern should still read as the same privacy-border design when the seed, grid size, or zone shape changes.
+        <strong>Phase 1 test:</strong> Plant discs are now settled by a real rigid-body physics engine, one at a time, against the patio and planting boundaries.
       </div>
     </section>
 
@@ -94,16 +94,16 @@
       <ul class="checklist">
         <li>Continuous upright hedge along the privacy edge</li>
         <li>Large rose masses repeat in a staggered rhythm</li>
-        <li>Every accepted disc has physical support</li>
-        <li>Bloodstone thrift packs like marbles into full drifts</li>
-        <li>Only the hedge is sticky or anchored</li>
+        <li>No disc can remain unsupported in open space</li>
+        <li>Bloodstone thrift packs along the patio edge</li>
+        <li>Hydrangeas and roses settle behind the foreground drift</li>
       </ul>
 
       <section class="status-card debug-card">
         <p class="eyebrow">Generation debug</p>
         <div id="debug-summary"></div>
         <button id="download-debug" class="primary debug-download">Download debug package</button>
-        <p class="muted debug-help">Includes recipe-scale radii, sequential drop order, support checks, retries, seed, shape, and final positions.</p>
+        <p class="muted debug-help">Includes calibrated radii, rigid-body settings, drop order, settled positions, seed, and final counts.</p>
       </section>
 
       <label class="notes-label" for="review-notes">Test notes</label>
@@ -111,6 +111,7 @@
     </aside>
   </main>
 
-  <script type="module" src="./app.js?v=8.0.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
+  <script type="module" src="./app.js?v=9.0.0"></script>
 </body>
 </html>
