@@ -12,7 +12,7 @@
       <p class="eyebrow">Plant Pending 2.0, Phase 1</p>
       <h1>Recipe Grid Laboratory</h1>
       <p>Test reusable planting recipes inside real zone shapes.</p>
-      <p><strong id="lab-version">Lab version 12.1.0 · top-aligned canvas</strong></p>
+      <p><strong id="lab-version">Lab version 12.2.0 · multi-edge zone physics</strong></p>
     </div>
     <a href="../" class="back-link">Back to Plant Pending</a>
   </header>
@@ -41,8 +41,8 @@
         </label>
         <div class="zone-button-grid">
           <button data-zone-action="draw-zone">Draw zone</button>
-          <button data-zone-action="select-front">Select front edge</button>
-          <button data-zone-action="select-back">Select back edge</button>
+          <button data-zone-action="select-front">Select front edges</button>
+          <button data-zone-action="select-back">Select back edges</button>
           <button data-zone-action="draw-exclusion">Draw exclusion</button>
         </div>
         <div class="button-row compact-row">
@@ -51,7 +51,7 @@
         </div>
         <button id="clear-canvas" class="secondary-wide">Clear canvas</button>
         <div id="zone-status" class="status-card"></div>
-        <p class="muted helper-text">Draw zone clears the current shape first. Click points on the canvas, then click Finish shape. Select front or back, then click near a zone edge.</p>
+        <p class="muted helper-text">Choose Select front edges or Select back edges, then click every edge you want. Click the same button again when finished. Green edges pull front-fill plants. Orange edges hold back-attract plants.</p>
       </section>
 
       <section class="control-grid">
@@ -120,7 +120,7 @@
         <svg id="recipe-canvas" role="img" aria-label="Generated recipe physics test"></svg>
       </div>
       <div class="notes">
-        <strong>Zone rules:</strong> green is front, orange is back, gray edges are solid walls, and red polygons are exclusions. Plant centers outside the zone or inside exclusions are pruned.
+        <strong>Zone rules:</strong> one or more green edges are fronts, one or more orange edges are backs, gray edges are solid walls, and red polygons are exclusions.
       </div>
     </section>
 
@@ -132,11 +132,22 @@
       <h3>Test goals</h3>
       <ul class="checklist">
         <li>The same recipe works across multiple zone shapes</li>
-        <li>Front-fill follows the selected green edge</li>
-        <li>Back-attract follows the selected orange edge</li>
+        <li>Front-fill follows every selected green edge</li>
+        <li>Back-attract distributes across selected orange edges</li>
         <li>Scatter and stack remain available</li>
         <li>Plant centers outside valid space are pruned</li>
       </ul>
+
+      <section class="status-card debug-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Running action log</p>
+            <h3>From page load onward</h3>
+          </div>
+          <button id="clear-action-log" class="small-button">Clear</button>
+        </div>
+        <div id="action-log" class="action-log" aria-live="polite"></div>
+      </section>
 
       <section class="status-card debug-card">
         <p class="eyebrow">Generation debug</p>
@@ -145,7 +156,7 @@
           <button id="download-recipe" class="primary">Download zone-ready recipe</button>
           <button id="download-debug">Download debug package</button>
         </div>
-        <p class="muted debug-help">Exports include the zone polygon, selected front and back edges, exclusions, recipe settings, and final normalized plant positions.</p>
+        <p class="muted debug-help">The debug package includes the running action log, zone polygon, selected edge arrays, exclusions, recipe settings, and final plant positions.</p>
       </section>
 
       <label class="notes-label" for="review-notes">Test notes</label>
@@ -154,6 +165,6 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
-  <script type="module" src="./app.js?v=12.1.0"></script>
+  <script type="module" src="./app.js?v=12.2.0"></script>
 </body>
 </html>
