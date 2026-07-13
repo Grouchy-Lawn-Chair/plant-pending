@@ -11,14 +11,14 @@ const els = {
   legend: document.querySelector('#legend'),
   metrics: document.querySelector('#metrics'),
   summary: document.querySelector('#test-summary'),
+  debugSummary: document.querySelector('#debug-summary'),
   grid: document.querySelector('#show-grid'),
   centers: document.querySelector('#show-centers'),
   debugOverlay: document.querySelector('#show-debug-overlay'),
   downloadDebug: document.querySelector('#download-debug'),
-  debugSummary: document.querySelector('#debug-summary'),
 };
 
-let latestRun = null;
+let lastRun = null;
 
 document.querySelector('#recipe-name').textContent = recipe.name;
 document.querySelector('#recipe-description').textContent = recipe.description;
@@ -54,9 +54,7 @@ function shapePoint(x, y, size, shape) {
   return { x: transformedX, y: transformedY };
 }
 
-function distance(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
+const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 function circleIntersectsRect(x, y, radius, rect) {
   const nearestX = Math.max(rect.x, Math.min(x, rect.x + rect.width));
@@ -64,14 +62,13 @@ function circleIntersectsRect(x, y, radius, rect) {
   return Math.hypot(x - nearestX, y - nearestY) < radius;
 }
 
-function downloadJson(filename, value) {
-  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
+function shuffled(items, rand) {
+  const copy = [...items];
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(rand() * (index + 1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+  return copy;
 }
 
 function generate() {
@@ -81,30 +78,12 @@ function generate() {
   const rand = rng(seed * 7919 + 17);
   const scale = size / recipe.rules.referenceGrid;
   const plants = [];
-  const rules = recipe.rules;
+  const anchors = [];
+  const attempts = [];
   const plantById = id => recipe.plants.find(plant => plant.id === id);
 
-  const debug = {
-    recipeId: recipe.id,
-    recipeName: recipe.name,
-    recipeVersion: 'phase-1-layout-rules-v3',
-    generatedAt: new Date().toISOString(),
-    settings: { size, shape, seed, scale },
-    rules: {
-      hydrangeaMaxOverlapFraction: 0.10,
-      hydrangeaClumpSize: [2, 4],
-      thriftClumpSize: [3, 6],
-      thriftRows: [1, 3],
-    },
-    anchors: [],
-    attempts: [],
-    accepted: [],
-    rejected: [],
-    summary: {},
-  };
-
-  const patioStart = shapePoint(rules.patio.x, rules.patio.y, size, shape);
-  const patioEnd = shapePoint(rules.patio.x + rules.patio.width, rules.patio.y + rules.patio.height, size, shape);
+  const patioStart = shapePoint(recipe.rules.patio.x, recipe.rules.patio.y, size, shape);
+  const patioEnd = shapePoint(recipe.rules.patio.x + recipe.rules.patio.width, recipe.rules.patio.y + recipe.rules.patio.height, size, shape);
   const patioRect = {
     x: Math.min(patioStart.x, patioEnd.x),
     y: Math.min(patioStart.y, patioEnd.y),
@@ -112,7 +91,7 @@ function generate() {
     height: Math.abs(patioEnd.y - patioStart.y),
   };
 
-  function evaluatePlacement(plantId, point, itemScale, options = {}) {
+  function testPlacement(plantId, point, itemScale, group, options = {}) {
     const radius = plantById(plantId).radius * itemScale;
     const edgePadding = 0.08 * scale;
     if (point.x - radius < edgePadding || point.x + radius > size - edgePadding || point.y - radius < edgePadding || point.y + radius > size - edgePadding) {
@@ -124,24 +103,35 @@ function generate() {
 
     for (const existing of plants) {
       const existingRadius = plantById(existing.plantId).radius * existing.scale;
-      const sumRadii = radius + existingRadius;
+      const combinedRadius = radius + existingRadius;
+      let minimumDistance = combinedRadius + (options.clearance ?? 0.04) * scale;
+      let reason = 'plant-collision';
+
+      if (plantId === 2 && existing.plantId === 2) {
+        if (existing.group === group) {
+          minimumDistance = combinedRadius * 0.9;
+          reason = 'hydrangea-overlap-too-large';
+        } else {
+          minimumDistance = combinedRadius + 0.22 * scale;
+          reason = 'hydrangea-clumps-too-close';
+        }
+      }
+
+      if (plantId === 1 && existing.plantId === 1) {
+        minimumDistance = existing.group === group ? combinedRadius * 0.84 : combinedRadius + 0.22 * scale;
+        reason = existing.group === group ? 'thrift-overlap-too-large' : 'thrift-clumps-too-close';
+      }
+
       const actualDistance = distance(point, existing);
-      const sameHydrangeaClump = plantId === 2 && existing.plantId === 2 && existing.group === options.group;
-      const sameThriftClump = plantId === 1 && existing.plantId === 1 && existing.group === options.group;
-
-      let minimumDistance = sumRadii + (options.clearance ?? 0.04) * scale;
-      if (sameHydrangeaClump) minimumDistance = sumRadii * 0.90;
-      if (sameThriftClump) minimumDistance = sumRadii * 0.74;
-
       if (actualDistance < minimumDistance) {
         return {
           ok: false,
-          reason: sameHydrangeaClump ? 'hydrangea-overlap-too-large' : sameThriftClump ? 'thrift-overlap-too-large' : 'plant-collision',
+          reason,
           radius,
           conflictWith: existing.id,
           actualDistance,
           minimumDistance,
-          overlapFraction: Math.max(0, (sumRadii - actualDistance) / sumRadii),
+          overlapFraction: Math.max(0, (combinedRadius - actualDistance) / combinedRadius),
         };
       }
     }
@@ -149,127 +139,179 @@ function generate() {
   }
 
   function addPlant(plantId, baseX, baseY, group, options = {}) {
-    const itemScale = scale * (options.scaleMultiplier ?? 1) * (1 + (rand() - 0.5) * (options.scaleJitter ?? 0.05));
+    const itemScale = scale * (options.scaleMultiplier ?? 1) * (1 + (rand() - 0.5) * (options.scaleJitter ?? 0.04));
     const basePoint = shapePoint(baseX, baseY, size, shape);
-    const jitter = (options.jitter ?? 0.12) * scale;
-    const attempts = options.attempts ?? 12;
+    const attemptsAllowed = options.attempts ?? 12;
+    const initialJitter = (options.jitter ?? 0.08) * scale;
 
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
-      const spread = attempt === 0 ? 1 : 1 + attempt * 0.14;
-      const point = {
-        x: basePoint.x + (rand() - 0.5) * jitter * spread,
-        y: basePoint.y + (rand() - 0.5) * jitter * spread,
+    for (let attempt = 0; attempt < attemptsAllowed; attempt += 1) {
+      const searchRadius = initialJitter + attempt * (options.retryStep ?? 0.05) * scale;
+      const angle = rand() * Math.PI * 2;
+      const point = attempt === 0 ? basePoint : {
+        x: basePoint.x + Math.cos(angle) * searchRadius * (0.45 + rand() * 0.55),
+        y: basePoint.y + Math.sin(angle) * searchRadius * (0.45 + rand() * 0.55),
       };
-      const result = evaluatePlacement(plantId, point, itemScale, { ...options, group });
-      const record = { plantId, plantName: plantById(plantId).name, group, attempt, baseX, baseY, x: point.x, y: point.y, scale: itemScale, ...result };
-      debug.attempts.push(record);
+      const result = testPlacement(plantId, point, itemScale, group, options);
+      attempts.push({
+        plantId,
+        plantName: plantById(plantId).name,
+        group,
+        attempt,
+        baseX,
+        baseY,
+        x: point.x,
+        y: point.y,
+        scale: itemScale,
+        ...result,
+      });
       if (result.ok) {
         const item = { id: `${group}-${plants.length + 1}`, plantId, x: point.x, y: point.y, group, scale: itemScale };
         plants.push(item);
-        debug.accepted.push({ ...record, id: item.id });
         return item;
       }
-      debug.rejected.push(record);
     }
     return null;
   }
 
-  const hedgeShift = (rand() - 0.5) * 0.55;
-  const hedgeStep = 3.85 + rand() * 0.35;
-  for (let index = 0; index < 5; index += 1) {
-    const anchor = { type: 'hedge', id: `hedge-${index + 1}`, x: 18.8, y: 3.05 + hedgeShift + index * hedgeStep };
-    debug.anchors.push(anchor);
-    addPlant(4, anchor.x, anchor.y, 'privacy-hedge', { jitter: 0.07, scaleJitter: 0.03, clearance: 0.12 });
+  function findValidAnchor(type, id, preferred, plantId, footprintRadius, options = {}) {
+    const candidates = [{ x: preferred.x, y: preferred.y }];
+    for (let ring = 1; ring <= 6; ring += 1) {
+      const radius = ring * (options.step ?? 0.45);
+      for (let slot = 0; slot < 12; slot += 1) {
+        const angle = (slot / 12) * Math.PI * 2 + rand() * 0.2;
+        candidates.push({ x: preferred.x + Math.cos(angle) * radius, y: preferred.y + Math.sin(angle) * radius });
+      }
+    }
+    for (const candidate of candidates) {
+      const point = shapePoint(candidate.x, candidate.y, size, shape);
+      const fakeScale = footprintRadius / plantById(plantId).radius;
+      const result = testPlacement(plantId, point, fakeScale, id, { clearance: options.clearance ?? 0.08 });
+      if (result.ok) {
+        const anchor = { type, id, axis: preferred.axis, x: candidate.x, y: candidate.y };
+        anchors.push(anchor);
+        return anchor;
+      }
+    }
+    anchors.push({ type, id, axis: preferred.axis, x: preferred.x, y: preferred.y, failed: true });
+    return null;
   }
 
+  // 1. Hedge
+  const hedgeShift = (rand() - 0.5) * 0.45;
+  const hedgeStep = 3.95 + rand() * 0.25;
+  for (let index = 0; index < 5; index += 1) {
+    const anchor = { type: 'hedge', id: `hedge-${index + 1}`, x: 18.8, y: 3.0 + hedgeShift + index * hedgeStep };
+    anchors.push(anchor);
+    addPlant(4, anchor.x, anchor.y, 'privacy-hedge', { jitter: 0.04, retryStep: 0.08, scaleJitter: 0.03, clearance: 0.06, attempts: 10 });
+  }
+
+  // 2. Roses, with structural relocation rather than tiny repeated jitter.
   const roseSlotSets = [
-    [[3.7, 4.1], [8.9, 5.0], [13.8, 4.1], [15.6, 8.1], [16.0, 17.2]],
-    [[4.7, 4.9], [9.7, 3.9], [13.1, 5.6], [15.9, 10.1], [15.1, 16.1]],
-    [[3.4, 5.5], [8.0, 3.8], [12.9, 4.6], [16.0, 7.0], [16.3, 15.6]],
-    [[5.0, 3.8], [9.7, 5.7], [13.2, 3.6], [15.0, 8.8], [16.2, 18.4]],
+    [[3.7, 4.1], [8.9, 5.0], [13.8, 4.1], [15.6, 8.1], [15.7, 17.1]],
+    [[4.7, 4.9], [9.7, 3.9], [13.1, 5.6], [15.9, 10.1], [15.0, 16.2]],
+    [[3.4, 5.5], [8.0, 3.8], [12.9, 4.6], [16.0, 7.0], [15.7, 15.8]],
+    [[5.0, 3.8], [9.7, 5.7], [13.2, 3.6], [15.0, 8.8], [15.5, 18.0]],
   ];
   const roseSlots = roseSlotSets[(seed - 1) % roseSlotSets.length];
   roseSlots.forEach(([x, y], index) => {
-    const anchor = { type: 'rose', id: `rose-${index + 1}`, x: x + (rand() - 0.5) * 0.45, y: y + (rand() - 0.5) * 0.45 };
-    debug.anchors.push(anchor);
-    addPlant(3, anchor.x, anchor.y, 'rose-mass', { jitter: 0.18, scaleJitter: 0.06, clearance: 0.18, attempts: 20 });
+    const anchor = findValidAnchor('rose', `rose-${index + 1}`, { x, y }, 3, 1.58 * scale, { step: 0.5, clearance: 0.12 });
+    if (anchor) addPlant(3, anchor.x, anchor.y, 'rose-mass', { jitter: 0.04, retryStep: 0.12, scaleJitter: 0.06, clearance: 0.12, attempts: 12 });
   });
 
-  const hydrangeaBands = [
-    { axis: 'top', start: 2.5, end: 11.1, fixed: 6.6 },
-    { axis: 'right', start: 10.6, end: 20.0, fixed: 14.2 },
+  // 3. Hydrangeas. Validate the entire clump footprint first, then use templates that already obey the 10% overlap rule.
+  const hydrangeaPreferred = [
+    { x: 3.5, y: 6.5, axis: 'top' },
+    { x: 7.0, y: 6.6, axis: 'top' },
+    { x: 10.6, y: 7.0, axis: 'top' },
+    { x: 14.1, y: 11.7, axis: 'right' },
+    { x: 14.2, y: 15.2, axis: 'right' },
+    { x: 14.0, y: 19.0, axis: 'right' },
   ];
-  let hydrangeaClumpIndex = 0;
-  for (const band of hydrangeaBands) {
-    const clumpCount = 3;
-    const span = band.end - band.start;
-    for (let index = 0; index < clumpCount; index += 1) {
-      hydrangeaClumpIndex += 1;
-      const t = (index + 0.5) / clumpCount;
-      const group = `hydrangea-clump-${hydrangeaClumpIndex}`;
-      const anchor = band.axis === 'top'
-        ? { type: 'hydrangea', id: group, axis: band.axis, x: band.start + span * t + (rand() - 0.5) * 0.8, y: band.fixed + (rand() - 0.5) * 0.35 }
-        : { type: 'hydrangea', id: group, axis: band.axis, x: band.fixed + (rand() - 0.5) * 0.35, y: band.start + span * t + (rand() - 0.5) * 0.8 };
-      debug.anchors.push(anchor);
-
-      const count = 2 + Math.floor(rand() * 3);
-      const baseAngle = rand() * Math.PI * 2;
-      for (let plantIndex = 0; plantIndex < count; plantIndex += 1) {
-        const angle = baseAngle + (plantIndex / count) * Math.PI * 2 + (rand() - 0.5) * 0.32;
-        const ring = plantIndex === 0 ? 0 : 1.58 + rand() * 0.24;
-        const x = anchor.x + Math.cos(angle) * ring * (band.axis === 'top' ? 1.05 : 0.88);
-        const y = anchor.y + Math.sin(angle) * ring * (band.axis === 'right' ? 1.05 : 0.88);
-        addPlant(2, x, y, group, { jitter: 0.10, scaleJitter: 0.04, clearance: 0.10, attempts: 22 });
-      }
-    }
-  }
-
-  function createThriftClumps(axis) {
-    const isTop = axis === 'top';
-    const clumpCount = 7;
-    const start = isTop ? 1.8 : 9.9;
-    const end = isTop ? 11.0 : 21.0;
-    const span = end - start;
-    for (let index = 0; index < clumpCount; index += 1) {
-      const group = `thrift-${axis}-${index + 1}`;
-      const t = (index + 0.5) / clumpCount;
-      const anchor = isTop
-        ? { type: 'thrift', id: group, axis, x: start + span * t + (rand() - 0.5) * 0.45, y: 8.38 + (rand() - 0.5) * 0.18 }
-        : { type: 'thrift', id: group, axis, x: 12.55 + (rand() - 0.5) * 0.18, y: start + span * t + (rand() - 0.5) * 0.45 };
-      debug.anchors.push(anchor);
-
-      const count = 3 + Math.floor(rand() * 4);
-      const depth = 1 + Math.floor(rand() * 3);
-      for (let plantIndex = 0; plantIndex < count; plantIndex += 1) {
-        const row = plantIndex % depth;
-        const along = (plantIndex - (count - 1) / 2) * 0.72 + (rand() - 0.5) * 0.18;
-        const inward = row * 0.68 + (rand() - 0.5) * 0.10;
-        const x = isTop ? anchor.x + along : anchor.x + inward;
-        const y = isTop ? anchor.y - inward : anchor.y + along;
-        addPlant(1, x, y, group, { jitter: 0.08, scaleJitter: 0.05, clearance: 0.02, attempts: 18 });
-      }
-    }
-  }
-
-  createThriftClumps('top');
-  createThriftClumps('right');
-
-  const counts = Object.fromEntries(recipe.plants.map(plant => [plant.name, plants.filter(item => item.plantId === plant.id).length]));
-  const rejectionCounts = debug.rejected.reduce((acc, item) => {
-    acc[item.reason] = (acc[item.reason] || 0) + 1;
-    return acc;
-  }, {});
-  debug.summary = {
-    totalPlants: plants.length,
-    counts,
-    hydrangeaClumps: new Set(plants.filter(item => item.plantId === 2).map(item => item.group)).size,
-    thriftClumps: new Set(plants.filter(item => item.plantId === 1).map(item => item.group)).size,
-    acceptedPlacements: debug.accepted.length,
-    rejectedPlacements: debug.rejected.length,
-    rejectionCounts,
+  const hydrangeaTemplates = {
+    2: [[-0.84, 0], [0.84, 0]],
+    3: [[-0.86, 0.35], [0.86, 0.35], [0, -0.92]],
+    4: [[-0.86, -0.46], [0.86, -0.46], [-0.86, 0.82], [0.86, 0.82]],
   };
-  latestRun = debug;
-  render(plants, size, size, shape, seed, patioRect, debug);
+
+  hydrangeaPreferred.forEach((preferred, index) => {
+    const count = 2 + Math.floor(rand() * 3);
+    const footprint = count === 4 ? 2.15 * scale : 1.85 * scale;
+    const anchor = findValidAnchor('hydrangea', `hydrangea-clump-${index + 1}`, preferred, 2, footprint, { step: 0.5, clearance: 0.14 });
+    if (!anchor) return;
+
+    const rotation = (preferred.axis === 'right' ? Math.PI / 2 : 0) + (rand() - 0.5) * 0.3;
+    const template = hydrangeaTemplates[count];
+    for (const [offsetX, offsetY] of template) {
+      const rotatedX = offsetX * Math.cos(rotation) - offsetY * Math.sin(rotation);
+      const rotatedY = offsetX * Math.sin(rotation) + offsetY * Math.cos(rotation);
+      addPlant(2, anchor.x + rotatedX, anchor.y + rotatedY, anchor.id, {
+        jitter: 0.03,
+        retryStep: 0.07,
+        scaleJitter: 0.035,
+        clearance: 0.04,
+        attempts: 12,
+      });
+    }
+  });
+
+  // 4. Bloodstone thrift. Use only a few real drift anchors, then place 3 to 6 plants inside each drift.
+  const thriftPreferred = [
+    { x: 2.7, y: 8.35, axis: 'top' },
+    { x: 6.0, y: 8.3, axis: 'top' },
+    { x: 9.4, y: 8.35, axis: 'top' },
+    { x: 12.55, y: 11.3, axis: 'right' },
+    { x: 12.55, y: 15.2, axis: 'right' },
+    { x: 12.55, y: 19.1, axis: 'right' },
+  ];
+  const thriftTemplates = [
+    [[-0.72, 0], [0, 0.05], [0.72, 0], [-0.36, -0.68], [0.38, -0.64], [0.03, -1.27]],
+    [[-0.7, -0.12], [0, 0.08], [0.7, -0.08], [-0.48, -0.72], [0.46, -0.69], [0, -1.3]],
+    [[-0.68, 0.02], [0.02, -0.03], [0.7, 0.04], [-0.3, -0.7], [0.42, -0.74], [-0.76, -1.18]],
+  ];
+
+  thriftPreferred.forEach((preferred, index) => {
+    const count = 3 + Math.floor(rand() * 4);
+    const anchor = findValidAnchor('thrift', `thrift-${preferred.axis}-${index + 1}`, preferred, 1, 1.35 * scale, { step: 0.4, clearance: 0.06 });
+    if (!anchor) return;
+    const template = thriftTemplates[(seed + index) % thriftTemplates.length];
+    const rotation = preferred.axis === 'right' ? Math.PI / 2 : 0;
+    for (const [offsetX, offsetY] of shuffled(template.slice(0, count), rand)) {
+      const rotatedX = offsetX * Math.cos(rotation) - offsetY * Math.sin(rotation);
+      const rotatedY = offsetX * Math.sin(rotation) + offsetY * Math.cos(rotation);
+      addPlant(1, anchor.x + rotatedX, anchor.y + rotatedY, anchor.id, {
+        jitter: 0.025,
+        retryStep: 0.06,
+        scaleJitter: 0.045,
+        clearance: 0.01,
+        attempts: 10,
+      });
+    }
+  });
+
+  const accepted = attempts.filter(attempt => attempt.ok).length;
+  const rejected = attempts.length - accepted;
+  const failedAnchors = anchors.filter(anchor => anchor.failed).length;
+  lastRun = {
+    recipeId: recipe.id,
+    recipeName: recipe.name,
+    recipeVersion: 'phase-1-layout-rules-v4',
+    generatedAt: new Date().toISOString(),
+    settings: { size, shape, seed, scale },
+    rules: {
+      hydrangeaMaxOverlapFraction: 0.1,
+      hydrangeaClumpSize: [2, 4],
+      hydrangeaAnchorValidation: true,
+      thriftClumpSize: [3, 6],
+      thriftAnchorCount: 6,
+      progressiveRetrySearch: true,
+    },
+    anchors,
+    attempts,
+    plants,
+    summary: { accepted, rejected, failedAnchors, acceptanceRate: attempts.length ? accepted / attempts.length : 0 },
+  };
+
+  render(plants, size, size, shape, seed, patioRect, anchors, attempts);
 }
 
 function line(x1, y1, x2, y2, stroke, width, dash = '') {
@@ -284,9 +326,10 @@ function line(x1, y1, x2, y2, stroke, width, dash = '') {
   els.svg.append(element);
 }
 
-function render(plants, width, height, shape, seed, patioRect, debug) {
+function render(plants, width, height, shape, seed, patioRect, anchors, attempts) {
   els.svg.innerHTML = '';
   els.svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
   if (els.grid.checked) {
     for (let x = 0; x <= width; x += 1) line(x, 0, x, height, '#cfd4c7', '.035');
     for (let y = 0; y <= height; y += 1) line(0, y, width, y, '#cfd4c7', '.035');
@@ -295,8 +338,8 @@ function render(plants, width, height, shape, seed, patioRect, debug) {
   const patio = document.createElementNS(svgNS, 'rect');
   patio.setAttribute('x', patioRect.x);
   patio.setAttribute('y', patioRect.y);
-  patio.setAttribute('width', Math.max(0.1, patioRect.width));
-  patio.setAttribute('height', Math.max(0.1, patioRect.height));
+  patio.setAttribute('width', patioRect.width);
+  patio.setAttribute('height', patioRect.height);
   patio.setAttribute('fill', '#f2eee6');
   patio.setAttribute('stroke', '#8f8a80');
   patio.setAttribute('stroke-width', '.09');
@@ -331,34 +374,35 @@ function render(plants, width, height, shape, seed, patioRect, debug) {
   }
 
   if (els.debugOverlay.checked) {
-    for (const anchor of debug.anchors) {
+    for (const anchor of anchors) {
       const point = shapePoint(anchor.x, anchor.y, width, shape);
       const marker = document.createElementNS(svgNS, 'circle');
       marker.setAttribute('cx', point.x);
       marker.setAttribute('cy', point.y);
-      marker.setAttribute('r', anchor.type === 'thrift' ? '.16' : '.22');
-      marker.setAttribute('fill', anchor.type === 'hydrangea' ? '#2563eb' : anchor.type === 'thrift' ? '#dc2626' : '#111827');
+      marker.setAttribute('r', '.16');
+      marker.setAttribute('fill', anchor.failed ? '#d22' : '#111');
       marker.setAttribute('stroke', '#fff');
       marker.setAttribute('stroke-width', '.05');
       els.svg.append(marker);
     }
-    for (const rejected of debug.rejected.slice(-180)) {
-      const marker = document.createElementNS(svgNS, 'path');
-      const s = 0.10;
-      marker.setAttribute('d', `M ${rejected.x - s} ${rejected.y - s} L ${rejected.x + s} ${rejected.y + s} M ${rejected.x + s} ${rejected.y - s} L ${rejected.x - s} ${rejected.y + s}`);
-      marker.setAttribute('stroke', '#b91c1c');
-      marker.setAttribute('stroke-width', '.045');
-      marker.setAttribute('opacity', '.7');
-      els.svg.append(marker);
+    for (const attempt of attempts.filter(value => !value.ok).slice(-220)) {
+      line(attempt.x - 0.09, attempt.y - 0.09, attempt.x + 0.09, attempt.y + 0.09, '#d22', '.045');
+      line(attempt.x + 0.09, attempt.y - 0.09, attempt.x - 0.09, attempt.y + 0.09, '#d22', '.045');
     }
   }
 
   const counts = recipe.plants.map(plant => ({ plant, count: plants.filter(item => item.plantId === plant.id).length }));
+  const hydrangeaClumps = new Set(plants.filter(item => item.plantId === 2).map(item => item.group)).size;
+  const thriftClumps = new Set(plants.filter(item => item.plantId === 1).map(item => item.group)).size;
+  const accepted = attempts.filter(attempt => attempt.ok).length;
+  const rejected = attempts.length - accepted;
+  const rate = attempts.length ? Math.round((accepted / attempts.length) * 100) : 0;
+
   els.title.textContent = `${width} × ${height}, ${shape}, seed ${seed}`;
   els.seedValue.textContent = seed;
   els.metrics.innerHTML = counts.map(({ plant, count }) => `<div class="metric"><strong>${count}</strong><span>${plant.role.replaceAll('-', ' ')}</span></div>`).join('');
-  els.summary.innerHTML = `<strong>${plants.length} plant centers</strong><br><span class="muted">${debug.summary.hydrangeaClumps} hydrangea clumps · ${debug.summary.thriftClumps} thrift clumps · ${debug.summary.rejectedPlacements} rejected attempts</span>`;
-  els.debugSummary.innerHTML = `<strong>${debug.summary.acceptedPlacements} accepted</strong><br><span class="muted">${Object.entries(debug.summary.rejectionCounts).map(([reason, count]) => `${count} ${reason}`).join(' · ') || 'No rejected placements'}</span>`;
+  els.summary.innerHTML = `<strong>${plants.length} plant centers</strong><br><span class="muted">${hydrangeaClumps} hydrangea clumps · ${thriftClumps} thrift clumps · ${counts.map(value => `${value.count} ${value.plant.name}`).join(' · ')}</span>`;
+  els.debugSummary.innerHTML = `<strong>${accepted} accepted · ${rejected} rejected</strong><br><span class="muted">${rate}% acceptance rate · ${anchors.filter(anchor => anchor.failed).length} failed anchors</span>`;
 }
 
 ['change', 'input'].forEach(eventName => {
@@ -375,9 +419,16 @@ document.querySelector('#next-seed').addEventListener('click', () => {
   els.seed.value = (Number(els.seed.value) % 100) + 1;
   generate();
 });
+
 els.downloadDebug.addEventListener('click', () => {
-  if (!latestRun) return;
-  downloadJson(`plant-pending-recipe-debug-seed-${latestRun.settings.seed}.json`, latestRun);
+  if (!lastRun) return;
+  const blob = new Blob([JSON.stringify(lastRun, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `plant-pending-recipe-debug-seed-${lastRun.settings.seed}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
 });
 
 generate();
