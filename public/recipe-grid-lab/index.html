@@ -12,7 +12,7 @@
       <p class="eyebrow">Plant Pending 2.0, Phase 1</p>
       <h1>Recipe Grid Laboratory</h1>
       <p>Build a recipe from percentages, placement rules, and physics.</p>
-      <p><strong id="lab-version">Lab version 11.0.0 · recipe mix builder</strong></p>
+      <p><strong id="lab-version">Lab version 11.1.0 · mixed drop order</strong></p>
     </div>
     <a href="../" class="back-link">Back to Plant Pending</a>
   </header>
@@ -35,6 +35,12 @@
             <option value="left">Left</option>
             <option value="right">Right</option>
             <option value="top">Top</option>
+          </select>
+        </label>
+        <label>Drop order
+          <select id="drop-order">
+            <option value="random">Random mixed</option>
+            <option value="grouped">Grouped by plant</option>
           </select>
         </label>
         <label>Physics size
@@ -93,7 +99,7 @@
         <svg id="recipe-canvas" role="img" aria-label="Generated recipe physics test"></svg>
       </div>
       <div class="notes">
-        <strong>Placement modes:</strong> Scatter drops loosely, stack starts in an orderly grid, line keeps a row, front-fill falls toward the selected front, and back-attract builds a hedge row.
+        <strong>Placement modes:</strong> Scatter and front-fill can now be released in a seed-based mixed order. Stack remains orderly, line keeps a row, and back-attract builds a hedge row.
       </div>
     </section>
 
@@ -105,9 +111,9 @@
       <h3>Recipe rules</h3>
       <ul class="checklist">
         <li>Percentages determine plant balance</li>
+        <li>Random mixed order prevents one plant type from always landing last</li>
         <li>Placement mode controls orderly vs. scattered</li>
         <li>Plant centers outside the valid zone are pruned</li>
-        <li>Exclusion areas remove plants by center point</li>
         <li>Saved output uses normalized zone coordinates</li>
       </ul>
 
@@ -118,7 +124,7 @@
           <button id="download-recipe" class="primary">Download zone-ready recipe</button>
           <button id="download-debug">Download debug package</button>
         </div>
-        <p class="muted debug-help">The recipe export includes plant definitions, percentages, placement modes, front direction, normalized positions, pruning rules, and physics settings.</p>
+        <p class="muted debug-help">The debug package includes the actual seed-based drop sequence so mixed results can be reproduced.</p>
       </section>
 
       <label class="notes-label" for="review-notes">Test notes</label>
@@ -127,6 +133,6 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
-  <script type="module" src="./app.js?v=11.0.0"></script>
+  <script type="module" src="./app.js?v=11.1.0"></script>
 </body>
 </html>
