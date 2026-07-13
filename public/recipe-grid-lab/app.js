@@ -1,6 +1,12 @@
 const svgNS = 'http://www.w3.org/2000/svg';
-const LAB_VERSION = '8.0.0';
-const recipe = await fetch('./recipe.json').then(r => r.json());
+const LAB_VERSION = '9.0.0';
+const recipe = await fetch('./recipe.json').then(response => response.json());
+
+if (!window.Matter) {
+  throw new Error('Matter.js did not load. Check the network connection and refresh.');
+}
+
+const { Engine, Composite, Bodies, Body, Sleeping } = window.Matter;
 
 const els = {
   svg: document.querySelector('#recipe-canvas'),
@@ -20,15 +26,17 @@ const els = {
   version: document.querySelector('#lab-version'),
 };
 
-if (els.version) els.version.textContent = `Lab version ${LAB_VERSION} · sequential marble packing`;
-let lastRun = null;
-
+if (els.version) els.version.textContent = `Lab version ${LAB_VERSION} · Matter.js rigid-body packing`;
 document.querySelector('#recipe-name').textContent = recipe.name;
 document.querySelector('#recipe-description').textContent = recipe.description;
 els.legend.innerHTML = recipe.plants.map(plant => `
-  <div class="legend-item"><span class="swatch" style="background:${plant.color}"></span>
-  <div><strong>${plant.name}</strong><span>${plant.role.replaceAll('-', ' ')}</span></div></div>
+  <div class="legend-item">
+    <span class="swatch" style="background:${plant.color}"></span>
+    <div><strong>${plant.name}</strong><span>${plant.role.replaceAll('-', ' ')}</span></div>
+  </div>
 `).join('');
+
+let lastRun = null;
 
 function rng(seed) {
   let state = seed >>> 0;
@@ -40,9 +48,6 @@ function rng(seed) {
     return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 function shapePoint(x, y, size, shape) {
   const scale = size / recipe.rules.referenceGrid;
@@ -58,27 +63,51 @@ function shapePoint(x, y, size, shape) {
   return { x: px, y: py };
 }
 
+function line(x1, y1, x2, y2, stroke, width, dash = '') {
+  const element = document.createElementNS(svgNS, 'line');
+  Object.entries({ x1, y1, x2, y2, stroke, 'stroke-width': width }).forEach(([key, value]) => element.setAttribute(key, value));
+  if (dash) element.setAttribute('stroke-dasharray', dash);
+  els.svg.append(element);
+}
+
+function addSvgCircle(item, plant) {
+  const circle = document.createElementNS(svgNS, 'circle');
+  Object.entries({
+    cx: item.x,
+    cy: item.y,
+    r: item.r,
+    fill: plant.color,
+    'fill-opacity': item.plantId === 4 ? '.72' : '.84',
+    stroke: '#fff',
+    'stroke-opacity': '.78',
+    'stroke-width': '.07',
+  }).forEach(([key, value]) => circle.setAttribute(key, value));
+  els.svg.append(circle);
+}
+
 function generate() {
   const size = Number(els.size.value);
   const shape = els.shape.value;
   const seed = Number(els.seed.value);
   const rand = rng(seed * 7919 + 17);
   const scale = size / recipe.rules.referenceGrid;
-  const plantById = id => recipe.plants.find(p => p.id === id);
-  const plants = [];
-  const anchors = [];
-  const modules = [];
-  const attempts = [];
+  const plantById = id => recipe.plants.find(plant => plant.id === id);
 
-  // Use the recipe's actual mature-size circles. The previous version shrank
-  // everything and changed the proportions seen in the source plan.
-  const radiusFor = (plantId, itemScale) => plantById(plantId).radius * itemScale;
+  // Calibrated against the scale bar and canopy diameters in the source plan.
+  const radiusByPlant = {
+    1: 0.34 * scale, // Bloodstone thrift, about 0.68 ft diameter
+    2: 0.66 * scale, // Hydrangea, about 1.32 ft diameter
+    3: 1.15 * scale, // Rose, about 2.30 ft diameter
+    4: 1.27 * scale, // Arborvitae, about 2.54 ft diameter
+  };
 
   const patioA = shapePoint(recipe.rules.patio.x, recipe.rules.patio.y, size, shape);
   const patioB = shapePoint(recipe.rules.patio.x + recipe.rules.patio.width, recipe.rules.patio.y + recipe.rules.patio.height, size, shape);
   const patio = {
-    x: Math.min(patioA.x, patioB.x), y: Math.min(patioA.y, patioB.y),
-    width: Math.abs(patioB.x - patioA.x), height: Math.abs(patioB.y - patioA.y),
+    x: Math.min(patioA.x, patioB.x),
+    y: Math.min(patioA.y, patioB.y),
+    width: Math.abs(patioB.x - patioA.x),
+    height: Math.abs(patioB.y - patioA.y),
   };
 
   const variants = [
@@ -90,269 +119,255 @@ function generate() {
   const variantIndex = (seed - 1) % variants.length;
   const composition = variants[variantIndex];
 
-  function addHedge(plantId, x, y, id) {
-    const p = shapePoint(x, y, size, shape);
-    const itemScale = scale * (1 + (rand() - 0.5) * 0.015);
-    const r = radiusFor(plantId, itemScale);
-    plants.push({ id, plantId, x: p.x, y: p.y, r, scale: itemScale, group: 'hedge', fixed: true });
-    anchors.push({ id, type: 'hedge', axis: 'right', x, y, sticky: true });
-    modules.push({ id, type: 'hedge', axis: 'right', requested: 1, placed: 1 });
-  }
+  const PHYS = 48;
+  const toPhys = value => value * PHYS;
+  const fromPhys = value => value / PHYS;
 
-  const topContainer = {
-    axis: 'top',
-    minX: 0.65 * scale,
-    maxX: patio.x + patio.width + 0.65 * scale,
+  const makeEngine = (gravityX, gravityY) => {
+    const engine = Engine.create({
+      gravity: { x: gravityX, y: gravityY, scale: 0.0018 },
+      positionIterations: 14,
+      velocityIterations: 12,
+      constraintIterations: 4,
+      enableSleeping: true,
+    });
+    return engine;
+  };
+
+  const topEngine = makeEngine(0, 1.35);
+  const rightEngine = makeEngine(-1.35, 0);
+  const wallOptions = { isStatic: true, friction: 0.35, restitution: 0, slop: 0.01 * PHYS };
+
+  const topBounds = {
+    minX: 0.55 * scale,
+    maxX: patio.x + patio.width + 0.9 * scale,
     floor: patio.y,
-    spawn: 0.35 * scale,
+    ceiling: 0.15 * scale,
   };
-  const rightContainer = {
-    axis: 'right',
+  const rightBounds = {
     minY: patio.y - 0.25 * scale,
-    maxY: Math.min(size - 0.65 * scale, patio.y + patio.height + 0.65 * scale),
+    maxY: patio.y + patio.height + 0.95 * scale,
     floor: patio.x + patio.width,
-    spawn: Math.min(size - 0.35 * scale, (recipe.rules.fenceX ?? 21) * scale - 0.35 * scale),
+    wall: shapePoint(17.15, 0, size, shape).x,
   };
 
-  function collidersFor(axis) {
-    return plants.filter(p => p.fixed || p.axis === axis);
-  }
+  Composite.add(topEngine.world, [
+    Bodies.rectangle(toPhys((topBounds.minX + topBounds.maxX) / 2), toPhys(topBounds.floor + 0.12 * scale), toPhys(topBounds.maxX - topBounds.minX + 0.5 * scale), toPhys(0.24 * scale), wallOptions),
+    Bodies.rectangle(toPhys(topBounds.minX - 0.12 * scale), toPhys((topBounds.ceiling + topBounds.floor) / 2), toPhys(0.24 * scale), toPhys(topBounds.floor - topBounds.ceiling + 1.0 * scale), wallOptions),
+    Bodies.rectangle(toPhys(topBounds.maxX + 0.12 * scale), toPhys((topBounds.ceiling + topBounds.floor) / 2), toPhys(0.24 * scale), toPhys(topBounds.floor - topBounds.ceiling + 1.0 * scale), wallOptions),
+  ]);
 
-  function resolveCollision(body, other) {
-    let dx = body.x - other.x;
-    let dy = body.y - other.y;
-    let d = Math.hypot(dx, dy);
-    const minD = body.r + other.r;
-    if (d >= minD) return false;
-    if (d < 0.00001) {
-      dx = (rand() - 0.5) || 0.001;
-      dy = (rand() - 0.5) || 0.001;
-      d = Math.hypot(dx, dy);
-    }
-    const nx = dx / d;
-    const ny = dy / d;
-    const overlap = minD - d;
-    body.x += nx * overlap;
-    body.y += ny * overlap;
-    const vn = body.vx * nx + body.vy * ny;
-    if (vn < 0) {
-      body.vx -= vn * nx;
-      body.vy -= vn * ny;
-    }
-    body.vx *= 0.94;
-    body.vy *= 0.94;
-    return true;
-  }
+  Composite.add(rightEngine.world, [
+    Bodies.rectangle(toPhys(rightBounds.floor - 0.12 * scale), toPhys((rightBounds.minY + rightBounds.maxY) / 2), toPhys(0.24 * scale), toPhys(rightBounds.maxY - rightBounds.minY + 0.5 * scale), wallOptions),
+    Bodies.rectangle(toPhys(rightBounds.wall + 0.12 * scale), toPhys((rightBounds.minY + rightBounds.maxY) / 2), toPhys(0.24 * scale), toPhys(rightBounds.maxY - rightBounds.minY + 0.5 * scale), wallOptions),
+    Bodies.rectangle(toPhys((rightBounds.floor + rightBounds.wall) / 2), toPhys(rightBounds.minY - 0.12 * scale), toPhys(rightBounds.wall - rightBounds.floor + 0.5 * scale), toPhys(0.24 * scale), wallOptions),
+    Bodies.rectangle(toPhys((rightBounds.floor + rightBounds.wall) / 2), toPhys(rightBounds.maxY + 0.12 * scale), toPhys(rightBounds.wall - rightBounds.floor + 0.5 * scale), toPhys(0.24 * scale), wallOptions),
+  ]);
 
-  function supported(body, container, colliders) {
-    const epsilon = 0.025 * scale;
-    if (container.axis === 'top' && Math.abs(body.y + body.r - container.floor) <= epsilon) return true;
-    if (container.axis === 'right' && Math.abs(body.x - body.r - container.floor) <= epsilon) return true;
-    for (const other of colliders) {
-      const touching = distance(body, other) <= body.r + other.r + epsilon;
-      if (!touching) continue;
-      if (container.axis === 'top' && other.y > body.y + epsilon) return true;
-      if (container.axis === 'right' && other.x < body.x - epsilon) return true;
-    }
-    return false;
-  }
+  const dynamicRecords = [];
+  const attempts = [];
+  const modules = [];
+  const anchors = [];
+  const plants = [];
 
-  function settleOne(body, container, colliders) {
-    const gravity = 0.010 * scale;
-    const damping = 0.992;
+  const bodyOptions = plantId => ({
+    restitution: 0.015,
+    friction: plantId === 1 ? 0.32 : 0.42,
+    frictionStatic: plantId === 1 ? 0.55 : 0.7,
+    frictionAir: 0.022,
+    slop: 0.01 * PHYS,
+    density: 0.0018,
+    sleepThreshold: 35,
+  });
+
+  function settleEngine(engine, focusBody) {
+    Sleeping.set(focusBody, false);
     let quietFrames = 0;
-
-    for (let step = 0; step < 2600; step += 1) {
-      if (container.axis === 'top') body.vy += gravity;
-      else body.vx -= gravity;
-
-      body.vx *= damping;
-      body.vy *= damping;
-      body.x += body.vx;
-      body.y += body.vy;
-
-      if (container.axis === 'top') {
-        if (body.x - body.r < container.minX) { body.x = container.minX + body.r; body.vx = Math.abs(body.vx) * 0.25; }
-        if (body.x + body.r > container.maxX) { body.x = container.maxX - body.r; body.vx = -Math.abs(body.vx) * 0.25; }
-        if (body.y + body.r > container.floor) { body.y = container.floor - body.r; body.vy = 0; }
-      } else {
-        if (body.y - body.r < container.minY) { body.y = container.minY + body.r; body.vy = Math.abs(body.vy) * 0.25; }
-        if (body.y + body.r > container.maxY) { body.y = container.maxY - body.r; body.vy = -Math.abs(body.vy) * 0.25; }
-        if (body.x - body.r < container.floor) { body.x = container.floor + body.r; body.vx = 0; }
-      }
-
-      let hit = false;
-      for (let pass = 0; pass < 4; pass += 1) {
-        let passHit = false;
-        for (const other of colliders) passHit = resolveCollision(body, other) || passHit;
-        hit = hit || passHit;
-        if (!passHit) break;
-      }
-
-      // Tiny sideways nudge prevents a perfectly centered disc from balancing
-      // forever on top of one marble. It is not attraction or stickiness.
-      if (hit) {
-        if (container.axis === 'top') body.vx += body.bias * 0.0012 * scale;
-        else body.vy += body.bias * 0.0012 * scale;
-      }
-
-      const speed = Math.hypot(body.vx, body.vy);
-      const isSupported = supported(body, container, colliders);
-      quietFrames = isSupported && speed < 0.0015 * scale ? quietFrames + 1 : 0;
-      if (quietFrames > 55) return { ok: true, steps: step + 1 };
+    let steps = 0;
+    for (; steps < 1800; steps += 1) {
+      Engine.update(engine, 1000 / 120);
+      const bodies = Composite.allBodies(engine.world).filter(body => !body.isStatic);
+      const quiet = bodies.every(body => body.speed < 0.035 && body.angularSpeed < 0.035);
+      quietFrames = quiet ? quietFrames + 1 : 0;
+      if (quietFrames > 90) break;
     }
-    return { ok: supported(body, container, colliders), steps: 2600 };
+    return steps;
   }
 
-  function dropDisc(plantId, axis, target, group, type) {
-    const container = axis === 'top' ? topContainer : rightContainer;
-    const itemScale = scale * (1 + (rand() - 0.5) * 0.018);
-    const r = radiusFor(plantId, itemScale);
-    const targetPoint = shapePoint(target[0], target[1], size, shape);
-    const maxRetries = 10;
-
-    for (let retry = 0; retry < maxRetries; retry += 1) {
-      const spread = (0.35 + retry * 0.12) * scale;
-      const body = axis === 'top'
-        ? {
-            x: clamp(targetPoint.x + (rand() - 0.5) * spread, container.minX + r, container.maxX - r),
-            y: container.spawn - r - retry * 0.03 * scale,
-            vx: (rand() - 0.5) * 0.018 * scale,
-            vy: 0,
-          }
-        : {
-            x: container.spawn + r + retry * 0.03 * scale,
-            y: clamp(targetPoint.y + (rand() - 0.5) * spread, container.minY + r, container.maxY - r),
-            vx: 0,
-            vy: (rand() - 0.5) * 0.018 * scale,
-          };
-      body.r = r;
-      body.bias = rand() < 0.5 ? -1 : 1;
-
-      const colliders = collidersFor(axis);
-      const result = settleOne(body, container, colliders);
-      const overlap = colliders.some(other => distance(body, other) < body.r + other.r - 0.005 * scale);
-      const inBounds = body.x - r >= 0 && body.x + r <= size && body.y - r >= 0 && body.y + r <= size;
-      const ok = result.ok && !overlap && inBounds;
-      attempts.push({ group, plantId, type, axis, mode: 'sequential-marble-drop', retry, x: body.x, y: body.y, radius: r, steps: result.steps, supported: result.ok, ok, reason: ok ? null : overlap ? 'overlap' : result.ok ? 'boundary' : 'unsupported' });
-      if (!ok) continue;
-
-      plants.push({ id: `${group}-${plants.length + 1}`, plantId, x: body.x, y: body.y, r, scale: itemScale, group, axis, fixed: false });
-      return true;
+  function dropOne({ engine, axis, plantId, type, group, anchorX, anchorY }) {
+    const baseRadius = radiusByPlant[plantId];
+    const radius = baseRadius * (0.988 + rand() * 0.024);
+    let x;
+    let y;
+    if (axis === 'top') {
+      x = Math.max(topBounds.minX + radius, Math.min(topBounds.maxX - radius, shapePoint(anchorX, anchorY, size, shape).x + (rand() - 0.5) * 1.35 * scale));
+      y = topBounds.ceiling - radius - (0.25 + rand() * 0.8) * scale;
+    } else {
+      x = rightBounds.wall - radius - 0.1 * scale;
+      y = Math.max(rightBounds.minY + radius, Math.min(rightBounds.maxY - radius, shapePoint(anchorX, anchorY, size, shape).y + (rand() - 0.5) * 1.35 * scale));
     }
-    return false;
+
+    const body = Bodies.circle(toPhys(x), toPhys(y), toPhys(radius), bodyOptions(plantId));
+    Body.setVelocity(body, axis === 'top'
+      ? { x: (rand() - 0.5) * 0.35, y: 0 }
+      : { x: 0, y: (rand() - 0.5) * 0.35 });
+    Composite.add(engine.world, body);
+    const steps = settleEngine(engine, body);
+
+    const record = {
+      body,
+      plantId,
+      type,
+      group,
+      axis,
+      r: radius,
+      x: fromPhys(body.position.x),
+      y: fromPhys(body.position.y),
+    };
+    dynamicRecords.push(record);
+    attempts.push({
+      group,
+      plantId,
+      type,
+      axis,
+      mode: 'matter-js-rigid-body-drop',
+      x: record.x,
+      y: record.y,
+      radius,
+      steps,
+      speed: body.speed,
+      sleeping: body.isSleeping,
+      ok: true,
+    });
+    return record;
   }
 
-  function dropSeries(type, plantId, axis, targets, count, groupPrefix) {
-    let placed = 0;
-    for (let i = 0; i < count; i += 1) {
-      const target = targets[i % targets.length];
-      if (dropDisc(plantId, axis, target, `${groupPrefix}-${(i % targets.length) + 1}`, type)) placed += 1;
+  function dropSequence(axis, type, plantId, anchorsForType, totalCount) {
+    const engine = axis === 'top' ? topEngine : rightEngine;
+    const before = dynamicRecords.length;
+    for (let index = 0; index < totalCount; index += 1) {
+      const anchor = anchorsForType[index % anchorsForType.length];
+      const group = `${type}-${axis}-${(index % anchorsForType.length) + 1}`;
+      dropOne({ engine, axis, plantId, type, group, anchorX: anchor[0], anchorY: anchor[1] });
     }
-    modules.push({ id: groupPrefix, type, axis, requested: count, placed });
-    targets.forEach(([x, y], i) => anchors.push({ id: `${groupPrefix}-${i + 1}`, type, axis, x, y, sticky: false }));
+    modules.push({ id: `${type}-${axis}`, type, axis, requested: totalCount, placed: dynamicRecords.length - before });
+    anchorsForType.forEach(([x, y], index) => anchors.push({ id: `${type}-${axis}-${index + 1}`, type, axis, x, y }));
   }
 
-  const hedgeShift = (rand() - 0.5) * 0.16;
-  for (let i = 0; i < 5; i += 1) addHedge(4, 18.8, 3.0 + hedgeShift + i * 4.0, `hedge-${i + 1}`);
+  // Foreground first, then middle layer, then large flowering masses.
+  dropSequence('top', 'thrift', 1, composition.topT, 18);
+  dropSequence('top', 'hydrangea', 2, composition.topH, 10);
+  dropSequence('top', 'rose', 3, composition.roses.slice(0, 3), 3);
 
-  // Drop one disc at a time into shared edge containers. Front layer first,
-  // then middle layer, then roses. Nothing except the hedge is anchored.
-  dropSeries('thrift', 1, 'top', composition.topT, 16, 'thrift-top');
-  dropSeries('hydrangea', 2, 'top', composition.topH, 9, 'hydrangea-top');
-  dropSeries('rose', 3, 'top', composition.roses.slice(0, 3), 3, 'rose-top');
+  dropSequence('right', 'thrift', 1, composition.rightT, 18);
+  dropSequence('right', 'hydrangea', 2, composition.rightH, 10);
+  dropSequence('right', 'rose', 3, composition.roses.slice(3), 2);
 
-  dropSeries('thrift', 1, 'right', composition.rightT, 16, 'thrift-right');
-  dropSeries('hydrangea', 2, 'right', composition.rightH, 9, 'hydrangea-right');
-  dropSeries('rose', 3, 'right', composition.roses.slice(3), 2, 'rose-right');
+  // Freeze only after every marble has had a chance to rearrange the pile.
+  for (const record of dynamicRecords) {
+    Body.setStatic(record.body, true);
+    record.x = fromPhys(record.body.position.x);
+    record.y = fromPhys(record.body.position.y);
+    plants.push({
+      id: `${record.group}-${plants.length + 1}`,
+      plantId: record.plantId,
+      x: record.x,
+      y: record.y,
+      r: record.r,
+      group: record.group,
+      axis: record.axis,
+      fixed: false,
+    });
+  }
 
-  const accepted = attempts.filter(a => a.ok).length;
-  const rejected = attempts.length - accepted;
-  const unsupported = attempts.filter(a => !a.ok && a.reason === 'unsupported').length;
+  const hedgeShift = (rand() - 0.5) * 0.16 * scale;
+  for (let index = 0; index < 5; index += 1) {
+    const point = shapePoint(18.8, 3.0 + index * 4.0, size, shape);
+    const radius = radiusByPlant[4] * (0.992 + rand() * 0.016);
+    plants.push({ id: `hedge-${index + 1}`, plantId: 4, x: point.x, y: point.y + hedgeShift, r: radius, group: 'hedge', fixed: true });
+    anchors.push({ id: `hedge-${index + 1}`, type: 'hedge', axis: 'right', x: 18.8, y: 3.0 + index * 4.0, sticky: true });
+  }
+  modules.unshift({ id: 'hedge', type: 'hedge', axis: 'right', requested: 5, placed: 5 });
+
   lastRun = {
     recipeId: recipe.id,
     recipeName: recipe.name,
-    recipeVersion: `sequential-marble-packing-v${LAB_VERSION}`,
+    recipeVersion: `matter-js-rigid-body-v${LAB_VERSION}`,
     generatedAt: new Date().toISOString(),
     settings: { size, shape, seed, scale, compositionVariant: variantIndex + 1 },
     rules: {
-      generationMode: 'one-disc-at-a-time-gravity',
-      physicalDiscsUseRecipeRadius: true,
+      generationMode: 'matter-js-rigid-body-one-at-a-time',
+      engineVersion: window.Matter.version,
+      calibratedRadiusByPlant: radiusByPlant,
+      radiusSource: 'source-plan-scale-bar-and-canopy-diameters',
+      dropOrder: ['thrift', 'hydrangea', 'rose'],
       stickyObjects: ['hedge'],
-      nonStickyObjects: ['rose', 'hydrangea', 'thrift'],
-      topDropOrder: ['thrift', 'hydrangea', 'rose'],
-      rightDropOrder: ['thrift', 'hydrangea', 'rose'],
-      gravityStepsPerAttempt: 2600,
-      supportRequired: true,
+      dynamicObjectsRemainLiveUntilAllDropsComplete: true,
+      gravity: { top: { x: 0, y: 1.35 }, right: { x: -1.35, y: 0 } },
+      restitution: 0.015,
     },
-    containers: { top: topContainer, right: rightContainer },
-    modules, anchors, attempts, plants,
-    summary: { accepted, rejected, unsupported, totalPlants: plants.length },
+    bounds: { top: topBounds, right: rightBounds },
+    modules,
+    anchors,
+    attempts,
+    plants,
+    summary: { settled: dynamicRecords.length, totalPlants: plants.length },
   };
 
-  render(plants, size, shape, seed, patio, anchors, attempts, modules, variantIndex + 1);
+  render(plants, size, shape, seed, patio, anchors, modules, variantIndex + 1, radiusByPlant);
 }
 
-function line(x1, y1, x2, y2, stroke, width, dash = '') {
-  const e = document.createElementNS(svgNS, 'line');
-  Object.entries({ x1, x2, y1, y2, stroke, 'stroke-width': width }).forEach(([k, v]) => e.setAttribute(k, v));
-  if (dash) e.setAttribute('stroke-dasharray', dash);
-  els.svg.append(e);
-}
-
-function render(plants, size, shape, seed, patio, anchors, attempts, modules, variant) {
+function render(plants, size, shape, seed, patio, anchors, modules, variant, radiusByPlant) {
   els.svg.innerHTML = '';
   els.svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+
   if (els.grid.checked) {
     for (let x = 0; x <= size; x += 1) line(x, 0, x, size, '#cfd4c7', '.035');
     for (let y = 0; y <= size; y += 1) line(0, y, size, y, '#cfd4c7', '.035');
   }
 
-  const rect = document.createElementNS(svgNS, 'rect');
-  Object.entries({ x: patio.x, y: patio.y, width: patio.width, height: patio.height, fill: '#f2eee6', stroke: '#8f8a80', 'stroke-width': '.09' }).forEach(([k, v]) => rect.setAttribute(k, v));
-  els.svg.append(rect);
+  const patioRect = document.createElementNS(svgNS, 'rect');
+  Object.entries({ x: patio.x, y: patio.y, width: patio.width, height: patio.height, fill: '#f2eee6', stroke: '#8f8a80', 'stroke-width': '.09' }).forEach(([key, value]) => patioRect.setAttribute(key, value));
+  els.svg.append(patioRect);
 
   const fenceTop = shapePoint(recipe.rules.fenceX ?? 21, 1.4, size, shape);
   const fenceBottom = shapePoint(recipe.rules.fenceX ?? 21, 22.3, size, shape);
   line(fenceTop.x, fenceTop.y, fenceBottom.x, fenceBottom.y, '#27322a', '.22', '.5 .28');
 
   for (const item of plants) {
-    const plant = recipe.plants.find(p => p.id === item.plantId);
-    const c = document.createElementNS(svgNS, 'circle');
-    Object.entries({ cx: item.x, cy: item.y, r: item.r, fill: plant.color, 'fill-opacity': item.plantId === 4 ? '.72' : '.84', stroke: '#fff', 'stroke-opacity': '.72', 'stroke-width': '.07' }).forEach(([k, v]) => c.setAttribute(k, v));
-    els.svg.append(c);
+    addSvgCircle(item, recipe.plants.find(plant => plant.id === item.plantId));
     if (els.centers.checked) {
       const dot = document.createElementNS(svgNS, 'circle');
-      Object.entries({ cx: item.x, cy: item.y, r: '.07', fill: '#111' }).forEach(([k, v]) => dot.setAttribute(k, v));
+      Object.entries({ cx: item.x, cy: item.y, r: '.07', fill: '#111' }).forEach(([key, value]) => dot.setAttribute(key, value));
       els.svg.append(dot);
     }
   }
 
   if (els.debugOverlay.checked) {
-    for (const a of anchors) {
-      const p = shapePoint(a.x, a.y, size, shape);
+    for (const anchor of anchors) {
+      const point = shapePoint(anchor.x, anchor.y, size, shape);
       const dot = document.createElementNS(svgNS, 'circle');
-      Object.entries({ cx: p.x, cy: p.y, r: '.12', fill: a.sticky ? '#126e37' : '#111', stroke: '#fff', 'stroke-width': '.04' }).forEach(([k, v]) => dot.setAttribute(k, v));
+      Object.entries({ cx: point.x, cy: point.y, r: '.12', fill: anchor.sticky ? '#246' : '#111', stroke: '#fff', 'stroke-width': '.04' }).forEach(([key, value]) => dot.setAttribute(key, value));
       els.svg.append(dot);
     }
   }
 
-  const counts = recipe.plants.map(plant => ({ plant, count: plants.filter(p => p.plantId === plant.id).length }));
-  const accepted = attempts.filter(a => a.ok).length;
-  const rejected = attempts.length - accepted;
-  const unsupported = attempts.filter(a => !a.ok && a.reason === 'unsupported').length;
+  const counts = recipe.plants.map(plant => ({ plant, count: plants.filter(item => item.plantId === plant.id).length }));
   els.title.textContent = `${size} × ${size}, ${shape}, seed ${seed}, composition ${variant}`;
   els.seedValue.textContent = seed;
   els.metrics.innerHTML = counts.map(({ plant, count }) => `<div class="metric"><strong>${count}</strong><span>${plant.role.replaceAll('-', ' ')}</span></div>`).join('');
-  els.summary.innerHTML = `<strong>${plants.length} plant centers</strong><br><span class="muted">Sequential marble packing v${LAB_VERSION} · actual recipe scale · hedge only is sticky</span>`;
-  els.debugSummary.innerHTML = `<strong>${accepted} settled · ${rejected} retries rejected</strong><br><span class="muted">${unsupported} unsupported results · every accepted disc has floor or disc support</span>`;
+  els.summary.innerHTML = `<strong>${plants.length} plant centers</strong><br><span class="muted">Matter.js rigid-body packing · calibrated radii ${Object.values(radiusByPlant).map(value => value.toFixed(2)).join(' / ')}</span>`;
+  els.debugSummary.innerHTML = `<strong>${plants.length - 5} dynamic discs settled</strong><br><span class="muted">One disc at a time · all earlier discs remain movable until the final drop</span>`;
 }
 
 ['change', 'input'].forEach(eventName => {
-  [els.size, els.shape, els.seed, els.grid, els.centers, els.debugOverlay].forEach(el => el.addEventListener(eventName, generate));
+  [els.size, els.shape, els.seed, els.grid, els.centers, els.debugOverlay].forEach(element => element.addEventListener(eventName, generate));
 });
 document.querySelector('#regenerate').addEventListener('click', generate);
-document.querySelector('#next-seed').addEventListener('click', () => { els.seed.value = (Number(els.seed.value) % 100) + 1; generate(); });
+document.querySelector('#next-seed').addEventListener('click', () => {
+  els.seed.value = (Number(els.seed.value) % 100) + 1;
+  generate();
+});
 els.downloadDebug.addEventListener('click', () => {
   if (!lastRun) return;
   const blob = new Blob([JSON.stringify(lastRun, null, 2)], { type: 'application/json' });
