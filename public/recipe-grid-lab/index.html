@@ -12,7 +12,7 @@
       <p class="eyebrow">Plant Pending 2.0, Phase 1</p>
       <h1>Recipe Grid Laboratory</h1>
       <p>Test reusable planting recipes inside real zone shapes.</p>
-      <p><strong id="lab-version">Lab version 12.0.0 · drawable zone physics</strong></p>
+      <p><strong id="lab-version">Lab version 12.1.0 · top-aligned canvas</strong></p>
     </div>
     <a href="../" class="back-link">Back to Plant Pending</a>
   </header>
@@ -35,6 +35,7 @@
             <option value="strip">Long narrow strip</option>
             <option value="trapezoid">Trapezoid</option>
             <option value="irregular">Irregular polygon</option>
+            <option value="empty">Empty canvas</option>
             <option value="custom">Custom zone</option>
           </select>
         </label>
@@ -48,8 +49,9 @@
           <button id="finish-shape" class="primary">Finish shape</button>
           <button id="clear-exclusions">Clear exclusions</button>
         </div>
+        <button id="clear-canvas" class="secondary-wide">Clear canvas</button>
         <div id="zone-status" class="status-card"></div>
-        <p class="muted helper-text">Draw by clicking points on the canvas, then click Finish shape. Select front or back, then click near a zone edge.</p>
+        <p class="muted helper-text">Draw zone clears the current shape first. Click points on the canvas, then click Finish shape. Select front or back, then click near a zone edge.</p>
       </section>
 
       <section class="control-grid">
@@ -152,6 +154,6 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
-  <script type="module" src="./app.js?v=12.0.0"></script>
+  <script type="module" src="./app.js?v=12.1.0"></script>
 </body>
 </html>
