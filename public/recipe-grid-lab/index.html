@@ -11,8 +11,8 @@
     <div>
       <p class="eyebrow">Plant Pending 2.0, Phase 1</p>
       <h1>Recipe Grid Laboratory</h1>
-      <p>Prove the recipe before touching the yard.</p>
-      <p><strong id="lab-version">Lab version 10.0.0 · pixel jar physics</strong></p>
+      <p>Build a recipe from percentages, placement rules, and physics.</p>
+      <p><strong id="lab-version">Lab version 11.0.0 · recipe mix builder</strong></p>
     </div>
     <a href="../" class="back-link">Back to Plant Pending</a>
   </header>
@@ -20,23 +20,29 @@
   <main class="layout">
     <aside class="panel controls">
       <section>
-        <p class="eyebrow">Test recipe</p>
-        <h2 id="recipe-name">Loading recipe...</h2>
+        <p class="eyebrow">Recipe setup</p>
+        <h2 id="recipe-name">Elegant Privacy Hedge Border</h2>
         <p id="recipe-description" class="muted"></p>
       </section>
 
-      <section class="control-group">
-        <label>Reference size</label>
-        <select id="grid-size" disabled>
-          <option value="24">560 × 472 pixels</option>
-        </select>
-      </section>
-
-      <section class="control-group">
-        <label>Physics shape</label>
-        <select id="shape" disabled>
-          <option value="rectangle">Open-top jar with solid patio</option>
-        </select>
+      <section class="control-grid">
+        <label>Total plants
+          <input id="total-plants" type="number" min="4" max="200" step="1" value="60" />
+        </label>
+        <label>Front direction
+          <select id="front-direction">
+            <option value="bottom">Bottom</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+            <option value="top">Top</option>
+          </select>
+        </label>
+        <label>Physics size
+          <div class="inline-field"><input id="physics-percent" type="number" min="50" max="100" value="90" /><span>%</span></div>
+        </label>
+        <label>Random pad
+          <div class="inline-field"><input id="spacing-pad" type="number" min="0" max="20" value="5" /><span>px</span></div>
+        </label>
       </section>
 
       <section class="control-group">
@@ -45,13 +51,24 @@
       </section>
 
       <div class="button-row">
-        <button id="regenerate" class="primary">Regenerate</button>
+        <button id="regenerate" class="primary">Apply + regenerate</button>
         <button id="next-seed">Next seed</button>
       </div>
 
       <section>
-        <h3>Recipe layers</h3>
-        <div id="legend" class="legend"></div>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Plant mix</p>
+            <h3>Plants and percentages</h3>
+          </div>
+          <button id="add-plant" class="small-button">Add plant</button>
+        </div>
+        <div id="plant-editor" class="plant-editor"></div>
+        <div class="mix-footer">
+          <strong id="percentage-total">100%</strong>
+          <span id="percentage-message" class="muted">Recipe mix</span>
+        </div>
+        <button id="reset-defaults" class="secondary-wide">Reset defaults</button>
       </section>
 
       <section class="status-card">
@@ -76,29 +93,32 @@
         <svg id="recipe-canvas" role="img" aria-label="Generated recipe physics test"></svg>
       </div>
       <div class="notes">
-        <strong>Version 10 test:</strong> Exact reference pixels, solid patio block, orange divider, open top, and one plant disc released at a time.
+        <strong>Placement modes:</strong> Scatter drops loosely, stack starts in an orderly grid, line keeps a row, front-fill falls toward the selected front, and back-attract builds a hedge row.
       </div>
     </section>
 
     <aside class="panel inspection">
-      <p class="eyebrow">Pattern inspection</p>
-      <h2>Does it match the source plan?</h2>
+      <p class="eyebrow">Recipe output</p>
+      <h2>Close enough to reuse?</h2>
       <div id="metrics" class="metrics"></div>
-      <h3>Required visual checks</h3>
+
+      <h3>Recipe rules</h3>
       <ul class="checklist">
-        <li>Bloodstone diameter is 34 px</li>
-        <li>Hydrangea diameter is 62 px</li>
-        <li>Rose diameter is 115 px</li>
-        <li>Arborvitae diameter is 140 px</li>
-        <li>At least 90% of every plant remains visible</li>
-        <li>No plant sticks to another plant</li>
+        <li>Percentages determine plant balance</li>
+        <li>Placement mode controls orderly vs. scattered</li>
+        <li>Plant centers outside the valid zone are pruned</li>
+        <li>Exclusion areas remove plants by center point</li>
+        <li>Saved output uses normalized zone coordinates</li>
       </ul>
 
       <section class="status-card debug-card">
         <p class="eyebrow">Generation debug</p>
         <div id="debug-summary"></div>
-        <button id="download-debug" class="primary debug-download">Download debug package</button>
-        <p class="muted debug-help">Includes exact pixel sizes, drop order, collision-body size, random spacing pad, final positions, seed, and Matter.js settings.</p>
+        <div class="stacked-buttons">
+          <button id="download-recipe" class="primary">Download zone-ready recipe</button>
+          <button id="download-debug">Download debug package</button>
+        </div>
+        <p class="muted debug-help">The recipe export includes plant definitions, percentages, placement modes, front direction, normalized positions, pruning rules, and physics settings.</p>
       </section>
 
       <label class="notes-label" for="review-notes">Test notes</label>
@@ -107,6 +127,6 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
-  <script type="module" src="./app.js?v=10.0.0"></script>
+  <script type="module" src="./app.js?v=11.0.0"></script>
 </body>
 </html>
