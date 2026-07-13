@@ -12,7 +12,7 @@
       <p class="eyebrow">Plant Pending 2.0, Phase 1</p>
       <h1>Recipe Grid Laboratory</h1>
       <p>Prove the recipe before touching the yard.</p>
-      <p><strong id="lab-version">Lab version 9.0.0 · Matter.js rigid-body packing</strong></p>
+      <p><strong id="lab-version">Lab version 10.0.0 · pixel jar physics</strong></p>
     </div>
     <a href="../" class="back-link">Back to Plant Pending</a>
   </header>
@@ -26,22 +26,16 @@
       </section>
 
       <section class="control-group">
-        <label for="grid-size">Grid size</label>
-        <select id="grid-size">
-          <option value="24">24 × 24</option>
-          <option value="36">36 × 36</option>
-          <option value="48">48 × 48</option>
+        <label>Reference size</label>
+        <select id="grid-size" disabled>
+          <option value="24">560 × 472 pixels</option>
         </select>
       </section>
 
       <section class="control-group">
-        <label for="shape">Test shape</label>
-        <select id="shape">
-          <option value="rectangle">Rectangle</option>
-          <option value="narrow">Narrow</option>
-          <option value="wide">Wide</option>
-          <option value="curved">Curved edge</option>
-          <option value="irregular">Irregular</option>
+        <label>Physics shape</label>
+        <select id="shape" disabled>
+          <option value="rectangle">Open-top jar with solid patio</option>
         </select>
       </section>
 
@@ -70,40 +64,41 @@
       <div class="workspace-header">
         <div>
           <p class="eyebrow">Generated output</p>
-          <h2 id="view-title">24 × 24, seed 1</h2>
+          <h2 id="view-title">560 × 472 reference pixels, seed 1</h2>
         </div>
         <div class="view-tools">
           <label><input type="checkbox" id="show-grid" checked /> Grid</label>
           <label><input type="checkbox" id="show-centers" /> Centers</label>
-          <label><input type="checkbox" id="show-debug-overlay" /> Debug overlay</label>
+          <label><input type="checkbox" id="show-debug-overlay" /> Physics bodies</label>
         </div>
       </div>
       <div class="canvas-wrap">
-        <svg id="recipe-canvas" role="img" aria-label="Generated recipe grid"></svg>
+        <svg id="recipe-canvas" role="img" aria-label="Generated recipe physics test"></svg>
       </div>
       <div class="notes">
-        <strong>Phase 1 test:</strong> Plant discs are now settled by a real rigid-body physics engine, one at a time, against the patio and planting boundaries.
+        <strong>Version 10 test:</strong> Exact reference pixels, solid patio block, orange divider, open top, and one plant disc released at a time.
       </div>
     </section>
 
     <aside class="panel inspection">
       <p class="eyebrow">Pattern inspection</p>
-      <h2>Does it still look like the recipe?</h2>
+      <h2>Does it match the source plan?</h2>
       <div id="metrics" class="metrics"></div>
       <h3>Required visual checks</h3>
       <ul class="checklist">
-        <li>Continuous upright hedge along the privacy edge</li>
-        <li>Large rose masses repeat in a staggered rhythm</li>
-        <li>No disc can remain unsupported in open space</li>
-        <li>Bloodstone thrift packs along the patio edge</li>
-        <li>Hydrangeas and roses settle behind the foreground drift</li>
+        <li>Bloodstone diameter is 34 px</li>
+        <li>Hydrangea diameter is 62 px</li>
+        <li>Rose diameter is 115 px</li>
+        <li>Arborvitae diameter is 140 px</li>
+        <li>At least 90% of every plant remains visible</li>
+        <li>No plant sticks to another plant</li>
       </ul>
 
       <section class="status-card debug-card">
         <p class="eyebrow">Generation debug</p>
         <div id="debug-summary"></div>
         <button id="download-debug" class="primary debug-download">Download debug package</button>
-        <p class="muted debug-help">Includes calibrated radii, rigid-body settings, drop order, settled positions, seed, and final counts.</p>
+        <p class="muted debug-help">Includes exact pixel sizes, drop order, collision-body size, random spacing pad, final positions, seed, and Matter.js settings.</p>
       </section>
 
       <label class="notes-label" for="review-notes">Test notes</label>
@@ -112,6 +107,6 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
-  <script type="module" src="./app.js?v=9.0.0"></script>
+  <script type="module" src="./app.js?v=10.0.0"></script>
 </body>
 </html>
