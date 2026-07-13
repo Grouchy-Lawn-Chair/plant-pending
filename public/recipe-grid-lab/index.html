@@ -11,8 +11,8 @@
     <div>
       <p class="eyebrow">Plant Pending 2.0, Phase 1</p>
       <h1>Recipe Grid Laboratory</h1>
-      <p>Build a recipe from percentages, placement rules, and physics.</p>
-      <p><strong id="lab-version">Lab version 11.1.0 · mixed drop order</strong></p>
+      <p>Test reusable planting recipes inside real zone shapes.</p>
+      <p><strong id="lab-version">Lab version 12.0.0 · drawable zone physics</strong></p>
     </div>
     <a href="../" class="back-link">Back to Plant Pending</a>
   </header>
@@ -25,17 +25,36 @@
         <p id="recipe-description" class="muted"></p>
       </section>
 
+      <section>
+        <p class="eyebrow">Zone laboratory</p>
+        <h3>Shape and direction</h3>
+        <label>Preset shape
+          <select id="zone-preset">
+            <option value="reference-l">Reference L-shape</option>
+            <option value="rectangle">Rectangle</option>
+            <option value="strip">Long narrow strip</option>
+            <option value="trapezoid">Trapezoid</option>
+            <option value="irregular">Irregular polygon</option>
+            <option value="custom">Custom zone</option>
+          </select>
+        </label>
+        <div class="zone-button-grid">
+          <button data-zone-action="draw-zone">Draw zone</button>
+          <button data-zone-action="select-front">Select front edge</button>
+          <button data-zone-action="select-back">Select back edge</button>
+          <button data-zone-action="draw-exclusion">Draw exclusion</button>
+        </div>
+        <div class="button-row compact-row">
+          <button id="finish-shape" class="primary">Finish shape</button>
+          <button id="clear-exclusions">Clear exclusions</button>
+        </div>
+        <div id="zone-status" class="status-card"></div>
+        <p class="muted helper-text">Draw by clicking points on the canvas, then click Finish shape. Select front or back, then click near a zone edge.</p>
+      </section>
+
       <section class="control-grid">
         <label>Total plants
-          <input id="total-plants" type="number" min="4" max="200" step="1" value="60" />
-        </label>
-        <label>Front direction
-          <select id="front-direction">
-            <option value="bottom">Bottom</option>
-            <option value="left">Left</option>
-            <option value="right">Right</option>
-            <option value="top">Top</option>
-          </select>
+          <input id="total-plants" type="number" min="4" max="200" step="1" value="40" />
         </label>
         <label>Drop order
           <select id="drop-order">
@@ -44,16 +63,16 @@
           </select>
         </label>
         <label>Physics size
-          <div class="inline-field"><input id="physics-percent" type="number" min="50" max="100" value="90" /><span>%</span></div>
+          <div class="inline-field"><input id="physics-percent" type="number" min="50" max="110" value="100" /><span>%</span></div>
         </label>
         <label>Random pad
-          <div class="inline-field"><input id="spacing-pad" type="number" min="0" max="20" value="5" /><span>px</span></div>
+          <div class="inline-field"><input id="spacing-pad" type="number" min="0" max="20" value="0" /><span>px</span></div>
         </label>
       </section>
 
       <section class="control-group">
-        <label for="seed">Seed <span id="seed-value">1</span></label>
-        <input id="seed" type="range" min="1" max="100" value="1" />
+        <label for="seed">Seed <span id="seed-value">63</span></label>
+        <input id="seed" type="range" min="1" max="100" value="63" />
       </section>
 
       <div class="button-row">
@@ -87,7 +106,7 @@
       <div class="workspace-header">
         <div>
           <p class="eyebrow">Generated output</p>
-          <h2 id="view-title">560 × 472 reference pixels, seed 1</h2>
+          <h2 id="view-title">Reference L-shape · seed 63</h2>
         </div>
         <div class="view-tools">
           <label><input type="checkbox" id="show-grid" checked /> Grid</label>
@@ -99,22 +118,22 @@
         <svg id="recipe-canvas" role="img" aria-label="Generated recipe physics test"></svg>
       </div>
       <div class="notes">
-        <strong>Placement modes:</strong> Scatter and front-fill can now be released in a seed-based mixed order. Stack remains orderly, line keeps a row, and back-attract builds a hedge row.
+        <strong>Zone rules:</strong> green is front, orange is back, gray edges are solid walls, and red polygons are exclusions. Plant centers outside the zone or inside exclusions are pruned.
       </div>
     </section>
 
     <aside class="panel inspection">
       <p class="eyebrow">Recipe output</p>
-      <h2>Close enough to reuse?</h2>
+      <h2>Does it survive the shape?</h2>
       <div id="metrics" class="metrics"></div>
 
-      <h3>Recipe rules</h3>
+      <h3>Test goals</h3>
       <ul class="checklist">
-        <li>Percentages determine plant balance</li>
-        <li>Random mixed order prevents one plant type from always landing last</li>
-        <li>Placement mode controls orderly vs. scattered</li>
-        <li>Plant centers outside the valid zone are pruned</li>
-        <li>Saved output uses normalized zone coordinates</li>
+        <li>The same recipe works across multiple zone shapes</li>
+        <li>Front-fill follows the selected green edge</li>
+        <li>Back-attract follows the selected orange edge</li>
+        <li>Scatter and stack remain available</li>
+        <li>Plant centers outside valid space are pruned</li>
       </ul>
 
       <section class="status-card debug-card">
@@ -124,15 +143,15 @@
           <button id="download-recipe" class="primary">Download zone-ready recipe</button>
           <button id="download-debug">Download debug package</button>
         </div>
-        <p class="muted debug-help">The debug package includes the actual seed-based drop sequence so mixed results can be reproduced.</p>
+        <p class="muted debug-help">Exports include the zone polygon, selected front and back edges, exclusions, recipe settings, and final normalized plant positions.</p>
       </section>
 
       <label class="notes-label" for="review-notes">Test notes</label>
-      <textarea id="review-notes" rows="8" placeholder="What matches? What breaks? What needs adjustment?"></textarea>
+      <textarea id="review-notes" rows="8" placeholder="Which shapes work? Where does the recipe break?"></textarea>
     </aside>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
-  <script type="module" src="./app.js?v=11.1.0"></script>
+  <script type="module" src="./app.js?v=12.0.0"></script>
 </body>
 </html>
