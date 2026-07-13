@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plant Pending Recipe Grid Laboratory</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Plant Pending 2.0, Phase 1</p>
+      <h1>Recipe Grid Laboratory</h1>
+      <p>Prove the recipe before touching the yard.</p>
+    </div>
+    <a href="../" class="back-link">Back to Plant Pending</a>
+  </header>
+
+  <main class="layout">
+    <aside class="panel controls">
+      <section>
+        <p class="eyebrow">Test recipe</p>
+        <h2 id="recipe-name">Loading recipe...</h2>
+        <p id="recipe-description" class="muted"></p>
+      </section>
+
+      <section class="control-group">
+        <label for="grid-size">Grid size</label>
+        <select id="grid-size">
+          <option value="24">24 × 24</option>
+          <option value="36">36 × 36</option>
+          <option value="48">48 × 48</option>
+        </select>
+      </section>
+
+      <section class="control-group">
+        <label for="shape">Test shape</label>
+        <select id="shape">
+          <option value="rectangle">Rectangle</option>
+          <option value="narrow">Narrow</option>
+          <option value="wide">Wide</option>
+          <option value="curved">Curved edge</option>
+          <option value="irregular">Irregular</option>
+        </select>
+      </section>
+
+      <section class="control-group">
+        <label for="seed">Seed <span id="seed-value">1</span></label>
+        <input id="seed" type="range" min="1" max="100" value="1" />
+      </section>
+
+      <div class="button-row">
+        <button id="regenerate" class="primary">Regenerate</button>
+        <button id="next-seed">Next seed</button>
+      </div>
+
+      <section>
+        <h3>Recipe layers</h3>
+        <div id="legend" class="legend"></div>
+      </section>
+
+      <section class="status-card">
+        <p class="eyebrow">Current test</p>
+        <div id="test-summary"></div>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <div class="workspace-header">
+        <div>
+          <p class="eyebrow">Generated output</p>
+          <h2 id="view-title">24 × 24, seed 1</h2>
+        </div>
+        <div class="view-tools">
+          <label><input type="checkbox" id="show-grid" checked /> Grid</label>
+          <label><input type="checkbox" id="show-centers" /> Centers</label>
+        </div>
+      </div>
+      <div class="canvas-wrap">
+        <svg id="recipe-canvas" role="img" aria-label="Generated recipe grid"></svg>
+      </div>
+      <div class="notes">
+        <strong>Phase 1 test:</strong> The pattern should still read as the same privacy-border design when the seed, grid size, or zone shape changes.
+      </div>
+    </section>
+
+    <aside class="panel inspection">
+      <p class="eyebrow">Pattern inspection</p>
+      <h2>Does it still look like the recipe?</h2>
+      <div id="metrics" class="metrics"></div>
+      <h3>Required visual checks</h3>
+      <ul class="checklist">
+        <li>Continuous upright hedge along the privacy edge</li>
+        <li>Large rose masses repeat in a staggered rhythm</li>
+        <li>Hydrangeas form an interlocking middle matrix</li>
+        <li>Low thrift creates a readable foreground edge</li>
+        <li>Variation changes the arrangement, not the recipe identity</li>
+      </ul>
+      <label class="notes-label" for="review-notes">Test notes</label>
+      <textarea id="review-notes" rows="8" placeholder="What matches? What breaks? What needs adjustment?"></textarea>
+    </aside>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
