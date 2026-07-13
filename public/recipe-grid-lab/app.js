@@ -1,8 +1,8 @@
 const svgNS = 'http://www.w3.org/2000/svg';
-const LAB_VERSION = '11.0.0';
+const LAB_VERSION = '11.1.0';
 if (!window.Matter) throw new Error('Matter.js did not load. Check the network connection and refresh.');
 
-const { Engine, Composite, Composites, Bodies, Body, Sleeping } = window.Matter;
+const { Engine, Composite, Composites, Bodies, Body } = window.Matter;
 const CANVAS = { width: 560, height: 472 };
 const PATIO = { x: 20, y: 202, width: 270, height: 270 };
 const DIVIDER_X = 420;
@@ -11,7 +11,7 @@ const STORAGE_KEY = 'plant-pending-recipe-lab-v11';
 const DEFAULT_PLANTS = [
   { id: 'bloodstone', name: 'Bloodstone Thrift', diameter: 34, percentage: 50, mode: 'front-fill', color: '#e88bb8' },
   { id: 'hydrangea', name: 'Early Evolution Hydrangea', diameter: 62, percentage: 30, mode: 'scatter', color: '#eadfcd' },
-  { id: 'rose', name: 'Eau de Parfum Blush Rose', diameter: 95, percentage: 13, mode: 'stack', color: '#c8d9bf' },
+  { id: 'rose', name: 'Eau de Parfum Blush Rose', diameter: 95, percentage: 13, mode: 'scatter', color: '#e11be4' },
   { id: 'arborvitae', name: 'UpStanding Emerald Arborvitae', diameter: 140, percentage: 7, mode: 'back-attract', color: '#b9d2b4' },
 ];
 
@@ -21,6 +21,7 @@ const els = {
   seedValue: document.querySelector('#seed-value'),
   totalPlants: document.querySelector('#total-plants'),
   frontDirection: document.querySelector('#front-direction'),
+  dropOrder: document.querySelector('#drop-order'),
   physicsPercent: document.querySelector('#physics-percent'),
   spacingPad: document.querySelector('#spacing-pad'),
   editor: document.querySelector('#plant-editor'),
@@ -39,13 +40,14 @@ const els = {
 let state = loadState();
 let lastRun = null;
 
-if (els.version) els.version.textContent = `Lab version ${LAB_VERSION} · recipe mix builder`;
-document.querySelector('#recipe-description').textContent = 'Tune plant sizes, percentages, and placement modes, then export the settled pattern for reuse in a real zone.';
+if (els.version) els.version.textContent = `Lab version ${LAB_VERSION} · mixed drop order`;
+document.querySelector('#recipe-description').textContent = 'Tune plant sizes, percentages, placement modes, and drop order, then export the settled pattern for reuse in a real zone.';
 
 function cloneDefaults() {
   return {
     totalPlants: 60,
     frontDirection: 'bottom',
+    dropOrder: 'random',
     physicsPercent: 90,
     spacingPad: 5,
     plants: DEFAULT_PLANTS.map(plant => ({ ...plant })),
@@ -55,7 +57,7 @@ function cloneDefaults() {
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (parsed?.plants?.length) return parsed;
+    if (parsed?.plants?.length) return { ...cloneDefaults(), ...parsed, dropOrder: parsed.dropOrder || 'random' };
   } catch {}
   return cloneDefaults();
 }
@@ -79,9 +81,19 @@ function rng(seed) {
   };
 }
 
+function shuffle(items, rand) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rand() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 function renderEditor() {
   els.totalPlants.value = state.totalPlants;
   els.frontDirection.value = state.frontDirection;
+  els.dropOrder.value = state.dropOrder;
   els.physicsPercent.value = state.physicsPercent;
   els.spacingPad.value = state.spacingPad;
   els.editor.innerHTML = state.plants.map((plant, index) => `
@@ -108,6 +120,7 @@ function renderEditor() {
 function readEditor() {
   state.totalPlants = Math.max(1, Number(els.totalPlants.value) || 1);
   state.frontDirection = els.frontDirection.value;
+  state.dropOrder = els.dropOrder.value;
   state.physicsPercent = Math.max(50, Math.min(100, Number(els.physicsPercent.value) || 90));
   state.spacingPad = Math.max(0, Math.min(20, Number(els.spacingPad.value) || 0));
   [...els.editor.querySelectorAll('.plant-row')].forEach((row, index) => {
@@ -151,12 +164,10 @@ function gravityVector(direction) {
 
 function isCenterInZone(record) {
   const { x, y } = record;
-  const insideCanvas = x >= 0 && x <= CANVAS.width && y >= 0 && y <= CANVAS.height;
-  if (!insideCanvas) return false;
-  if (record.mode === 'back-attract') return x >= DIVIDER_X && x <= CANVAS.width;
-  const inPlantingArea = x <= DIVIDER_X;
+  if (x < 0 || x > CANVAS.width || y < 0 || y > CANVAS.height) return false;
+  if (record.mode === 'back-attract') return x >= DIVIDER_X;
   const inPatio = x >= PATIO.x && x <= PATIO.x + PATIO.width && y >= PATIO.y && y <= PATIO.y + PATIO.height;
-  return inPlantingArea && !inPatio;
+  return x <= DIVIDER_X && !inPatio;
 }
 
 function settle(engine, maxSteps = 2600) {
@@ -198,6 +209,7 @@ function generate() {
   const records = [];
   const pruned = [];
   const attempts = [];
+  const dropQueue = [];
   const bodyOptions = { restitution: 0.015, friction: 0.3, frictionStatic: 0.55, frictionAir: 0.02, density: 0.0015, sleepThreshold: 45, slop: 0.05 };
 
   function physicsRadiusFor(plant) {
@@ -213,19 +225,20 @@ function generate() {
       if (state.frontDirection === 'left') return { x: CANVAS.width - 18 - radius, y: 25 + fraction * (CANVAS.height - 50) };
       return { x: 18 + radius, y: 25 + fraction * (CANVAS.height - 50) };
     }
-    return { x: 25 + rand() * (DIVIDER_X - 50), y: 18 + radius + rand() * 24 };
+    return { x: 25 + rand() * (DIVIDER_X - 50), y: 18 + radius + rand() * 28 };
   }
 
-  function addDynamic(plant, mode, index, count) {
+  function addDynamic(job, dropIndex) {
+    const { plant, mode, index, count } = job;
     const visualRadius = plant.diameter / 2;
     const physicsRadius = physicsRadiusFor(plant);
     const spawn = spawnPoint(plant, index, count, mode);
     const body = Bodies.circle(spawn.x, spawn.y, physicsRadius, { ...bodyOptions, label: plant.id });
-    Body.setVelocity(body, { x: (rand() - 0.5) * 0.55, y: (rand() - 0.5) * 0.2 });
+    Body.setVelocity(body, { x: (rand() - 0.5) * 0.75, y: (rand() - 0.5) * 0.25 });
     Composite.add(engine.world, body);
-    settle(engine, 1600);
-    records.push({ id: `${plant.id}-${index + 1}`, plantId: plant.id, name: plant.name, color: plant.color, diameter: plant.diameter, visualRadius, physicsRadius, x: body.position.x, y: body.position.y, mode, body, fixed: false });
-    attempts.push({ plantId: plant.id, mode, spawn, final: { x: body.position.x, y: body.position.y }, visualDiameter: plant.diameter, physicsDiameter: physicsRadius * 2 });
+    const steps = settle(engine, 1600);
+    records.push({ id: `${plant.id}-${index + 1}`, plantId: plant.id, name: plant.name, color: plant.color, diameter: plant.diameter, visualRadius, physicsRadius, x: body.position.x, y: body.position.y, mode, body, fixed: false, dropIndex });
+    attempts.push({ dropIndex, plantId: plant.id, mode, spawn, final: { x: body.position.x, y: body.position.y }, visualDiameter: plant.diameter, physicsDiameter: physicsRadius * 2, steps });
   }
 
   state.plants.forEach((plant, plantIndex) => {
@@ -259,7 +272,7 @@ function generate() {
         const visualRadius = plant.diameter / 2;
         const physicsRadius = physicsRadiusFor(plant);
         const body = Bodies.circle(x, y, physicsRadius, { ...bodyOptions, label: plant.id });
-        records.push({ id: `${plant.id}-${created + 1}`, plantId: plant.id, name: plant.name, color: plant.color, diameter: plant.diameter, visualRadius, physicsRadius, x, y, mode: plant.mode, body, fixed: false });
+        records.push({ id: `${plant.id}-${created + 1}`, plantId: plant.id, name: plant.name, color: plant.color, diameter: plant.diameter, visualRadius, physicsRadius, x, y, mode: plant.mode, body, fixed: false, dropIndex: null });
         created += 1;
         return body;
       });
@@ -268,8 +281,11 @@ function generate() {
       return;
     }
 
-    for (let i = 0; i < count; i += 1) addDynamic(plant, plant.mode, i, count);
+    for (let i = 0; i < count; i += 1) dropQueue.push({ plant, mode: plant.mode, index: i, count });
   });
+
+  const orderedQueue = state.dropOrder === 'random' ? shuffle(dropQueue, rand) : dropQueue;
+  orderedQueue.forEach((job, index) => addDynamic(job, index + 1));
 
   settle(engine, 2600);
   records.filter(record => record.body).forEach(record => {
@@ -290,10 +306,11 @@ function generate() {
   lastRun = {
     recipeVersion: `recipe-mix-builder-v${LAB_VERSION}`,
     generatedAt: new Date().toISOString(),
-    settings: { seed, totalPlants: state.totalPlants, frontDirection: state.frontDirection, physicsPercent: state.physicsPercent, spacingPad: state.spacingPad, canvas: CANVAS, patio: PATIO, dividerX: DIVIDER_X },
+    settings: { seed, totalPlants: state.totalPlants, frontDirection: state.frontDirection, dropOrder: state.dropOrder, physicsPercent: state.physicsPercent, spacingPad: state.spacingPad, canvas: CANVAS, patio: PATIO, dividerX: DIVIDER_X },
     plants: state.plants,
     allocatedCounts: Object.fromEntries(state.plants.map((plant, index) => [plant.id, counts[index]])),
     placementModes: Object.fromEntries(state.plants.map(plant => [plant.id, plant.mode])),
+    dropSequence: attempts.map(attempt => ({ dropIndex: attempt.dropIndex, plantId: attempt.plantId, mode: attempt.mode })),
     zoneFitRules: { centerMustBeInsideZone: true, centerMustBeOutsideExclusions: true, pruneInvalidPlants: true },
     normalizedPlants,
     pruned,
@@ -346,7 +363,7 @@ function render(records, seed, prunedCount, countByPlant) {
   els.seedValue.textContent = seed;
   els.metrics.innerHTML = state.plants.map(plant => `<div class="metric"><strong>${countByPlant[plant.id] || 0}</strong><span>${plant.name}<br>${plant.percentage}% · ${plant.mode.replace('-', ' ')}</span></div>`).join('');
   els.summary.innerHTML = `<strong>${records.length} plants kept</strong><br><span class="muted">${prunedCount} pruned by center point · ${state.totalPlants} requested</span>`;
-  els.debugSummary.innerHTML = `<strong>${state.plants.length} plant types</strong><br><span class="muted">${state.physicsPercent}% collision bodies · 0–${state.spacingPad}px random pad · ${state.frontDirection} front</span>`;
+  els.debugSummary.innerHTML = `<strong>${state.plants.length} plant types</strong><br><span class="muted">${state.dropOrder} drop order · ${state.physicsPercent}% collision bodies · 0–${state.spacingPad}px random pad</span>`;
 }
 
 function downloadJson(filename, value) {
@@ -359,8 +376,8 @@ function downloadJson(filename, value) {
   URL.revokeObjectURL(url);
 }
 
-els.editor.addEventListener('input', () => { readEditor(); });
-els.editor.addEventListener('change', () => { readEditor(); });
+els.editor.addEventListener('input', readEditor);
+els.editor.addEventListener('change', readEditor);
 els.editor.addEventListener('click', event => {
   const button = event.target.closest('.remove-plant');
   if (!button) return;
@@ -381,7 +398,7 @@ document.querySelector('#reset-defaults').addEventListener('click', () => { stat
 document.querySelector('#regenerate').addEventListener('click', generate);
 document.querySelector('#next-seed').addEventListener('click', () => { els.seed.value = (Number(els.seed.value) % 100) + 1; generate(); });
 [els.seed, els.grid, els.centers, els.debugOverlay].forEach(element => element.addEventListener('change', generate));
-[els.totalPlants, els.frontDirection, els.physicsPercent, els.spacingPad].forEach(element => element.addEventListener('change', generate));
+[els.totalPlants, els.frontDirection, els.dropOrder, els.physicsPercent, els.spacingPad].forEach(element => element.addEventListener('change', generate));
 document.querySelector('#download-debug').addEventListener('click', () => lastRun && downloadJson(`plant-pending-recipe-debug-seed-${lastRun.settings.seed}.json`, lastRun));
 document.querySelector('#download-recipe').addEventListener('click', () => {
   if (!lastRun) return;
