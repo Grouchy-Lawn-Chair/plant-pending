@@ -74,6 +74,7 @@
         <div class="view-tools">
           <label><input type="checkbox" id="show-grid" checked /> Grid</label>
           <label><input type="checkbox" id="show-centers" /> Centers</label>
+          <label><input type="checkbox" id="show-debug-overlay" /> Debug overlay</label>
         </div>
       </div>
       <div class="canvas-wrap">
@@ -92,10 +93,18 @@
       <ul class="checklist">
         <li>Continuous upright hedge along the privacy edge</li>
         <li>Large rose masses repeat in a staggered rhythm</li>
-        <li>Hydrangeas form an interlocking middle matrix</li>
-        <li>Low thrift creates a readable foreground edge</li>
+        <li>Hydrangeas form small groups with only slight overlap</li>
+        <li>Bloodstone thrift forms chunky 3 to 6 plant drifts</li>
         <li>Variation changes the arrangement, not the recipe identity</li>
       </ul>
+
+      <section class="status-card debug-card">
+        <p class="eyebrow">Generation debug</p>
+        <div id="debug-summary"></div>
+        <button id="download-debug" class="primary debug-download">Download debug package</button>
+        <p class="muted debug-help">Includes every anchor, accepted plant, rejected attempt, collision reason, overlap measurement, seed, shape, and final count.</p>
+      </section>
+
       <label class="notes-label" for="review-notes">Test notes</label>
       <textarea id="review-notes" rows="8" placeholder="What matches? What breaks? What needs adjustment?"></textarea>
     </aside>
