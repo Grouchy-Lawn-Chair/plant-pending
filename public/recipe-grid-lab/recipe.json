@@ -1,32 +1,26 @@
 {
   "id": "elegant-privacy-hedge-border",
   "name": "Elegant Privacy Hedge Border",
-  "source": "Professional guide recipe 12",
-  "description": "A continuous privacy hedge with repeated flowering masses, an interlocking middle matrix, and a low foreground edge.",
+  "source": "Monrovia Fall Guide 2023, Elegant Privacy Hedge Border",
+  "description": "An L-shaped corner planting around a patio, with a large upright arborvitae screen on the right, interlocking hydrangea and rose masses, and a low thrift edge along the patio.",
   "plants": [
     { "id": 1, "name": "Bloodstone Thrift", "role": "foreground-edge", "color": "#d26d7f", "radius": 0.42 },
-    { "id": 2, "name": "Early Evolution Hydrangea", "role": "middle-matrix", "color": "#8facc7", "radius": 0.85 },
-    { "id": 3, "name": "Eau De Parfum Blush Rose", "role": "flowering-mass", "color": "#e49aab", "radius": 1.05 },
-    { "id": 4, "name": "UpStanding Emerald Arborvitae", "role": "privacy-hedge", "color": "#476f50", "radius": 0.72 }
+    { "id": 2, "name": "Early Evolution Hydrangea", "role": "middle-matrix", "color": "#d8cdbd", "radius": 0.82 },
+    { "id": 3, "name": "Eau De Parfum Blush Rose", "role": "flowering-mass", "color": "#d887ad", "radius": 1.28 },
+    { "id": 4, "name": "UpStanding Emerald Arborvitae", "role": "privacy-hedge", "color": "#7fa57d", "radius": 1.62 }
   ],
   "rules": {
-    "privacyEdge": "top",
-    "hedgeSpacing": 1.55,
-    "roseMassSpacing": 7.2,
-    "roseMassSize": 3,
-    "hydrangeaSpacing": 2.65,
-    "foregroundSpacing": 1.35,
-    "edgeInset": 1.1,
-    "layerDepths": {
-      "hedge": 1.1,
-      "rose": 3.1,
-      "hydrangea": 5.25,
-      "foreground": 7.35
-    },
+    "referenceGrid": 24,
+    "patio": { "x": 1.4, "y": 9.3, "width": 10.2, "height": 12.6 },
+    "privacyEdge": "right",
+    "hedgeCenters": [[20.2,3.4],[20.2,7.6],[20.2,11.8],[20.2,16.0],[20.2,20.2]],
+    "roseCenters": [[4.0,4.2],[9.0,5.1],[13.7,4.0],[15.8,8.0],[16.6,17.2]],
+    "hydrangeaCenters": [[2.2,6.5],[5.8,7.0],[7.4,3.1],[8.0,7.6],[11.5,6.7],[12.0,9.6],[13.7,11.1],[15.0,13.0],[15.0,15.2],[14.2,19.4],[17.5,20.2]],
+    "thriftTop": [[1.6,8.7],[2.8,8.4],[4.0,8.7],[5.2,8.4],[6.4,8.7],[7.6,8.4],[8.8,8.7],[10.0,8.4],[11.2,8.7]],
+    "thriftRight": [[12.2,10.0],[12.5,11.2],[12.2,12.4],[12.5,13.6],[12.2,14.8],[12.5,16.0],[12.2,17.2],[12.5,18.4],[12.2,19.6],[12.5,20.8]],
     "seedVariation": {
-      "horizontalJitter": 0.35,
-      "verticalJitter": 0.22,
-      "massSizeVariation": 1
+      "positionJitter": 0.16,
+      "scaleJitter": 0.05
     }
   }
 }
