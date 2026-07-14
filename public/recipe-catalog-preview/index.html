@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plant Pending Recipe Catalog Preview</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#0f141b;color:#eef2f7;font-family:Inter,Arial,sans-serif}.shell{min-height:100vh;display:grid;grid-template-columns:340px 1fr}.side{padding:24px;border-right:1px solid #29313a;background:#151b23}.main{padding:28px}.eyebrow{text-transform:uppercase;letter-spacing:.18em;font-size:11px;color:#8ea0b3}.muted{color:#97a6b4}.back{display:inline-block;margin-bottom:20px;color:#c7d2dc;text-decoration:none}.brand{font-size:28px;font-weight:800;margin:5px 0}.select{width:100%;margin-top:18px;padding:12px;border-radius:12px;border:1px solid #3a4652;background:#0e141a;color:#fff}.card{border:1px solid #303a45;background:#151c24;border-radius:18px;padding:18px}.source{margin-top:10px;border:1px solid #353f4a;background:#0f151c;border-radius:14px;padding:12px}.plants{display:grid;gap:12px;margin-top:18px}.plant{display:grid;grid-template-columns:1fr auto;gap:12px;border:1px solid #303a45;background:#10171e;border-radius:14px;padding:14px}.name{font-weight:700}.meta{font-size:12px;color:#98a8b7;margin-top:5px}.match{font-size:12px;color:#c9d4de;margin-top:8px}.pill{height:max-content;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:700;border:1px solid #4b5563}.unmatched{color:#aeb9c5;background:#111827}.note{margin-top:18px;border:1px solid #5b4d91;background:#241e3e;border-radius:14px;padding:14px;color:#d8cffd}.legend{margin-top:18px;display:grid;gap:8px}.legend div{font-size:12px;color:#aab7c3}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}.front{background:#2dd4bf}.middle{background:#60a5fa}.backrole{background:#f59e0b}.accent{background:#e879f9}@media(max-width:800px){.shell{display:block}.side{border-right:0;border-bottom:1px solid #29313a}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <a class="back" href="../">← Back to Plant Pending</a>
+      <div class="eyebrow">Plant Pending</div>
+      <div class="brand">Plant recipes</div>
+      <p class="muted">Review the first Monrovia plant lists before the picker is connected to zone generation.</p>
+      <label class="eyebrow" for="recipe">Recipe</label>
+      <select class="select" id="recipe"></select>
+      <div class="legend">
+        <div><span class="dot front"></span>Front</div>
+        <div><span class="dot middle"></span>Middle</div>
+        <div><span class="dot backrole"></span>Back</div>
+        <div><span class="dot accent"></span>Accent</div>
+      </div>
+    </aside>
+    <main class="main">
+      <div id="detail"></div>
+    </main>
+  </div>
+<script>
+const recipes=[
+{id:'elegant',name:'Elegant Privacy Hedge Border',pdf:'Monrovia_FallGuide_2023-Final (1)(1).pdf',page:4,plants:[['Bloodstone Thrift',30,'front',12],['Early Evolution Hydrangea',30,'middle',24],['Eau de Parfum Blush Rose',25,'accent',48],['UpStanding Emerald Arborvitae',15,'back',96]]},
+{id:'meadow',name:'Modern Meadow',pdf:'LandscapeProjectGuide2025_Single(1).pdf',page:2,plants:[['Northwind Switch Grass',14,'back',36],['Butterfly Weed',14,'middle',24],['Narrowleaf Milkweed',10,'middle',12],['Dark Matter Meadow Sage',16,'front',20],['Heavy Metal Blue Switch Grass',14,'middle',36],['Apex White Meadow Sage',10,'front',14],['Sunseekers Golden Sun Coneflower',11,'middle',16],['Sunseekers White Perfection Coneflower',11,'middle',16]]},
+{id:'hummingbird',name:'Hummingbird Oasis',pdf:'LandscapeProjectGuide2025_Single(1).pdf',page:8,plants:[['Chateau de Chambord Rose of Sharon',22,'back',48],['Chapel Hill Yellow Lantana',17,'middle',36],['Pink Pearl Agastache',14,'middle',16],['Colorburst Rose Cape Fuchsia',18,'front',24],['Harlequin Pink Beardtongue',14,'front',16],['Colorburst Yellow Cape Fuchsia',15,'front',24]]},
+{id:'firepit',name:'Fire Pit',pdf:"Ultimate Spring Planning Guide '23(1).pdf",page:4,plants:[['Little Darling Lilac',12,'accent',48],['Evolution Colorific Coneflower',14,'middle',18],['Scallywag Holly',14,'back',36],['Evolution Emerald Ice Sedum',12,'front',15],['Red Creeping Thyme',14,'front',18],['Dark Matter Meadow Sage',14,'middle',12],['Dark Knight Bluebeard',10,'middle',24],['Elijah Blue Fescue',10,'front',12]]},
+{id:'fenceline',name:'Fenceline Flow',pdf:'Monrovia_FallGuide_2023-Final (1)(1).pdf',page:2,plants:[['T-Rex Hosta',28,'middle',72],['Ryusen Weeping Japanese Maple',20,'accent',72],['Ice Dance Japanese Sedge',27,'front',24],['Northern Exposure Sienna Heuchera',25,'front',21]]},
+{id:'drought',name:'Delightful and Drought-Tolerant',pdf:'Monrovia_WeekendProjectGuide2024-V4(1).pdf',page:6,plants:[['Summertime Blues Chaste Tree',18,'back',60],['Blonde Ambition Blue Grama Grass',30,'middle',36],['Sombrero Granada Gold Coneflower',24,'middle',24],['Rozanne Cranesbill',28,'front',24]]}
+];
+const select=document.querySelector('#recipe'),detail=document.querySelector('#detail');
+recipes.forEach(r=>{const o=document.createElement('option');o.value=r.id;o.textContent=r.name;select.append(o)});
+function render(){const r=recipes.find(x=>x.id===select.value)||recipes[0];detail.innerHTML=`<section class="card"><div class="eyebrow">Recipe preview</div><h1>${r.name}</h1><div class="source"><strong>Source</strong><div class="meta">${r.pdf} · page ${r.page}</div></div><div class="note">This build is for reviewing plant lists, coverage estimates, and front/middle/back/accent roles. Green Acres matching and physics generation are the next connection.</div><div class="plants">${r.plants.map(p=>`<div class="plant"><div><div class="name">${p[0]}</div><div class="meta">${p[1]}% coverage · ${p[2]} · ${p[3]}\" mature width</div><div class="match">Green Acres match: pending</div></div><span class="pill unmatched">Needs match</span></div>`).join('')}</div></section>`}
+select.addEventListener('change',render);select.value=recipes[0].id;render();
+</script>
+</body>
+</html>
