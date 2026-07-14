@@ -3,9 +3,17 @@ import { createPortal } from 'react-dom';
 import App from './App';
 import { recipeCatalog } from './data/recipeCatalog';
 import { runRecipePhysics } from './engine/recipePhysicsEngine';
-import type { GardenPlan, GardenZone, PlacedPlant, PlantingGroup } from './types/plant';
+import type { GardenPlan, GardenZone, PlacedPlant, PlantingGroup, TestSnapshot } from './types/plant';
 
 const CURRENT_PLAN_KEY = 'garden-planner-current';
+const RECIPE_DEBUG_HISTORY_KEY = 'plant-pending-recipe-generation-history';
+
+type HookNode = {
+  memoizedState?: unknown;
+  baseState?: unknown;
+  queue?: { dispatch?: (value: unknown) => void } | null;
+  next?: HookNode | null;
+};
 
 type FiberNode = {
   child?: FiberNode | null;
@@ -13,6 +21,7 @@ type FiberNode = {
   return?: FiberNode | null;
   memoizedProps?: Record<string, unknown> | null;
   pendingProps?: Record<string, unknown> | null;
+  memoizedState?: HookNode | null;
 };
 
 function findReactFiber(element: Element | null): FiberNode | null {
@@ -25,10 +34,16 @@ function findReactFiber(element: Element | null): FiberNode | null {
   return null;
 }
 
-function findCallbackInFiber(start: FiberNode | null, callbackName: string): ((plan: GardenPlan) => void) | null {
+function fiberRoot(start: FiberNode | null): FiberNode | null {
   if (!start) return null;
   let root = start;
   while (root.return) root = root.return;
+  return root;
+}
+
+function findCallbackInFiber(start: FiberNode | null, callbackName: string): ((plan: GardenPlan) => void) | null {
+  const root = fiberRoot(start);
+  if (!root) return null;
 
   const stack: FiberNode[] = [root];
   const visited = new Set<FiberNode>();
@@ -54,6 +69,115 @@ function applyPlanToRunningApp(host: HTMLElement, plan: GardenPlan): boolean {
   if (!apply) return false;
   apply(plan);
   return true;
+}
+
+function appendDebugSnapshotToRunningApp(host: HTMLElement, snapshot: TestSnapshot): boolean {
+  const root = fiberRoot(findReactFiber(host));
+  if (!root) return false;
+
+  const stack: FiberNode[] = [root];
+  const visited = new Set<FiberNode>();
+  while (stack.length) {
+    const fiber = stack.pop()!;
+    if (visited.has(fiber)) continue;
+    visited.add(fiber);
+
+    const snapshotsProp = fiber.memoizedProps?.debugSnapshots;
+    if (Array.isArray(snapshotsProp)) {
+      let owner: FiberNode | null | undefined = fiber;
+      while (owner) {
+        let hook = owner.memoizedState;
+        while (hook) {
+          if (hook.memoizedState === snapshotsProp && typeof hook.queue?.dispatch === 'function') {
+            const current = snapshotsProp as TestSnapshot[];
+            hook.queue.dispatch([...current.slice(-99), snapshot]);
+            return true;
+          }
+          hook = hook.next;
+        }
+        owner = owner.return;
+      }
+    }
+
+    if (fiber.sibling) stack.push(fiber.sibling);
+    if (fiber.child) stack.push(fiber.child);
+  }
+
+  return false;
+}
+
+function persistRecipeDebugSnapshot(snapshot: TestSnapshot): void {
+  try {
+    const raw = localStorage.getItem(RECIPE_DEBUG_HISTORY_KEY);
+    const current = raw ? JSON.parse(raw) : [];
+    const history = Array.isArray(current) ? current : [];
+    localStorage.setItem(RECIPE_DEBUG_HISTORY_KEY, JSON.stringify([...history.slice(-99), snapshot]));
+  } catch {
+    // Debug persistence must never block recipe generation.
+  }
+}
+
+function createRecipeDebugImage(zone: GardenZone, placements: ReturnType<typeof runRecipePhysics>['placements']): {
+  imageDataUrl: string;
+  width: number;
+  height: number;
+} {
+  const bounds = {
+    minX: Math.min(...zone.points.map(point => point.x)),
+    minY: Math.min(...zone.points.map(point => point.y)),
+    maxX: Math.max(...zone.points.map(point => point.x)),
+    maxY: Math.max(...zone.points.map(point => point.y)),
+  };
+  const padding = 30;
+  const sourceWidth = Math.max(160, bounds.maxX - bounds.minX + padding * 2);
+  const sourceHeight = Math.max(120, bounds.maxY - bounds.minY + padding * 2);
+  const scale = Math.min(1, 720 / Math.max(sourceWidth, sourceHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(220, Math.round(sourceWidth * scale));
+  canvas.height = Math.max(180, Math.round(sourceHeight * scale));
+  const context = canvas.getContext('2d');
+  if (!context) return { imageDataUrl: '', width: 0, height: 0 };
+
+  const x = (value: number) => (value - bounds.minX + padding) * scale;
+  const y = (value: number) => (value - bounds.minY + padding) * scale;
+
+  context.fillStyle = '#f3f4f6';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.beginPath();
+  zone.points.forEach((point, index) => {
+    if (index === 0) context.moveTo(x(point.x), y(point.y));
+    else context.lineTo(x(point.x), y(point.y));
+  });
+  context.closePath();
+  context.fillStyle = 'rgba(34, 197, 94, 0.14)';
+  context.strokeStyle = '#15803d';
+  context.lineWidth = 2;
+  context.fill();
+  context.stroke();
+
+  const layerColors: Record<string, string> = {
+    front: '#14b8a6',
+    middle: '#60a5fa',
+    back: '#15803d',
+    accent: '#db2777',
+  };
+  placements.forEach(placement => {
+    context.beginPath();
+    context.arc(x(placement.x), y(placement.y), Math.max(3, placement.radius * scale), 0, Math.PI * 2);
+    context.fillStyle = layerColors[placement.layer] || '#64748b';
+    context.globalAlpha = 0.62;
+    context.fill();
+    context.globalAlpha = 1;
+    context.strokeStyle = '#0f172a';
+    context.lineWidth = 1;
+    context.stroke();
+  });
+
+  return {
+    imageDataUrl: canvas.toDataURL('image/jpeg', 0.62),
+    width: canvas.width,
+    height: canvas.height,
+  };
 }
 
 function RecipePanel({ host }: { host: HTMLElement }) {
@@ -88,23 +212,26 @@ function RecipePanel({ host }: { host: HTMLElement }) {
       return;
     }
 
+    const previousZonePlants = ((plan.placedPlants || []) as PlacedPlant[]).filter(item => item.zone === zone.id);
     const pixelsPerFoot = plan.scalePixelsPerFoot || 20;
+    const density = Math.max(0.05, Math.min(1, (zone.density ?? 50) / 100));
+    const physicsInputs = selectedRecipe.plants.map(item => ({
+      key: `${selectedRecipe.id}:${item.plantId}`,
+      plantId: item.plantId,
+      layer: item.layer,
+      weight: item.weight,
+      radius: Math.max(5, (item.widthInches / 12) * pixelsPerFoot * 0.525),
+      clump: item.clump,
+    }));
     const physics = runRecipePhysics({
       polygon: zone.points,
       seed: zone.plantingSeed || Math.floor(Math.random() * 99999),
-      density: Math.max(0.05, Math.min(1, (zone.density ?? 50) / 100)),
+      density,
       frontEdges: zone.edgeRoles?.front,
       backEdges: zone.edgeRoles?.back,
       iterations: 420,
       padding: 4,
-      plants: selectedRecipe.plants.map(item => ({
-        key: `${selectedRecipe.id}:${item.plantId}`,
-        plantId: item.plantId,
-        layer: item.layer,
-        weight: item.weight,
-        radius: Math.max(5, (item.widthInches / 12) * pixelsPerFoot * 0.525),
-        clump: item.clump,
-      })),
+      plants: physicsInputs,
     });
 
     const generated: PlacedPlant[] = physics.placements.map(item => ({
@@ -179,7 +306,43 @@ function RecipePanel({ host }: { host: HTMLElement }) {
       return;
     }
 
-    setMessage(`${selectedRecipe.name}: ${generated.length} plants placed.`);
+    const image = createRecipeDebugImage(zone, physics.placements);
+    const snapshot: TestSnapshot = {
+      id: `recipe-${selectedRecipe.id}-${Date.now().toString(36)}`,
+      timestamp: new Date().toISOString(),
+      reason: 'recipe.physics.completed',
+      imageDataUrl: image.imageDataUrl,
+      width: image.width,
+      height: image.height,
+      details: {
+        recipeId: selectedRecipe.id,
+        recipeName: selectedRecipe.name,
+        recipePlants: selectedRecipe.plants,
+        zone: {
+          id: zone.id,
+          name: zone.name,
+          points: zone.points,
+          density: zone.density ?? 50,
+          seed: physics.diagnostics.seed,
+          frontEdges: zone.edgeRoles?.front || [],
+          backEdges: zone.edgeRoles?.back || [],
+        },
+        physicsInputs,
+        physicsDiagnostics: physics.diagnostics,
+        placements: physics.placements,
+        generatedPlacedPlants: generated,
+        replacedZonePlants: previousZonePlants,
+        planCountsAfterGeneration: {
+          placedPlants: placedPlants.length,
+          zones: nextZones.length,
+          plantingGroups: plantingGroups.length,
+        },
+      },
+    };
+    persistRecipeDebugSnapshot(snapshot);
+    const captured = appendDebugSnapshotToRunningApp(host, snapshot);
+
+    setMessage(`${selectedRecipe.name}: ${generated.length} plants placed. Debug generation ${captured ? 'captured' : 'saved to backup history'}.`);
   };
 
   return createPortal(
@@ -209,7 +372,7 @@ function RecipePanel({ host }: { host: HTMLElement }) {
         Generate recipe with physics
       </button>
       <div className="mt-2 text-[11px] text-violet-200/80">
-        Uses normalized Green Acres plant IDs, recipe mature widths, the zone seed, marked edges, clumping, and collision handling.
+        Every generation is retained in the debug package with its recipe, seed, zone, physics inputs, diagnostics, exact positions, replaced layout, and preview image.
       </div>
       {message && <div className="mt-2 rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-slate-200">{message}</div>}
     </section>,
