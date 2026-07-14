@@ -1,0 +1,62 @@
+name: Patch true-size stack behavior
+
+on:
+  push:
+    branches:
+      - phase-1-recipe-grid-lab
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[skip true-size patch]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: phase-1-recipe-grid-lab
+      - name: Patch lab
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          app = Path('public/recipe-grid-lab/app.js')
+          text = app.read_text()
+          text = text.replace("VERSION='12.4.0'", "VERSION='12.5.0'", 1)
+          text = text.replace('edge-assigned local gravity', 'true-size sequential packing', 1)
+          text = text.replace("state.physicsPercent=Math.max(50,Math.min(110,+els.physics.value||100))", "state.physicsPercent=Math.max(100,Math.min(120,+els.physics.value||100))", 1)
+          text = text.replace("radius=p=>p.diameter*(state.physicsPercent/100)/2+r()*state.spacingPad/2", "radius=p=>Math.max(p.diameter/2,p.diameter*(state.physicsPercent/100)/2)+r()*state.spacingPad/2", 1)
+
+          old_stack = "if(p.mode==='stack'){const b=bounds(),cols=Math.max(1,Math.ceil(Math.sqrt(n))),rows=Math.ceil(n/cols);let made=0;const stack=Composites.stack(b.minX+30,b.minY+30,cols,rows,8,8,(x,y)=>{if(made>=n)return null;const vr=p.diameter/2,pr=radius(p),body=Bodies.circle(x,y,pr,{...opts,label:p.id});records.push({id:`${p.id}-${++made}`,plantId:p.id,name:p.name,color:p.color,diameter:p.diameter,visualRadius:vr,physicsRadius:pr,x,y,mode:p.mode,body,fixed:false,dropIndex:null});return body});Composite.add(engine.world,stack);settle(engine,1800);return}"
+          new_stack = "if(p.mode==='stack'){for(let i=0;i<n;i++)queue.push({p,index:i,count:n,mode:p.mode});return}"
+          if old_stack not in text:
+              raise SystemExit('stack branch not found')
+          text = text.replace(old_stack, new_stack, 1)
+
+          old_target = "if(mode==='front-fill'){const target=pointAcross(state.zone.frontEdges,(index+1)/(j.count+1),pr+6),n=inward(target.edge),depth=Math.min(180,Math.max(CANVAS.width,CANVAS.height)*.35);targetPoint={x:target.x,y:target.y};targetEdge=target.edge;spawn={x:target.x+n.x*depth,y:target.y+n.y*depth};if(!inside(spawn,state.zone.points))spawn=randomPoint(r,pr+4)}else{const target=pointAcross(state.zone.frontEdges,r(),pr+10+r()*24);targetPoint={x:target.x,y:target.y};targetEdge=target.edge}"
+          new_target = "if(mode==='front-fill'){const target=pointAcross(state.zone.frontEdges,(index+1)/(j.count+1),pr+6),n=inward(target.edge),depth=Math.min(180,Math.max(CANVAS.width,CANVAS.height)*.35);targetPoint={x:target.x,y:target.y};targetEdge=target.edge;spawn={x:target.x+n.x*depth,y:target.y+n.y*depth};if(!inside(spawn,state.zone.points))spawn=randomPoint(r,pr+4)}else if(mode==='stack'){const row=Math.floor(index/Math.max(1,Math.ceil(Math.sqrt(j.count)))),target=pointAcross(state.zone.frontEdges,(index+1)/(j.count+1),pr+45+row*(p.diameter+8));targetPoint={x:target.x,y:target.y};targetEdge=target.edge}else{const target=pointAcross(state.zone.frontEdges,r(),pr+10+r()*24);targetPoint={x:target.x,y:target.y};targetEdge=target.edge}"
+          if old_target not in text:
+              raise SystemExit('target branch not found')
+          text = text.replace(old_target, new_target, 1)
+          text = text.replace('const steps=settle(engine,1400)', 'const steps=settle(engine,240)', 1)
+          text = text.replace('});settle(engine,2600);', '});settle(engine,1400);', 1)
+          app.write_text(text)
+
+          index = Path('public/recipe-grid-lab/index.html')
+          html = index.read_text()
+          html = html.replace('Lab version 12.4.0 · edge-assigned local gravity', 'Lab version 12.5.0 · true-size sequential packing')
+          html = html.replace('min="50" max="110" value="100"', 'min="100" max="120" value="100"')
+          html = html.replace('./app.js?v=12.4.0', './app.js?v=12.5.0')
+          index.write_text(html)
+
+          Path('.github/workflows/patch-true-size-stack.yml').unlink()
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "plant-pending-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add public/recipe-grid-lab/app.js public/recipe-grid-lab/index.html .github/workflows/patch-true-size-stack.yml
+          git commit -m "Use true-size sequential stack packing [skip true-size patch]"
+          git push origin HEAD:phase-1-recipe-grid-lab
