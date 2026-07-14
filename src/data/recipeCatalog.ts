@@ -7,12 +7,7 @@ export interface AppRecipePlant {
   weight: number;
   layer: RecipePhysicsLayer;
   widthInches: number;
-  clump?: number;
-  sourceName?: string;
-  matchStatus?: 'exact' | 'close' | 'substitute';
-  matchScore?: number;
-  riskNotes?: string;
-  notes?: string;
+  clump: number;
 }
 
 export interface AppRecipe {
@@ -24,8 +19,11 @@ export interface AppRecipe {
 }
 
 /**
- * App-facing adapter only. All recipe definitions live in plantRecipes.ts.
- * Do not add recipe data to this file.
+ * Production-facing recipe catalog.
+ *
+ * The app receives only the final Green Acres plant selected for each recipe.
+ * Source plants, rejected candidates, substitution labels, match scores, and
+ * research notes are intentionally excluded from this runtime model.
  */
 export const recipeCatalog: AppRecipe[] = plantRecipes.map(recipe => ({
   id: recipe.id,
@@ -38,10 +36,6 @@ export const recipeCatalog: AppRecipe[] = plantRecipes.map(recipe => ({
     weight: item.coveragePercent,
     layer: item.layer,
     widthInches: item.matureWidthInches || 24,
-    sourceName: item.sourceName,
-    matchStatus: item.matchStatus,
-    matchScore: item.matchScore,
-    riskNotes: item.riskNotes,
-    notes: item.notes,
+    clump: 0.65,
   })),
 }));
