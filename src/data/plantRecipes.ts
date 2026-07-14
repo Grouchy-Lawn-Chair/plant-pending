@@ -50,11 +50,25 @@ const p = (
   notes,
 });
 
+const gardenia = (
+  id: string,
+  name: string,
+  plants: PlantRecipeItem[],
+): PlantRecipe => ({
+  id,
+  name,
+  sourcePdf: 'Gardenia.net supplied recipe set',
+  sourcePage: 0,
+  status: 'reviewed',
+  plants,
+});
+
 /**
- * Monrovia recipes matched only to verified Plant Pending Green Acres records.
- * Conservative functional substitutions are used where the source cultivar is not in the catalog.
- * Plants with meaningful invasive, reseeding, suckering, rhizome, or aggressive-spread concerns
- * are not used as automatic defaults.
+ * SINGLE SOURCE OF TRUTH FOR ALL APP RECIPES.
+ *
+ * Every recipe used by the app must be defined here. recipeCatalog.ts is only
+ * an adapter for the physics UI. The old public recipe-grid-lab is a standalone
+ * development fixture and is not an application recipe source.
  */
 export const plantRecipes: PlantRecipe[] = [
   {
@@ -145,6 +159,64 @@ export const plantRecipes: PlantRecipe[] = [
       p('Rozanne Cranesbill', 28, 'front', 24, 860, 'Fruity Germander', 'substitute', 66, 'Compact mound; no aggressive ground-running habit.', 'Low purple flowering front layer without sprawling cranesbill behavior.'),
     ],
   },
+
+  gardenia('gardenia-provencal-courtyard', 'A Contemporary Provencal Courtyard', [
+    p('Deer Grass', 55, 'back', 48, 811, 'Deer Grass', 'exact', 98, 'Clumping California native grass; no running spread.', 'Direct Green Acres match.'),
+    p('Fruity Germander', 45, 'front', 24, 860, 'Fruity Germander', 'exact', 98, 'Compact woody perennial; no invasive concern.', 'Direct Green Acres match.'),
+  ]),
+  gardenia('gardenia-soft-autumn-colors', 'Soft Autumn Colors', [
+    p("Sedum 'Autumn Fire'", 35, 'front', 18, 506, "Sedum 'Autumn Fire'", 'exact', 98, 'Clumping sedum; no invasive concern.', 'Direct Green Acres match.'),
+    p("Coast Rosemary 'Blue Gem'", 35, 'back', 36, 781, "Coast Rosemary 'Blue Gem'", 'exact', 98, 'Evergreen shrub; no running spread.', 'Direct Green Acres match.'),
+    p('Silver Carpet', 30, 'front', 24, 343, 'Silver Carpet', 'exact', 98, 'Mat-forming groundcover; gradual spread only.', 'Direct Green Acres match.'),
+  ]),
+  gardenia('gardenia-brilliant-summer-border', 'Brilliant Summer Border', [
+    p("Bottlebrush 'Little John'", 30, 'back', 36, 729, "Bottlebrush 'Little John'", 'exact', 98, 'Compact woody shrub; no aggressive spread.', 'Direct Green Acres match.'),
+    p('Bright Lights Horizon Sunset African Daisy', 45, 'middle', 24, 285, 'Bright Lights Horizon Sunset African Daisy', 'exact', 98, 'Clumping perennial; no invasive concern.', 'Direct Green Acres match.'),
+    p("Cordyline 'Electric Pink'", 25, 'accent', 60, 792, "Cordyline 'Electric Pink'", 'exact', 98, 'Clumping foliage plant; no invasive concern.', 'Direct Green Acres match.'),
+  ]),
+  gardenia('gardenia-successful-marriage', 'A Successful Marriage', [
+    p('Northern Lights Tufted Hair Grass', 45, 'middle', 12, 399, 'Northern Lights Tufted Hair Grass', 'exact', 98, 'Clumping grass; no running habit.', 'Direct Green Acres match.'),
+    p('Fruity Germander', 30, 'front', 24, 860, 'Fruity Germander', 'exact', 98, 'Compact woody perennial; no invasive concern.', 'Direct Green Acres match.'),
+    p('Blue Fescue', 25, 'front', 10, 277, 'Blue Fescue', 'exact', 98, 'Clumping grass; no running spread.', 'Direct Green Acres match.'),
+  ]),
+  gardenia('gardenia-mediterranean-border', 'A Pretty Mediterranean Border Idea', [
+    p('Fruity Germander', 16, 'front', 24, 860, 'Fruity Germander', 'exact', 98, 'Compact woody perennial; no invasive concern.', 'Direct Green Acres match.'),
+    p("Lily of the Nile 'Storm Cloud'", 14, 'back', 60, 937, "Lily of the Nile 'Storm Cloud'", 'exact', 98, 'Clumping rhizomatous perennial; monitor bed edges.', 'Direct Green Acres match.'),
+    p('Blue Fescue', 14, 'front', 10, 277, 'Blue Fescue', 'exact', 98, 'Clumping grass; no running spread.', 'Direct Green Acres match.'),
+    p('Bright Lights Horizon Sunset African Daisy', 14, 'front', 24, 285, 'Bright Lights Horizon Sunset African Daisy', 'exact', 98, 'Clumping perennial; no invasive concern.', 'Direct Green Acres match.'),
+    p("Bottlebrush 'Little John'", 14, 'accent', 36, 729, "Bottlebrush 'Little John'", 'exact', 98, 'Compact woody shrub; no aggressive spread.', 'Direct Green Acres match.'),
+    p("Coast Rosemary 'Blue Gem'", 14, 'back', 36, 781, "Coast Rosemary 'Blue Gem'", 'exact', 98, 'Evergreen shrub; no running spread.', 'Direct Green Acres match.'),
+    p("Coreopsis 'Nana'", 14, 'middle', 24, 312, "Coreopsis 'Nana'", 'exact', 98, 'Clumping perennial; no invasive concern.', 'Direct Green Acres match.'),
+  ]),
+  gardenia('gardenia-backyard-retreat', 'Backyard Retreat with Achillea, Festuca and Grasses', [
+    p("Yarrow 'Little Moonshine'", 35, 'middle', 24, 574, "Yarrow 'Little Moonshine'", 'exact', 98, 'Clumping perennial; may slowly widen.', 'Direct Green Acres match.'),
+    p('Blue Fescue', 30, 'front', 10, 277, 'Blue Fescue', 'exact', 98, 'Clumping grass; no running spread.', 'Direct Green Acres match.'),
+    p('Northern Lights Tufted Hair Grass', 35, 'back', 12, 399, 'Northern Lights Tufted Hair Grass', 'exact', 98, 'Clumping grass; no running habit.', 'Direct Green Acres match.'),
+  ]),
+  gardenia('gardenia-desert-pollinator', 'Native Desert Pollinator Garden', [
+    p("Lomandra 'Lime Tuff'", 20, 'accent', 30, 444, "Lomandra 'Lime Tuff'", 'exact', 98, 'Sterile clumping selection; no running spread.', 'Direct Green Acres match.'),
+    p("Bottlebrush 'Little John'", 25, 'back', 36, 729, "Bottlebrush 'Little John'", 'exact', 98, 'Compact woody shrub; no aggressive spread.', 'Direct Green Acres match.'),
+    p('Northern Lights Tufted Hair Grass', 30, 'middle', 12, 399, 'Northern Lights Tufted Hair Grass', 'exact', 98, 'Clumping grass; no running habit.', 'Direct Green Acres match.'),
+    p("Coreopsis 'Nana'", 25, 'front', 24, 312, "Coreopsis 'Nana'", 'exact', 98, 'Clumping perennial; no invasive concern.', 'Direct Green Acres match.'),
+  ]),
+  gardenia('gardenia-butterfly-friendly', 'Butterfly-Friendly Garden Design', [
+    p("Coreopsis 'Nana'", 25, 'front', 24, 312, "Coreopsis 'Nana'", 'exact', 98, 'Clumping perennial; no invasive concern.', 'Direct Green Acres match.'),
+    p("Coast Rosemary 'Blue Gem'", 20, 'back', 36, 781, "Coast Rosemary 'Blue Gem'", 'exact', 98, 'Evergreen shrub; no running spread.', 'Direct Green Acres match.'),
+    p("Feather Reed Grass 'Karl Foerster'", 15, 'back', 36, 370, "Feather Reed Grass 'Karl Foerster'", 'exact', 98, 'Clumping ornamental grass; no running habit.', 'Direct Green Acres match.'),
+    p("Sedum 'Autumn Fire'", 20, 'middle', 18, 506, "Sedum 'Autumn Fire'", 'exact', 98, 'Clumping sedum; no invasive concern.', 'Direct Green Acres match.'),
+    p('Blue Fescue', 20, 'front', 10, 277, 'Blue Fescue', 'exact', 98, 'Clumping grass; no running spread.', 'Direct Green Acres match.'),
+  ]),
+  gardenia('gardenia-grasses-sage', 'A Fabulous Planting Idea with Grasses and Sage', [
+    p('Northern Lights Tufted Hair Grass', 60, 'middle', 12, 399, 'Northern Lights Tufted Hair Grass', 'exact', 98, 'Clumping grass; no running habit.', 'Direct Green Acres match.'),
+    p("Coast Rosemary 'Blue Gem'", 40, 'back', 36, 781, "Coast Rosemary 'Blue Gem'", 'exact', 98, 'Evergreen shrub; no running spread.', 'Direct Green Acres match.'),
+  ]),
+  gardenia('gardenia-summer-fall-border', 'Summer-to-Fall Perennial Border', [
+    p("Bottlebrush 'Little John'", 20, 'accent', 36, 729, "Bottlebrush 'Little John'", 'exact', 98, 'Compact woody shrub; no aggressive spread.', 'Direct Green Acres match.'),
+    p("Coast Rosemary 'Blue Gem'", 20, 'back', 36, 781, "Coast Rosemary 'Blue Gem'", 'exact', 98, 'Evergreen shrub; no running spread.', 'Direct Green Acres match.'),
+    p('Bright Lights Horizon Sunset African Daisy', 20, 'middle', 24, 285, 'Bright Lights Horizon Sunset African Daisy', 'exact', 98, 'Clumping perennial; no invasive concern.', 'Direct Green Acres match.'),
+    p('Blue Fescue', 20, 'front', 10, 277, 'Blue Fescue', 'exact', 98, 'Clumping grass; no running spread.', 'Direct Green Acres match.'),
+    p('Firehouse Verbena', 20, 'front', 22, 374, 'Firehouse Verbena', 'exact', 98, 'Controlled spreading groundcover; keep within intended bed.', 'Direct Green Acres match.'),
+  ]),
 ];
 
 export const getPlantRecipe = (id: string): PlantRecipe | undefined =>
