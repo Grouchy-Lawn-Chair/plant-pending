@@ -1,0 +1,64 @@
+name: Patch edge-assigned front fill
+
+on:
+  push:
+    branches:
+      - phase-1-recipe-grid-lab
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[skip edge-assigned patch]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: phase-1-recipe-grid-lab
+      - name: Patch lab physics
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          app = Path('public/recipe-grid-lab/app.js')
+          text = app.read_text()
+
+          old_attract = "function attract(engine){const gx=engine.gravity.x*engine.gravity.scale,gy=engine.gravity.y*engine.gravity.scale;for(const b of Composite.allBodies(engine.world)){if(b.isStatic||!b.plugin?.frontFill)continue;Body.applyForce(b,b.position,{x:-gx*b.mass,y:-gy*b.mass});const e=nearestSelected(b.position,state.zone.frontEdges);if(!e)continue;const dx=e.n.x-b.position.x,dy=e.n.y-b.position.y,d=Math.hypot(dx,dy)||1;if(d>2){const strength=Math.min(.0024,.0007+d*.000006);Body.applyForce(b,b.position,{x:dx/d*b.mass*strength,y:dy/d*b.mass*strength})}}}"
+          new_attract = "function attract(engine){for(const b of Composite.allBodies(engine.world)){if(b.isStatic||!b.plugin?.targetPoint)continue;const t=b.plugin.targetPoint,dx=t.x-b.position.x,dy=t.y-b.position.y,d=Math.hypot(dx,dy)||1;if(d<=2)continue;const strength=b.plugin.frontFill?Math.min(.0024,.0008+d*.000006):Math.min(.00034,.00008+d*.0000012);Body.applyForce(b,b.position,{x:dx/d*b.mass*strength,y:dy/d*b.mass*strength})}}"
+          if old_attract not in text:
+              raise SystemExit('old attract function not found')
+          text = text.replace(old_attract, new_attract, 1)
+
+          old_engine = "const r=rng(seed*7919+17),g=avgOut(state.zone.frontEdges),engine=Engine.create({gravity:{...g,scale:.0017},positionIterations:20,velocityIterations:16,constraintIterations:8,enableSleeping:true});"
+          new_engine = "const r=rng(seed*7919+17),engine=Engine.create({gravity:{x:0,y:0,scale:0},positionIterations:20,velocityIterations:16,constraintIterations:8,enableSleeping:true});"
+          if old_engine not in text:
+              raise SystemExit('old engine setup not found')
+          text = text.replace(old_engine, new_engine, 1)
+
+          old_loop = "const ordered=state.dropOrder==='random'?shuffle(queue,r):queue;ordered.forEach((j,di)=>{const{p,index,mode}=j,vr=p.diameter/2,pr=radius(p);let spawn=randomPoint(r,pr+4);if(mode==='front-fill'){const target=pointAcross(state.zone.frontEdges,(index+1)/(j.count+1),pr+8),n=inward(target.edge),depth=Math.min(180,Math.max(CANVAS.width,CANVAS.height)*.35);spawn={x:target.x+n.x*depth,y:target.y+n.y*depth};if(!inside(spawn,state.zone.points))spawn=randomPoint(r,pr+4)}const body=Bodies.circle(spawn.x,spawn.y,pr,{...opts,label:p.id,plugin:{frontFill:mode==='front-fill'}});Body.setVelocity(body,{x:(r()-.5)*.65,y:(r()-.5)*.65});"
+          new_loop = "const ordered=state.dropOrder==='random'?shuffle(queue,r):queue;ordered.forEach((j,di)=>{const{p,index,mode}=j,vr=p.diameter/2,pr=radius(p);let spawn=randomPoint(r,pr+4),targetPoint=null,targetEdge=null;if(mode==='front-fill'){const target=pointAcross(state.zone.frontEdges,(index+1)/(j.count+1),pr+6),n=inward(target.edge),depth=Math.min(180,Math.max(CANVAS.width,CANVAS.height)*.35);targetPoint={x:target.x,y:target.y};targetEdge=target.edge;spawn={x:target.x+n.x*depth,y:target.y+n.y*depth};if(!inside(spawn,state.zone.points))spawn=randomPoint(r,pr+4)}else{const target=pointAcross(state.zone.frontEdges,r(),pr+10+r()*24);targetPoint={x:target.x,y:target.y};targetEdge=target.edge}const body=Bodies.circle(spawn.x,spawn.y,pr,{...opts,label:p.id,plugin:{frontFill:mode==='front-fill',targetPoint,targetEdge}});Body.setVelocity(body,{x:(r()-.5)*.65,y:(r()-.5)*.65});"
+          if old_loop not in text:
+              raise SystemExit('old ordered loop not found')
+          text = text.replace(old_loop, new_loop, 1)
+
+          text = text.replace("VERSION='12.3.0'", "VERSION='12.4.0'", 1)
+          text = text.replace('assigned front-edge pull', 'edge-assigned local gravity', 1)
+          app.write_text(text)
+
+          index = Path('public/recipe-grid-lab/index.html')
+          html = index.read_text()
+          html = html.replace('Lab version 12.3.0 · assigned front-edge pull', 'Lab version 12.4.0 · edge-assigned local gravity')
+          html = html.replace('./app.js?v=12.3.0', './app.js?v=12.4.0')
+          index.write_text(html)
+
+          Path('.github/workflows/patch-edge-assigned-front-fill.yml').unlink()
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "plant-pending-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add public/recipe-grid-lab/app.js public/recipe-grid-lab/index.html .github/workflows/patch-edge-assigned-front-fill.yml
+          git commit -m "Assign plants to local front-edge targets [skip edge-assigned patch]"
+          git push origin HEAD:phase-1-recipe-grid-lab
