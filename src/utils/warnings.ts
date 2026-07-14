@@ -3,26 +3,48 @@
 import { Plant, PlacedPlant, Warning } from '../types/plant';
 import { generateId } from './storage';
 
-// Calculate distance between two points
-function distance(x1: number, y1: number, x2: number, y2: number): number {
-  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+export const OVERLAP_WARNING_RATIO = 0.92;
+export const DEFAULT_PIXELS_PER_FOOT = 20;
+
+export interface OverlapMeasurement {
+  distancePx: number;
+  thresholdPx: number;
+  overlapPx: number;
+  overlapPercent: number;
+  warning: boolean;
 }
 
-// Check if two circles overlap
-function circlesOverlap(
-  x1: number, y1: number, r1: number,
-  x2: number, y2: number, r2: number
-): boolean {
-  const dist = distance(x1, y1, x2, y2);
-  return dist < (r1 + r2);
+export function getPlacedPlantRadiusPx(
+  placed: PlacedPlant,
+  plant: Plant,
+  pixelsPerFoot: number | null,
+): number {
+  const widthFt = placed.displayWidthFt || plant.matureWidthFt || 3;
+  const scale = pixelsPerFoot || DEFAULT_PIXELS_PER_FOOT;
+  return Math.max(5, (widthFt / 2) * scale);
 }
 
-// Get plant by ID from the plant list
+export function measurePlantOverlap(
+  a: { x: number; y: number; radiusPx: number },
+  b: { x: number; y: number; radiusPx: number },
+): OverlapMeasurement {
+  const distancePx = Math.hypot(b.x - a.x, b.y - a.y);
+  const thresholdPx = a.radiusPx + b.radiusPx;
+  const overlapPx = Math.max(0, thresholdPx - distancePx);
+  const overlapPercent = thresholdPx > 0 ? (overlapPx / thresholdPx) * 100 : 0;
+  return {
+    distancePx,
+    thresholdPx,
+    overlapPx,
+    overlapPercent,
+    warning: distancePx < thresholdPx * OVERLAP_WARNING_RATIO,
+  };
+}
+
 function getPlantById(plants: Plant[], id: number): Plant | undefined {
   return plants.find(p => p.id === id);
 }
 
-// Generate all warnings for the current plan
 export function generateWarnings(
   placedPlants: PlacedPlant[],
   allPlants: Plant[],
@@ -32,30 +54,25 @@ export function generateWarnings(
 
   if (placedPlants.length === 0) return warnings;
 
-  // Check each pair of plants for overlap and spacing
   for (let i = 0; i < placedPlants.length; i++) {
     const placedA = placedPlants[i];
     const plantA = getPlantById(allPlants, placedA.plantId);
-
     if (!plantA) continue;
-
-    // Get plant A's radius in pixels
+    const radiusA = getPlacedPlantRadiusPx(placedA, plantA, pixelsPerFoot);
     const widthA = placedA.displayWidthFt || plantA.matureWidthFt || 3;
-    const radiusA = pixelsPerFoot ? (widthA / 2) * pixelsPerFoot : 30;
 
-    // Check against all other plants
     for (let j = i + 1; j < placedPlants.length; j++) {
       const placedB = placedPlants[j];
       const plantB = getPlantById(allPlants, placedB.plantId);
-
       if (!plantB) continue;
-
-      // Get plant B's radius in pixels
+      const radiusB = getPlacedPlantRadiusPx(placedB, plantB, pixelsPerFoot);
       const widthB = placedB.displayWidthFt || plantB.matureWidthFt || 3;
-      const radiusB = pixelsPerFoot ? (widthB / 2) * pixelsPerFoot : 30;
+      const overlap = measurePlantOverlap(
+        { x: placedA.x, y: placedA.y, radiusPx: radiusA },
+        { x: placedB.x, y: placedB.y, radiusPx: radiusB },
+      );
 
-      // Check for overlap
-      if (circlesOverlap(placedA.x, placedA.y, radiusA, placedB.x, placedB.y, radiusB)) {
+      if (overlap.warning) {
         warnings.push({
           id: generateId(),
           type: 'overlap',
@@ -65,16 +82,14 @@ export function generateWarnings(
         });
       }
 
-      // Check minimum spacing if scale is set
       if (pixelsPerFoot) {
         const largerSpacing = Math.max(
           plantA.minimumSpacingFt || widthA,
           plantB.minimumSpacingFt || widthB
         );
-        const distPixels = distance(placedA.x, placedA.y, placedB.x, placedB.y);
-        const distFeet = distPixels / pixelsPerFoot;
+        const distFeet = overlap.distancePx / pixelsPerFoot;
 
-        if (distFeet < largerSpacing && !circlesOverlap(placedA.x, placedA.y, radiusA, placedB.x, placedB.y, radiusB)) {
+        if (distFeet < largerSpacing && overlap.overlapPx <= 0) {
           warnings.push({
             id: generateId(),
             type: 'spacing',
@@ -87,13 +102,11 @@ export function generateWarnings(
     }
   }
 
-  // Check for pool area issues
   const poolPlants = placedPlants.filter(p => p.zone === 'Pool Area');
   for (const placed of poolPlants) {
     const plant = getPlantById(allPlants, placed.plantId);
     if (!plant) continue;
 
-    // High messiness warning
     if (plant.messinessRating !== null && plant.messinessRating >= 7) {
       warnings.push({
         id: generateId(),
@@ -104,7 +117,6 @@ export function generateWarnings(
       });
     }
 
-    // High pollinator warning
     if (plant.pollinatorValue === 'High') {
       warnings.push({
         id: generateId(),
@@ -116,7 +128,6 @@ export function generateWarnings(
     }
   }
 
-  // Check for waterwise mixing in same zone
   const zoneGroups: Record<string, PlacedPlant[]> = {};
   for (const placed of placedPlants) {
     if (!placed.zone) continue;
@@ -136,7 +147,6 @@ export function generateWarnings(
     if (waterwiseRatings.length >= 2) {
       const maxRating = Math.max(...waterwiseRatings);
       const minRating = Math.min(...waterwiseRatings);
-
       if (maxRating - minRating > 3) {
         warnings.push({
           id: generateId(),
@@ -149,7 +159,6 @@ export function generateWarnings(
     }
   }
 
-  // Check for low confidence estimates
   for (const placed of placedPlants) {
     const plant = getPlantById(allPlants, placed.plantId);
     if (!plant) continue;
