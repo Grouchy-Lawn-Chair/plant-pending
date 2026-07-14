@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plant Pending Recipe Physics Lab</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#0f141b;color:#eef2f7;font-family:Inter,Arial,sans-serif}.shell{min-height:100vh;display:grid;grid-template-columns:320px 1fr}.side{padding:24px;border-right:1px solid #29313a;background:#151b23}.main{padding:24px}.eyebrow{text-transform:uppercase;letter-spacing:.17em;font-size:11px;color:#8ea0b3}.title{font-size:28px;font-weight:800;margin:6px 0}.muted{color:#9aa9b7;line-height:1.45}.control{margin-top:18px}.control label{display:block;font-size:12px;color:#cbd5e1;margin-bottom:6px}.control input,.control select{width:100%;padding:10px;border-radius:10px;border:1px solid #46515d;background:#0d1319;color:#fff}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.buttons button{padding:11px;border:0;border-radius:11px;font-weight:800;cursor:pointer}.primary{background:#7c3aed;color:white}.secondary{background:#26303a;color:#e5edf5}.stats{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{border:1px solid #303a45;background:#10171e;border-radius:12px;padding:10px}.stat strong{display:block;font-size:18px}.stat span{font-size:10px;color:#94a3b8}.canvas-wrap{border:1px solid #303a45;background:#0b1016;border-radius:18px;padding:16px;overflow:auto}canvas{display:block;max-width:100%;background:#f7f5ef;border-radius:12px}.checks{margin-top:16px;display:grid;gap:8px}.check{border:1px solid #303a45;background:#151c24;border-radius:12px;padding:10px;font-size:12px}.pass{color:#86efac}.fail{color:#fca5a5}@media(max-width:850px){.shell{display:block}.side{border-right:0;border-bottom:1px solid #29313a}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="eyebrow">Plant Pending</div>
+      <div class="title">Physics lab</div>
+      <p class="muted">Tests the shared Matter.js layout engine before real recipes are connected to it.</p>
+      <div class="control"><label for="shape">Test shape</label><select id="shape"><option value="wide">Wide rectangle</option><option value="narrow">Narrow rectangle</option><option value="irregular">Irregular bed</option><option value="curve">Curved-ish bed</option></select></div>
+      <div class="control"><label for="seed">Seed</label><input id="seed" type="number" value="42" min="1" max="99999" /></div>
+      <div class="control"><label for="density">Density <span id="density-value">50%</span></label><input id="density" type="range" min="15" max="85" value="50" /></div>
+      <div class="buttons"><button id="run" class="primary">Run physics</button><button id="next" class="secondary">Next seed</button></div>
+      <div class="stats"><div class="stat"><strong id="requested">0</strong><span>requested</span></div><div class="stat"><strong id="placed">0</strong><span>placed</span></div><div class="stat"><strong id="rejected">0</strong><span>rejected</span></div><div class="stat"><strong id="overlaps">0</strong><span>overlaps</span></div></div>
+      <div id="checks" class="checks"></div>
+    </aside>
+    <main class="main"><div class="canvas-wrap"><canvas id="canvas" width="900" height="620"></canvas></div></main>
+  </div>
+  <script type="module" src="/src/recipe-engine-lab.ts"></script>
+</body>
+</html>
