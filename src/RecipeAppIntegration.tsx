@@ -7,7 +7,66 @@ import type { GardenPlan, GardenZone, PlacedPlant, PlantingGroup } from './types
 
 const CURRENT_PLAN_KEY = 'garden-planner-current';
 
-function RecipePanel({ host, onPlanChanged }: { host: HTMLElement; onPlanChanged: () => void }) {
+type FiberNode = {
+  child?: FiberNode | null;
+  sibling?: FiberNode | null;
+  return?: FiberNode | null;
+  memoizedProps?: Record<string, unknown> | null;
+  pendingProps?: Record<string, unknown> | null;
+};
+
+function findReactFiber(element: Element | null): FiberNode | null {
+  let current: Element | null = element;
+  while (current) {
+    const key = Object.keys(current).find(name => name.startsWith('__reactFiber$'));
+    if (key) return (current as unknown as Record<string, FiberNode>)[key] || null;
+    current = current.parentElement;
+  }
+
+  const root = document.querySelector('#root');
+  if (!root) return null;
+  const rootKey = Object.keys(root).find(name => name.startsWith('__reactContainer$') || name.startsWith('__reactFiber$'));
+  return rootKey ? (root as unknown as Record<string, FiberNode>)[rootKey] || null : null;
+}
+
+function findCallbackInFiber(
+  start: FiberNode | null,
+  callbackName: string,
+): ((plan: GardenPlan) => void) | null {
+  if (!start) return null;
+
+  let root = start;
+  while (root.return) root = root.return;
+
+  const stack: FiberNode[] = [root];
+  const visited = new Set<FiberNode>();
+  while (stack.length) {
+    const fiber = stack.pop()!;
+    if (visited.has(fiber)) continue;
+    visited.add(fiber);
+
+    const memoized = fiber.memoizedProps?.[callbackName];
+    if (typeof memoized === 'function') return memoized as (plan: GardenPlan) => void;
+
+    const pending = fiber.pendingProps?.[callbackName];
+    if (typeof pending === 'function') return pending as (plan: GardenPlan) => void;
+
+    if (fiber.sibling) stack.push(fiber.sibling);
+    if (fiber.child) stack.push(fiber.child);
+  }
+
+  return null;
+}
+
+function applyPlanToRunningApp(host: HTMLElement, plan: GardenPlan): boolean {
+  const fiber = findReactFiber(host);
+  const apply = findCallbackInFiber(fiber, 'onImportPlan') || findCallbackInFiber(fiber, 'onLoadPlan');
+  if (!apply) return false;
+  apply(plan);
+  return true;
+}
+
+function RecipePanel({ host }: { host: HTMLElement }) {
   const [selectedId, setSelectedId] = useState(recipeCatalog[0]?.id || '');
   const [message, setMessage] = useState('');
   const selectedRecipe = useMemo(() => recipeCatalog.find(recipe => recipe.id === selectedId), [selectedId]);
@@ -99,15 +158,36 @@ function RecipePanel({ host, onPlanChanged }: { host: HTMLElement; onPlanChanged
       ...generated,
     ];
 
-    localStorage.setItem(CURRENT_PLAN_KEY, JSON.stringify({
-      ...plan,
+    const nextPlan: GardenPlan = {
+      id: plan.id || 'current-plan',
+      name: plan.name || 'My Garden Plan',
+      createdAt: plan.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      backgroundImage: plan.backgroundImage ?? null,
+      backgroundOpacity: plan.backgroundOpacity ?? 0.5,
+      backgroundLocked: plan.backgroundLocked ?? false,
+      scalePixelsPerFoot: plan.scalePixelsPerFoot ?? null,
+      placedPlants,
       zones: nextZones,
       plantingGroups,
-      placedPlants,
-    }));
+      zoneShapesVisible: plan.zoneShapesVisible,
+      notes: plan.notes || '',
+      canvasWorldSize: plan.canvasWorldSize,
+      plantCircleOpacity: plan.plantCircleOpacity,
+      plantLabelMode: plan.plantLabelMode,
+      plantClumpingEnabled: plan.plantClumpingEnabled,
+      plantClumpStrength: plan.plantClumpStrength,
+      zoom: plan.zoom,
+      shrubScore: plan.shrubScore,
+      restoreBackgroundOnLaunch: plan.restoreBackgroundOnLaunch,
+    };
+
+    if (!applyPlanToRunningApp(host, nextPlan)) {
+      setMessage('The running app could not accept the recipe. Nothing was changed.');
+      return;
+    }
 
     setMessage(`${selectedRecipe.name}: ${generated.length} plants placed. ${physics.diagnostics.unresolvedOverlaps} unresolved overlap${physics.diagnostics.unresolvedOverlaps === 1 ? '' : 's'}.`);
-    window.setTimeout(onPlanChanged, 250);
   };
 
   return createPortal(
@@ -146,7 +226,6 @@ function RecipePanel({ host, onPlanChanged }: { host: HTMLElement; onPlanChanged
 }
 
 export default function RecipeAppIntegration() {
-  const [appKey, setAppKey] = useState(0);
   const [host, setHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -180,12 +259,12 @@ export default function RecipeAppIntegration() {
       observer.disconnect();
       cancelAnimationFrame(frame);
     };
-  }, [appKey]);
+  }, []);
 
   return (
     <>
-      <App key={appKey} />
-      {host && <RecipePanel host={host} onPlanChanged={() => setAppKey(value => value + 1)} />}
+      <App />
+      {host && <RecipePanel host={host} />}
     </>
   );
 }
