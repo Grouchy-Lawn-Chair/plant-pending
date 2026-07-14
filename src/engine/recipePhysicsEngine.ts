@@ -41,6 +41,8 @@ export interface RecipePhysicsResult {
     rejected: number;
     unresolvedOverlaps: number;
     seed: number;
+    capacity: number;
+    capacityLimited: boolean;
   };
 }
 
@@ -65,6 +67,14 @@ export function pointInPolygon(point: PhysicsPoint, polygon: PhysicsPoint[]): bo
     if (intersects) inside = !inside;
   }
   return inside;
+}
+
+function polygonArea(points: PhysicsPoint[]): number {
+  let area = 0;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    area += points[j].x * points[i].y - points[i].x * points[j].y;
+  }
+  return Math.abs(area / 2);
 }
 
 function distanceToSegment(point: PhysicsPoint, a: PhysicsPoint, b: PhysicsPoint): number {
@@ -136,9 +146,30 @@ function targetForLayer(
   };
 }
 
-function expandWeightedPlants(plants: RecipePhysicsPlant[], density: number): RecipePhysicsPlant[] {
+function estimateCapacity(plants: RecipePhysicsPlant[], polygon: PhysicsPoint[]): number {
   const totalWeight = plants.reduce((sum, plant) => sum + Math.max(0, plant.weight), 0) || 1;
-  const targetCount = Math.max(plants.length, Math.round(10 + density * 30));
+  const weightedCircleArea = plants.reduce((sum, plant) => {
+    const normalizedWeight = Math.max(0, plant.weight) / totalWeight;
+    const radius = Math.max(3, plant.radius);
+    return sum + Math.PI * radius * radius * normalizedWeight;
+  }, 0);
+  if (weightedCircleArea <= 0) return plants.length;
+
+  // Mature plants cannot tile a polygon perfectly. Sixty-eight percent is a
+  // practical upper bound that leaves room for edges and mixed circle sizes.
+  const packingEfficiency = 0.68;
+  return Math.max(plants.length, Math.floor((polygonArea(polygon) * packingEfficiency) / weightedCircleArea));
+}
+
+function expandWeightedPlants(
+  plants: RecipePhysicsPlant[],
+  density: number,
+  polygon: PhysicsPoint[],
+): { expanded: RecipePhysicsPlant[]; capacity: number; capacityLimited: boolean } {
+  const totalWeight = plants.reduce((sum, plant) => sum + Math.max(0, plant.weight), 0) || 1;
+  const desiredCount = Math.max(plants.length, Math.round(10 + density * 30));
+  const capacity = estimateCapacity(plants, polygon);
+  const targetCount = Math.min(desiredCount, capacity);
   const expanded: RecipePhysicsPlant[] = [];
 
   plants.forEach(plant => {
@@ -146,7 +177,13 @@ function expandWeightedPlants(plants: RecipePhysicsPlant[], density: number): Re
     for (let index = 0; index < count; index += 1) expanded.push(plant);
   });
 
-  return expanded;
+  while (expanded.length > capacity && expanded.length > plants.length) expanded.pop();
+
+  return {
+    expanded,
+    capacity,
+    capacityLimited: desiredCount > capacity,
+  };
 }
 
 export function runRecipePhysics(options: RecipePhysicsOptions): RecipePhysicsResult {
@@ -154,14 +191,25 @@ export function runRecipePhysics(options: RecipePhysicsOptions): RecipePhysicsRe
     throw new Error('Recipe physics requires a polygon with at least three points.');
   }
   if (!options.plants.length) {
-    return { placements: [], diagnostics: { requested: 0, placed: 0, rejected: 0, unresolvedOverlaps: 0, seed: options.seed } };
+    return {
+      placements: [],
+      diagnostics: {
+        requested: 0,
+        placed: 0,
+        rejected: 0,
+        unresolvedOverlaps: 0,
+        seed: options.seed,
+        capacity: 0,
+        capacityLimited: false,
+      },
+    };
   }
 
   const random = seededRandom(options.seed);
   const density = Math.max(0.05, Math.min(1, options.density ?? 0.5));
   const padding = Math.max(0, options.padding ?? 2);
   const iterations = Math.max(30, options.iterations ?? 180);
-  const expanded = expandWeightedPlants(options.plants, density);
+  const { expanded, capacity, capacityLimited } = expandWeightedPlants(options.plants, density, options.polygon);
   const engine = Matter.Engine.create({ gravity: { x: 0, y: 0 } });
   engine.positionIterations = 12;
   engine.velocityIterations = 10;
@@ -213,11 +261,10 @@ export function runRecipePhysics(options: RecipePhysicsOptions): RecipePhysicsRe
       const info = metadata.get(body.id);
       if (!info) return;
 
-      const toTarget = {
+      Matter.Body.applyForce(body, body.position, {
         x: (info.target.x - body.position.x) * 0.00055,
         y: (info.target.y - body.position.y) * 0.00055,
-      };
-      Matter.Body.applyForce(body, body.position, toTarget);
+      });
 
       if (!pointInPolygon(body.position, options.polygon) || distanceToPolygonEdge(body.position, options.polygon) < info.plant.radius + padding) {
         const bounds = boundsOf(options.polygon);
@@ -271,6 +318,8 @@ export function runRecipePhysics(options: RecipePhysicsOptions): RecipePhysicsRe
       rejected: rejected + (bodies.length - validBodies.length),
       unresolvedOverlaps,
       seed: options.seed,
+      capacity,
+      capacityLimited,
     },
   };
 }
