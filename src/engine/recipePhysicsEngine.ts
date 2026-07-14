@@ -1,4 +1,5 @@
 import Matter from 'matter-js';
+import { getRecipePhysicsProfile } from '../data/recipePhysicsProfiles';
 
 export type PhysicsPoint = { x: number; y: number };
 export type RecipePhysicsLayer = 'front' | 'middle' | 'back' | 'accent';
@@ -13,6 +14,10 @@ export interface RecipePhysicsPlant {
   clump?: number;
   count?: number;
   enabled?: boolean;
+  frontAttraction?: number;
+  backAttraction?: number;
+  edgeAttraction?: number;
+  repetition?: string;
 }
 
 export interface RecipePhysicsOptions {
@@ -69,6 +74,8 @@ function seededRandom(seed: number): () => number {
   };
 }
 
+const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
+
 export function pointInPolygon(point: PhysicsPoint, polygon: PhysicsPoint[]): boolean {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -104,36 +111,66 @@ function boundsOf(polygon: PhysicsPoint[]) {
   return { minX: Math.min(...polygon.map(p => p.x)), maxX: Math.max(...polygon.map(p => p.x)), minY: Math.min(...polygon.map(p => p.y)), maxY: Math.max(...polygon.map(p => p.y)) };
 }
 
-function targetForLayer(layer: RecipePhysicsLayer, polygon: PhysicsPoint[], random: () => number, frontEdges?: number[], backEdges?: number[], layout: RecipeLayoutBehavior = 'natural'): PhysicsPoint {
-  const bounds = boundsOf(polygon); const width = Math.max(1, bounds.maxX - bounds.minX); const height = Math.max(1, bounds.maxY - bounds.minY);
+function resolvedPlant(plant: RecipePhysicsPlant): RecipePhysicsPlant {
+  const profile = getRecipePhysicsProfile(plant.key);
+  return {
+    ...plant,
+    layer: profile?.role ?? plant.layer,
+    clump: plant.clump ?? profile?.clumpStrength,
+    frontAttraction: plant.frontAttraction ?? profile?.frontAttraction,
+    backAttraction: plant.backAttraction ?? profile?.backAttraction,
+    edgeAttraction: plant.edgeAttraction ?? profile?.edgeAttraction,
+    repetition: plant.repetition ?? profile?.repetition,
+  };
+}
+
+function targetForPlant(
+  plant: RecipePhysicsPlant,
+  polygon: PhysicsPoint[],
+  random: () => number,
+  frontEdges?: number[],
+  backEdges?: number[],
+  layout: RecipeLayoutBehavior = 'natural',
+): PhysicsPoint {
+  const bounds = boundsOf(polygon); const width = Math.max(1, bounds.maxX - bounds.minX); const height = Math.max(1, bounds.maxY - bounds.minY); const span = Math.max(width, height);
+  const frontPull = clamp01(plant.frontAttraction ?? (plant.layer === 'front' ? 1 : plant.layer === 'middle' ? .35 : 0));
+  const backPull = clamp01(plant.backAttraction ?? (plant.layer === 'back' ? 1 : plant.layer === 'middle' ? .35 : 0));
+  const edgePull = clamp01(plant.edgeAttraction ?? 0);
+
   if (layout === 'stacked') {
-    const yRatio = layer === 'back' ? .2 : layer === 'middle' ? .5 : layer === 'front' ? .8 : .5;
+    const yRatio = plant.layer === 'back' ? .2 : plant.layer === 'middle' ? .5 : plant.layer === 'front' ? .8 : .5;
     return { x: bounds.minX + width * (.15 + random() * .7), y: bounds.minY + height * yRatio };
   }
-  for (let attempt = 0; attempt < 500; attempt += 1) {
+
+  let best: PhysicsPoint | null = null; let bestScore = Number.POSITIVE_INFINITY;
+  for (let attempt = 0; attempt < 220; attempt += 1) {
     const candidate = { x: bounds.minX + random() * width, y: bounds.minY + random() * height };
     if (!pointInPolygon(candidate, polygon)) continue;
-    if (layout === 'spread' || layer === 'accent') return candidate;
+    if (layout === 'spread') return candidate;
     const frontDistance = distanceToMarkedEdges(candidate, polygon, frontEdges);
     const backDistance = distanceToMarkedEdges(candidate, polygon, backEdges);
     const fallbackFront = bounds.maxY - candidate.y; const fallbackBack = candidate.y - bounds.minY;
-    const layerDistance = layer === 'front' ? (Number.isFinite(frontDistance) ? frontDistance : fallbackFront)
-      : layer === 'back' ? (Number.isFinite(backDistance) ? backDistance : fallbackBack)
-        : (Number.isFinite(frontDistance) && Number.isFinite(backDistance) ? Math.abs(frontDistance - backDistance) : Math.abs(candidate.y - (bounds.minY + height / 2)));
-    if (layerDistance <= Math.max(width, height) * .28 * (.25 + random() * .75)) return candidate;
+    const normalizedFront = Math.min(1, (Number.isFinite(frontDistance) ? frontDistance : fallbackFront) / span);
+    const normalizedBack = Math.min(1, (Number.isFinite(backDistance) ? backDistance : fallbackBack) / span);
+    const normalizedOuterEdge = Math.min(1, distanceToPolygonEdge(candidate, polygon) / span);
+    const centerX = (bounds.minX + bounds.maxX) / 2; const centerY = (bounds.minY + bounds.maxY) / 2;
+    const centerDistance = Math.min(1, Math.hypot(candidate.x - centerX, candidate.y - centerY) / span);
+    const accentCenterPreference = plant.layer === 'accent' ? (1 - centerDistance) * .12 : 0;
+    const score = normalizedFront * frontPull + normalizedBack * backPull + normalizedOuterEdge * edgePull - accentCenterPreference + random() * .08;
+    if (score < bestScore) { bestScore = score; best = candidate; }
   }
-  return { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
+  return best ?? { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
 }
 
 function estimateCapacity(plants: RecipePhysicsPlant[], polygon: PhysicsPoint[]): number {
-  const active = plants.filter(p => p.enabled !== false);
+  const active = plants.filter(p => p.enabled !== false).map(resolvedPlant);
   const totalWeight = active.reduce((sum, p) => sum + Math.max(0, p.weight), 0) || 1;
   const weightedArea = active.reduce((sum, p) => sum + Math.PI * Math.max(3, p.radius) ** 2 * (Math.max(0, p.weight) / totalWeight), 0);
   return weightedArea > 0 ? Math.max(active.length, Math.floor((polygonArea(polygon) * .68) / weightedArea)) : active.length;
 }
 
 function expandPlants(options: RecipePhysicsOptions) {
-  const plants = options.plants.filter(p => p.enabled !== false);
+  const plants = options.plants.filter(p => p.enabled !== false).map(resolvedPlant);
   const totalWeight = plants.reduce((sum, p) => sum + Math.max(0, p.weight), 0) || 1;
   const desired = options.targetCount ?? Math.max(plants.length, Math.round(10 + Math.max(.05, Math.min(1, options.density ?? .5)) * 30));
   const capacity = estimateCapacity(plants, options.polygon); const target = Math.min(desired, capacity); const expanded: RecipePhysicsPlant[] = [];
@@ -146,19 +183,30 @@ function expandPlants(options: RecipePhysicsOptions) {
   return { expanded, capacity, capacityLimited: desired > capacity };
 }
 
+function repetitionJitter(plant: RecipePhysicsPlant, radius: number, layout: RecipeLayoutBehavior): number {
+  if (layout === 'even') return radius * 4;
+  if (layout === 'clumps') return radius * .55;
+  const repetition = plant.repetition || '';
+  if (/hedge|row|ribbon|edge|paired/.test(repetition)) return radius * .8;
+  if (/isolated|anchor|spaced/.test(repetition)) return radius * 4.2;
+  if (/drift|mass|clump|matrix|wave/.test(repetition)) return radius * 1.25;
+  return radius * (plant.clump ?? 1.2);
+}
+
 function runPass(options: RecipePhysicsOptions, seed: number): RecipePhysicsResult {
   const random = seededRandom(seed); const padding = Math.max(0, options.padding ?? 2); const iterations = Math.max(30, options.iterations ?? 180);
   const overlapRatio = Math.max(0, Math.min(.35, options.allowedOverlap ?? .08)); const attraction = Math.max(.1, options.attractionStrength ?? 1);
-  const clumpStrength = Math.max(0, options.clumpStrength ?? 1); const layout = options.layoutBehavior ?? 'natural'; const keepInside = options.keepCentersInside !== false;
+  const globalClump = Math.max(0, options.clumpStrength ?? 1); const layout = options.layoutBehavior ?? 'natural'; const keepInside = options.keepCentersInside !== false;
   const { expanded, capacity, capacityLimited } = expandPlants(options);
   const engine = Matter.Engine.create({ gravity: { x: 0, y: 0 } }); engine.positionIterations = 12; engine.velocityIterations = 10; engine.constraintIterations = 4;
   const bodies: Matter.Body[] = []; const metadata = new Map<number, { plant: RecipePhysicsPlant; target: PhysicsPoint; rotationDeg: number }>(); let rejected = 0;
   expanded.forEach((plant, index) => {
     const effectiveRadius = Math.max(3, plant.radius * (1 - overlapRatio)); let start: PhysicsPoint | null = null;
-    const target = targetForLayer(plant.layer, options.polygon, random, options.frontEdges, options.backEdges, layout);
+    const target = targetForPlant(plant, options.polygon, random, options.frontEdges, options.backEdges, layout);
     for (let attempt = 0; attempt < 300; attempt += 1) {
-      const baseJitter = layout === 'even' ? effectiveRadius * 4 : layout === 'clumps' ? effectiveRadius * .55 : effectiveRadius * (plant.clump ?? 1.2);
-      const jitter = Math.max(2, baseJitter / Math.max(.25, clumpStrength));
+      const baseJitter = repetitionJitter(plant, effectiveRadius, layout);
+      const localClump = Math.max(.15, (plant.clump ?? .65) * Math.max(.25, globalClump));
+      const jitter = Math.max(2, /isolated|anchor|spaced/.test(plant.repetition || '') ? baseJitter : baseJitter / localClump);
       const candidate = { x: target.x + (random() - .5) * jitter, y: target.y + (random() - .5) * jitter };
       if ((!keepInside || pointInPolygon(candidate, options.polygon)) && distanceToPolygonEdge(candidate, options.polygon) >= effectiveRadius + padding) { start = candidate; break; }
     }
@@ -170,7 +218,8 @@ function runPass(options: RecipePhysicsOptions, seed: number): RecipePhysicsResu
   for (let step = 0; step < iterations; step += 1) {
     bodies.forEach(body => {
       const info = metadata.get(body.id); if (!info) return;
-      const pull = layout === 'spread' ? .0002 : .00055 * attraction;
+      const intentStrength = .45 + Math.max(info.plant.frontAttraction ?? 0, info.plant.backAttraction ?? 0, info.plant.edgeAttraction ?? 0) * .75;
+      const pull = layout === 'spread' ? .0002 : .00055 * attraction * intentStrength;
       Matter.Body.applyForce(body, body.position, { x: (info.target.x - body.position.x) * pull, y: (info.target.y - body.position.y) * pull });
       if (keepInside && (!pointInPolygon(body.position, options.polygon) || distanceToPolygonEdge(body.position, options.polygon) < body.circleRadius! + padding)) {
         const b = boundsOf(options.polygon); const center = { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 };
