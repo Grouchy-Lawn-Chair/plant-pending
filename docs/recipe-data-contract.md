@@ -39,7 +39,22 @@ For every source plant, compare against the Plant Pending Green Acres dataset in
 
 Then check suitability for Orangevale and screen for invasive, aggressive-spreading, thorny, toxic, high-fire-risk, or otherwise unsuitable plants.
 
-If the source plant is unsuitable or unavailable, use the safer Green Acres substitute as the recipe plant. The live recipe does not need to retain the rejected original plant as a selectable option.
+If the source plant is unsuitable or unavailable, select the approved Green Acres replacement before the recipe enters production.
+
+## Final production data
+
+A production recipe contains only the plants Plant Pending will actually place.
+
+The runtime recipe data must not contain:
+
+- the rejected source plant
+- a substitute label
+- match scores
+- rejection reasons
+- candidate alternatives
+- research notes
+
+Those details belong only in separate research and audit files that the app does not import. Once a replacement is approved, it is simply the plant used by that recipe.
 
 ## Layout behavior
 
@@ -59,9 +74,13 @@ The tested Elegant Privacy Hedge Border behavior must be migrated into the produ
 
 ## Storage architecture
 
-All production recipes must live in one authoritative dataset beside the other Plant Pending data files.
+Production data is split into connected authoritative datasets:
 
-The application, recipe panel, preview, tests, and any maintained lab must import that same dataset. No production recipe may be hand-copied into a second catalog.
+- plant facts, keyed by plant ID
+- recipe facts, keyed by recipe ID
+- recipe-plant placement records, keyed by recipe ID and plant ID
+
+The application, recipe panel, preview, tests, and any maintained lab must consume those same datasets. No production recipe may be hand-copied into a second catalog.
 
 Historical standalone fixtures may remain only if clearly marked as non-production and excluded from catalog counts.
 
@@ -69,14 +88,17 @@ Historical standalone fixtures may remain only if clearly marked as non-producti
 
 The import is not complete until automated checks confirm:
 
-- every expected source plan has exactly one recipe record
+- exactly 30 Monrovia recipes are present
 - all 11 Gardenia entries are present
+- exactly 41 total production recipes are present
 - recipe IDs are unique
 - every recipe contains at least one plant
-- every Green Acres plant ID resolves in the current Plant Pending plant dataset
-- every plant has a mature width and valid layer
+- every plant ID resolves in the current Plant Pending plant dataset
+- every recipe-plant record has a valid layer and complete placement behavior
+- mature dimensions come from the plant dataset
 - mixture percentages are valid or intentionally normalized
 - source PDF and page are recorded for Monrovia recipes
-- no production recipe definitions exist outside the master dataset
+- production data contains no rejected source-plant or substitution-analysis fields
+- no production recipe definitions exist outside the master datasets
 
 Never reduce the recipe count, delete a supplied entry, or replace an existing reviewed recipe without an explicit instruction from the project owner.
