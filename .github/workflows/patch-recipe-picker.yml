@@ -1,0 +1,149 @@
+name: Patch recipe picker
+
+on:
+  push:
+    branches:
+      - phase-1-recipe-grid-lab
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[skip recipe-picker patch]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: phase-1-recipe-grid-lab
+      - name: Patch Plant Pending recipe picker
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/components/PlanDetails.tsx')
+          text = path.read_text()
+
+          old_import = "import { PlanIconSvg } from './PlanIconSvg';"
+          new_import = old_import + "\nimport { plantRecipes, type PlantRecipe, type PlantRecipeItem } from '../data/plantRecipes';"
+          if old_import not in text:
+              raise SystemExit('PlanIcon import not found')
+          text = text.replace(old_import, new_import, 1)
+
+          marker = "function formatSunAmount(value?: ZoneSunExposure): string {"
+          helpers = """function normalizeRecipePlantName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[®™]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function recipeTokens(value: string): string[] {
+  return normalizeRecipePlantName(value)
+    .split(' ')
+    .filter(token => token.length > 2 && !['the', 'and', 'plant', 'dwarf', 'common'].includes(token));
+}
+
+function findRecipePlantMatch(item: PlantRecipeItem, plants: Plant[]): { plant: Plant | null; status: 'exact' | 'close' | 'unmatched' } {
+  const source = normalizeRecipePlantName(item.sourceName);
+  const exact = plants.find(plant => {
+    const names = [plant.commonName, plant.botanicalName].filter(Boolean).map(name => normalizeRecipePlantName(name || ''));
+    return names.some(name => name === source || name.includes(source) || source.includes(name));
+  });
+  if (exact) return { plant: exact, status: 'exact' };
+
+  const sourceTokens = recipeTokens(item.sourceName);
+  let best: Plant | null = null;
+  let bestScore = 0;
+  for (const plant of plants) {
+    const candidate = `${plant.commonName || ''} ${plant.botanicalName || ''} ${plant.category || ''}`;
+    const candidateTokens = new Set(recipeTokens(candidate));
+    const overlap = sourceTokens.filter(token => candidateTokens.has(token)).length;
+    const score = sourceTokens.length ? overlap / sourceTokens.length : 0;
+    if (score > bestScore) {
+      bestScore = score;
+      best = plant;
+    }
+  }
+  return best && bestScore >= 0.34 ? { plant: best, status: 'close' } : { plant: null, status: 'unmatched' };
+}
+
+"""
+          if marker not in text:
+              raise SystemExit('formatSunAmount marker not found')
+          text = text.replace(marker, helpers + marker, 1)
+
+          state_marker = "  const [zoneSettingsTab, setZoneSettingsTab] = useState<'site' | 'generate' | 'style'>('site');"
+          state_new = state_marker + "\n  const [selectedRecipeId, setSelectedRecipeId] = useState(plantRecipes[0]?.id || '');"
+          if state_marker not in text:
+              raise SystemExit('zoneSettingsTab state not found')
+          text = text.replace(state_marker, state_new, 1)
+
+          computed_marker = "  const selectedPlantingGroup = plantingGroups.find(group => group.id === selectedPlantingGroupId) || plantingGroups[0] || null;"
+          computed_new = computed_marker + "\n  const selectedRecipe: PlantRecipe | null = plantRecipes.find(recipe => recipe.id === selectedRecipeId) || plantRecipes[0] || null;\n  const selectedRecipeMatches = selectedRecipe?.plants.map(item => ({ item, ...findRecipePlantMatch(item, plants) })) || [];"
+          if computed_marker not in text:
+              raise SystemExit('selectedPlantingGroup marker not found')
+          text = text.replace(computed_marker, computed_new, 1)
+
+          ui_marker = """                  <div>
+                    <label title=\"Optional saved plant list. Leave blank to let the generator choose from the full catalog.\" className=\"text-xs text-slate-400 block mb-1\">Assigned planting group</label>"""
+          ui = """                  <div className=\"rounded-2xl border border-violet-900/70 bg-violet-950/25 p-3\">
+                    <div className=\"text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300\">Plant recipe preview</div>
+                    <label className=\"mt-2 block text-xs text-slate-400\">Monrovia plan</label>
+                    <select
+                      value={selectedRecipe?.id || ''}
+                      onChange={(event) => setSelectedRecipeId(event.target.value)}
+                      className=\"mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white\"
+                    >
+                      {plantRecipes.map(recipe => (
+                        <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
+                      ))}
+                    </select>
+
+                    {selectedRecipe && (
+                      <div className=\"mt-3\">
+                        <div className=\"rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2\">
+                          <div className=\"text-sm font-semibold text-white\">{selectedRecipe.name}</div>
+                          <div className=\"mt-1 text-xs text-slate-400\">{selectedRecipe.sourcePdf} · page {selectedRecipe.sourcePage}</div>
+                          <div className=\"mt-1 text-[11px] text-violet-200\">Preview only in this build. Generation still uses the assigned planting group or catalog.</div>
+                        </div>
+
+                        <div className=\"mt-2 space-y-2\">
+                          {selectedRecipeMatches.map(({ item, plant, status }) => (
+                            <div key={item.sourceName} className=\"rounded-xl border border-slate-800 bg-slate-900 px-3 py-2\">
+                              <div className=\"flex items-start justify-between gap-2\">
+                                <div className=\"min-w-0\">
+                                  <div className=\"truncate text-xs font-semibold text-white\">{item.sourceName}</div>
+                                  <div className=\"mt-0.5 text-[11px] text-slate-400\">{item.coveragePercent}% coverage · {item.layer} · {item.matureWidthInches ? `${item.matureWidthInches}\" wide` : 'size pending'}</div>
+                                </div>
+                                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${status === 'exact' ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' : status === 'close' ? 'border-amber-500/40 bg-amber-500/10 text-amber-200' : 'border-slate-700 bg-slate-950 text-slate-400'}`}>
+                                  {status === 'exact' ? 'Exact' : status === 'close' ? 'Close' : 'Needs match'}
+                                </span>
+                              </div>
+                              <div className=\"mt-1 text-[11px] text-slate-300\">
+                                {plant ? `Green Acres: ${plant.commonName || plant.botanicalName}` : 'No Green Acres candidate found yet'}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+""" + ui_marker
+          if ui_marker not in text:
+              raise SystemExit('assigned planting group marker not found')
+          text = text.replace(ui_marker, ui, 1)
+
+          path.write_text(text)
+          Path('.github/workflows/patch-recipe-picker.yml').unlink()
+          PY
+      - name: Commit picker
+        run: |
+          git config user.name "plant-pending-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/components/PlanDetails.tsx .github/workflows/patch-recipe-picker.yml
+          git commit -m "Add Monrovia recipe preview picker [skip recipe-picker patch]"
+          git push origin HEAD:phase-1-recipe-grid-lab
