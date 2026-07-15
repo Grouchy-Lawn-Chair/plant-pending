@@ -2097,7 +2097,7 @@ function App() {
       id: generateId(),
       name: `Zone ${zones.length + 1}`,
       color,
-      opacity: 0.28,
+      opacity: 0.10,
       visible: true,
       zoneType: 'planting',
       sunExposure: 'unknown',
@@ -3933,3 +3933,4 @@ function App() {
 }
 
 export default App;
+
