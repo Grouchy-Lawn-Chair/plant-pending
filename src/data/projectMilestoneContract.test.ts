@@ -11,6 +11,19 @@ describe('Plant Pending milestone contract', () => {
     expect(projectMilestoneContract.authority.oneSourceRule).toContain('Rules live here once');
   });
 
+  it('requires duplicate and contradiction checks before adding rules', () => {
+    expect(projectMilestoneContract.changeControl.beforeAddingRule).toContain('Search this contract');
+    expect(projectMilestoneContract.changeControl.amendInsteadOfDuplicate).toContain('amend that rule');
+    expect(projectMilestoneContract.changeControl.conflictCheck).toContain('contradictory requirements');
+    expect(projectMilestoneContract.changeControl.unresolvedConflict).toContain('implementation must stop');
+  });
+
+  it('requires explicit supersession and versioning when a rule changes', () => {
+    expect(projectMilestoneContract.changeControl.conflictResolution).toContain('explicitly identifies the rule being superseded');
+    expect(projectMilestoneContract.changeControl.conflictResolution).toContain('increments the contract version');
+    expect(projectMilestoneContract.changeControl.precedence[0]).toContain('project-owner decision');
+  });
+
   it('prohibits function-breaking recipe substitutions', () => {
     const rejects = projectMilestoneContract.recipeMatching.hardRejects.join(' | ');
     expect(rejects).toContain('hedge or screen replaced by grass');
