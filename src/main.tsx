@@ -4,7 +4,6 @@ import RecipeAppIntegration from './RecipeAppIntegration';
 import RecipeGenerationEnhancements from './RecipeGenerationEnhancements';
 import RecipeSelectionPersistence from './RecipeSelectionPersistence';
 import RecipeUiCorrections from './RecipeUiCorrections';
-import ZoneEdgeInteractionFix from './ZoneEdgeInteractionFix';
 import { installRecipeEdgeFallback } from './utils/recipeEdgeFallback';
 import './index.css';
 
@@ -15,7 +14,6 @@ createRoot(document.getElementById('root')!).render(
     <RecipeSelectionPersistence />
     <RecipeGenerationEnhancements />
     <RecipeUiCorrections />
-    <ZoneEdgeInteractionFix />
     <RecipeAppIntegration />
   </StrictMode>,
 );
