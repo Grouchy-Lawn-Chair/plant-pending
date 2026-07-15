@@ -1,1 +1,49 @@
-PLACEHOLDER
+export type RecipeLayer='front'|'middle'|'back'|'accent';
+export interface PlantRecipeItem{coveragePercent:number;layer:RecipeLayer;matureWidthInches:number;greenAcresPlantId:string;greenAcresName:string;clump:number}
+export interface PlantRecipe{id:string;name:string;sourcePdf:string;sourcePage:number;pattern:string;status:'reviewed';plants:PlantRecipeItem[]}
+const P:Record<number,[string,number]>={277:['Blue Fescue',10],399:['Northern Lights Tufted Hair Grass',12],811:['Deer Grass',48],860:['Fruity Germander',24],781:['Coast Rosemary \'Blue Gem\'',36],729:['Bottlebrush \'Little John\'',36],312:['Coreopsis \'Nana\'',24],506:['Sedum \'Autumn Fire\'',18],343:['Silver Carpet',24],374:['Firehouse Verbena',22],444:['Lomandra \'Lime Tuff\'',30],792:['Cordyline \'Electric Pink\'',60],937:['Lily of the Nile \'Storm Cloud\'',60],370:['Feather Reed Grass \'Karl Foerster\'',36],574:['Yarrow \'Little Moonshine\'',24],285:['Bright Lights Horizon Sunset African Daisy',24]};
+const R:Array<[string,string,string,number,string,Array<[number,number,RecipeLayer,number]>]>=[
+['monrovia-2023-fire-pit','Fire Pit','Ultimate Spring Planning Guide 2023',4,'ring',[[729,25,'accent',0.25],[312,12.5,'middle',0.80],[506,12.5,'front',0.80],[343,12.5,'front',0.90],[860,12.5,'middle',0.85],[781,12.5,'back',0.45],[277,12.5,'front',0.75]]],
+['monrovia-2023-water-feature-pool','Water Feature or Pool','Ultimate Spring Planning Guide 2023',6,'layered-ring',[[781,25,'back',0.45],[312,12.5,'front',0.80],[860,37.5,'front',0.78],[811,12.5,'back',0.55],[792,12.5,'accent',0.05]]],
+['monrovia-2023-dining-room','Dining Room','Ultimate Spring Planning Guide 2023',8,'formal-symmetry',[[781,37.5,'back',0.27],[811,12.5,'back',0.35],[343,12.5,'front',0.85],[729,25,'accent',0.10],[277,12.5,'front',0.75]]],
+['monrovia-2023-patio-living-room','Patio Living Room','Ultimate Spring Planning Guide 2023',10,'asymmetric-room',[[860,12.5,'front',0.75],[811,12.5,'back',0.55],[781,37.5,'back',0.42],[312,12.5,'middle',0.65],[729,25,'accent',0.30]]],
+['monrovia-2023-personal-retreat','Personal Retreat','Ultimate Spring Planning Guide 2023',12,'enclosed-retreat',[[781,25,'back',0.35],[277,25,'front',0.88],[792,25,'back',0.65],[312,12.5,'middle',0.70],[444,12.5,'accent',0.30]]],
+['monrovia-2023-shady-corner','Shady Corner','Ultimate Spring Planning Guide 2023',15,'corner-layer',[[277,25,'front',0.85],[781,50,'back',0.50],[343,25,'front',0.80]]],
+['monrovia-2023-retaining-wall','Retaining Wall','Ultimate Spring Planning Guide 2023',16,'cascade-wall',[[343,25,'front',0.90],[781,50,'back',0.40],[399,25,'middle',0.70]]],
+['monrovia-2023-pathway-border','Pathway Border','Ultimate Spring Planning Guide 2023',17,'linear-border',[[312,25,'middle',0.80],[729,25,'back',0.20],[860,25,'front',0.80],[343,25,'front',0.85]]],
+['monrovia-2023-driveway-border','Driveway Border','Ultimate Spring Planning Guide 2023',18,'linear-border',[[860,50,'front',0.80],[312,25,'middle',0.65],[811,25,'back',0.60]]],
+['monrovia-2023-welcoming-entry','Welcoming Entry','Ultimate Spring Planning Guide 2023',19,'entry-symmetry',[[312,50,'middle',0.75],[729,25,'back',0.30],[860,25,'front',0.80]]],
+['monrovia-2023-fenceline-flow','Fenceline Flow','Monrovia Fall Guide 2023',2,'fenceline-flow',[[444,25,'middle',0.75],[792,25,'accent',0.10],[277,25,'front',0.80],[343,25,'front',0.85]]],
+['elegant-privacy-hedge-border','Elegant Privacy Hedge Border','Monrovia Fall Guide 2023',4,'hedge-border',[[343,25,'front',0.95],[781,50,'back',0.50],[729,25,'accent',0.35]]],
+['monrovia-2023-entryway-eden','An Entryway Eden','Monrovia Fall Guide 2023',6,'foundation-border',[[312,25,'front',0.85],[860,25,'front',0.85],[811,25,'back',0.55],[781,25,'back',0.35]]],
+['monrovia-2024-lush-container','Lush, Easy-Care Container','Monrovia Weekend Project Guide 2024',2,'container',[[444,25,'accent',0.05],[343,25,'front',0.80],[312,50,'middle',0.75]]],
+['monrovia-2024-romantic-cottage-corner','Romantic Cottage Corner','Monrovia Weekend Project Guide 2024',4,'corner-room',[[781,25,'middle',0.80],[343,25,'front',0.90],[729,50,'back',0.20]]],
+['delightful-drought-tolerant','Delightful and Drought-Tolerant','Monrovia Weekend Project Guide 2024',6,'entry-border',[[781,25,'back',0.15],[399,25,'middle',0.75],[312,25,'middle',0.85],[343,25,'front',0.90]]],
+['monrovia-2024-hummingbird-container','Hummingbird Container Plan','Backyard Habitat Guide 2024',4,'container',[[729,25,'accent',0.10],[506,25,'front',0.80],[312,50,'middle',0.70]]],
+['monrovia-2024-hummingbird-weekend','Hummingbird Weekend Project Plan','Backyard Habitat Guide 2024',5,'small-border',[[860,25,'middle',0.80],[343,25,'front',0.50],[374,25,'front',0.80],[781,25,'back',0.20]]],
+['monrovia-2024-hummingbird-landscape','Hummingbird Garden Landscape Plan','Backyard Habitat Guide 2024',6,'layered-border',[[811,25,'back',0.55],[781,25,'back',0.10],[370,25,'middle',0.70],[860,25,'front',0.85]]],
+['monrovia-2024-birding-container','Birding Container Plan','Backyard Habitat Guide 2024',9,'container',[[312,75,'middle',0.75],[370,25,'accent',0.10]]],
+['monrovia-2024-birding-weekend','Birding Weekend Project Plan','Backyard Habitat Guide 2024',10,'small-border',[[312,50,'front',0.85],[399,25,'middle',0.75],[781,25,'back',0.20]]],
+['monrovia-2024-birding-landscape','Birding Garden Landscape Plan','Backyard Habitat Guide 2024',11,'layered-border',[[781,25,'back',0.20],[312,50,'front',0.85],[811,25,'back',0.65]]],
+['monrovia-2024-bees-butterflies-container','Bees and Butterflies Container Plan','Backyard Habitat Guide 2024',14,'container',[[312,25,'middle',0.80],[506,25,'front',0.80],[729,25,'accent',0.10],[860,25,'middle',0.80]]],
+['monrovia-2024-bees-butterflies-weekend','Bees and Butterflies Weekend Project Plan','Backyard Habitat Guide 2024',15,'small-border',[[811,25,'back',0.55],[312,25,'middle',0.85],[781,25,'middle',0.75],[506,25,'front',0.90]]],
+['monrovia-2024-bees-butterflies-landscape','Bees and Butterflies Landscape Plan','Backyard Habitat Guide 2024',16,'layered-border',[[729,25,'back',0.30],[811,25,'back',0.65],[312,50,'front',0.80]]],
+['modern-meadow','Modern Meadow','Best Landscape Plans 2025',2,'meadow',[[811,25,'back',0.65],[312,50,'middle',0.80],[860,25,'front',0.80]]],
+['monrovia-2025-romancing-edible','Romancing the Edible Garden','Best Landscape Plans 2025',4,'potager',[[729,50,'accent',0.40],[781,12.5,'back',0.55],[860,37.5,'front',0.82]]],
+['monrovia-2025-bold-color-white','Bold Color and Calm White','Best Landscape Plans 2025',6,'layered-shade',[[729,25,'accent',0.38],[343,37.5,'front',0.82],[444,25,'middle',0.80],[781,12.5,'back',0.35]]],
+['hummingbird-oasis','Hummingbird Oasis','Best Landscape Plans 2025',8,'layered-border',[[781,33.33,'back',0.53],[860,33.33,'front',0.82],[374,33.33,'front',0.85]]],
+['monrovia-2025-green-drenching','Green Drenching','Best Landscape Plans 2025',10,'green-room',[[312,12.5,'middle',0.80],[781,50,'back',0.34],[729,25,'back',0.23],[343,12.5,'front',0.80]]],
+['gardenia-provencal-courtyard','A Contemporary Provencal Courtyard','Gardenia supplied URL set',0,'formal-courtyard',[[811,50,'back',0.45],[343,50,'front',0.80]]],
+['gardenia-soft-autumn-colors','Soft Autumn Colors','Gardenia supplied URL set',0,'seasonal-border',[[506,33.33,'front',0.85],[781,33.33,'back',0.70],[343,33.33,'front',0.90]]],
+['gardenia-brilliant-summer-border','Brilliant Summer Border','Gardenia supplied URL set',0,'bold-tropical-border',[[781,33.33,'back',0.65],[312,33.33,'middle',0.75],[792,33.33,'back',0.50]]],
+['gardenia-successful-marriage','A Successful Marriage','Gardenia supplied URL set',0,'minimal-drift',[[399,33.33,'middle',0.80],[860,66.67,'front',0.80]]],
+['gardenia-mediterranean-border','A Pretty Mediterranean Border Idea','Gardenia supplied URL set',0,'mediterranean-drift',[[860,25,'front',0.80],[937,12.5,'back',0.55],[343,12.5,'front',0.80],[312,37.5,'front',0.80],[729,12.5,'accent',0.40]]],
+['gardenia-backyard-retreat','A Lovely Backyard Retreat with Achillea, Festuca and Grasses','Gardenia supplied URL set',0,'meadow-retreat',[[574,50,'middle',0.85],[277,25,'front',0.80],[811,25,'back',0.75]]],
+['gardenia-desert-pollinator','Native Desert Pollinator Garden','Gardenia supplied URL set',0,'desert-scatter',[[444,40,'accent',0.17],[860,20,'middle',0.75],[399,20,'middle',0.75],[312,20,'front',0.80]]],
+['gardenia-butterfly-friendly','Butterfly-Friendly Garden Design','Gardenia supplied URL set',0,'pollinator-border',[[312,16.67,'middle',0.85],[781,33.33,'back',0.70],[506,16.67,'front',0.80],[277,16.67,'front',0.80],[729,16.67,'back',0.25]]],
+['gardenia-grasses-sage','A Fabulous Planting Idea with Grasses and Sage','Gardenia supplied URL set',0,'two-plant-drift',[[399,50,'middle',0.80],[860,50,'middle',0.90]]],
+['gardenia-salvia-caradonna','Salvia Caradonna Plant Profile','Gardenia supplied URL set',0,'single-plant-mass',[[860,100,'middle',0.90]]],
+['gardenia-summer-fall-border','Summer-to-Fall Perennial Border','Gardenia supplied URL set',0,'seasonal-layered-border',[[781,40,'back',0.55],[312,20,'middle',0.80],[860,20,'middle',0.70],[343,20,'front',0.85]]],
+];
+export const plantRecipes:PlantRecipe[]=R.map(([id,name,sourcePdf,sourcePage,pattern,items])=>({id,name,sourcePdf,sourcePage,pattern,status:'reviewed',plants:items.map(([plantId,coveragePercent,layer,clump])=>({coveragePercent,layer,matureWidthInches:P[plantId][1],greenAcresPlantId:String(plantId),greenAcresName:P[plantId][0],clump}))}));
+export const getPlantRecipe=(id:string)=>plantRecipes.find(r=>r.id===id);
