@@ -37,7 +37,6 @@ function iconScaleForRadius(radius: number): number {
 }
 
 function clumpDiameter(radius: number): number {
-  // Match the normal TopDownPlantSymbol icon footprint, not the old small blob footprint.
   return Math.max(12, radius * 2 * iconScaleForRadius(radius));
 }
 
@@ -67,8 +66,6 @@ export function PlantDriftOverlay({
     : labelMode === 'numbers'
       ? String(legendNumber)
       : '';
-  // The outline is now a true ring, so the fill can be richer without
-  // black showing through. Keep it lighter than a single flat SVG, but not washed out.
   const fillOpacity = Math.max(0.32, Math.min(0.58, circleOpacity * 0.72));
   const strokeWidth = Math.max(1.8, Math.min(3.6, Math.max(...members.map(member => member.radius)) * 0.07));
   const outlineFilterId = `clump-outline-${key.replace(/[^a-zA-Z0-9_-]/g, '')}`;
@@ -76,7 +73,7 @@ export function PlantDriftOverlay({
 
   return (
     <div
-      className="absolute pointer-events-none overflow-visible"
+      className={`absolute z-10 pointer-events-none overflow-visible ${isSelected ? 'z-20' : ''}`}
       style={{ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height }}
     >
       <svg width={bounds.width} height={bounds.height} className="absolute inset-0 overflow-visible">
