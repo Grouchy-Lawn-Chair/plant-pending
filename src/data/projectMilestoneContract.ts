@@ -1,4 +1,4 @@
-export const PROJECT_MILESTONE_CONTRACT_VERSION = '1.0.0';
+export const PROJECT_MILESTONE_CONTRACT_VERSION = '1.1.0';
 
 /**
  * Plant Pending's single authoritative implementation contract.
@@ -11,6 +11,26 @@ export const projectMilestoneContract = {
     greenAcresDataset: 'The clean Green Acres plant dataset is the production truth for plant identity, category, mature size, light, water, and other plant facts.',
     sourceRecipe: 'The supplied source plan is the truth for design intent, plant roles, composition, and placement relationships.',
     oneSourceRule: 'Rules live here once. Other files import or reference this contract rather than maintaining duplicate versions.',
+  },
+
+  changeControl: {
+    beforeAddingRule: 'Search this contract for an existing rule that covers the same subject before adding anything new.',
+    amendInsteadOfDuplicate: 'When an existing rule covers the subject, amend that rule instead of creating a second overlapping instruction.',
+    conflictCheck: 'Every proposed rule or milestone change must be checked against all existing contract sections for duplicate, overlapping, or contradictory requirements.',
+    conflictResolution: 'A new rule may replace an old rule only when it explicitly identifies the rule being superseded, explains why, and increments the contract version.',
+    unresolvedConflict: 'If two rules conflict and neither explicitly supersedes the other, implementation must stop until the conflict is resolved.',
+    precedence: [
+      'explicit project-owner decision recorded in this contract',
+      'current authoritative contract rule',
+      'approved milestone behavior and tests',
+      'implementation detail',
+    ],
+    prohibited: [
+      'duplicating the same requirement in multiple authoritative files',
+      'adding a narrower rule that silently contradicts a broader existing rule',
+      'keeping both old and new rules active when they prescribe incompatible behavior',
+      'changing milestone behavior without updating its contract entry and tests',
+    ],
   },
 
   recipeMatching: {
