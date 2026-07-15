@@ -32,4 +32,4 @@ export const recipeCatalog:AppRecipe[]=plantRecipes.map(recipe=>{
     designIntent:design?.designIntent??'Use plant layers and mature sizes to create a balanced planting layout.',
     plants,
   };
-});
+}).sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base'}));
