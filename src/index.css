@@ -62,26 +62,25 @@
 .inspector-dark button.bg-gray-100:hover { background-color: #475569 !important; }
 .inspector-dark button:disabled { opacity: 0.62 !important; }
 
-/* White canvas dialogs inherit light text from the dark app shell unless every
-   foreground is reset. These rules cover scale, save/load, confirmations, and
-   any future white modal using the same shell pattern. */
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] { color: #111827 !important; }
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] :is(h1,h2,h3,h4,p,label,span,legend) { color: #111827 !important; }
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] :is(.text-white,.text-slate-100,.text-slate-200,.text-slate-300,.text-slate-400,.text-gray-300,.text-gray-400) { color: #334155 !important; }
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] :is(input,select,textarea) {
+/* White dialogs may be nested inside the fixed overlay, so target any white panel
+   inside it rather than only a direct child. */
+div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] { color: #111827 !important; }
+div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] :is(h1,h2,h3,h4,p,label,span,legend) { color: #111827 !important; }
+div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] :is(.text-white,.text-slate-100,.text-slate-200,.text-slate-300,.text-slate-400,.text-gray-300,.text-gray-400) { color: #334155 !important; }
+div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] :is(input,select,textarea) {
   background-color: #ffffff !important;
   color: #111827 !important;
   border-color: #64748b !important;
 }
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] :is(input,textarea)::placeholder { color: #64748b !important; opacity: 1; }
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-emerald"]):not([class*="bg-green"]) {
+div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] :is(input,textarea)::placeholder { color: #64748b !important; opacity: 1; }
+div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-emerald"]):not([class*="bg-green"]) {
   color: #0f172a !important;
   border-color: #64748b !important;
 }
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] button[class*="bg-blue"],
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] button[class*="bg-red"],
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] button[class*="bg-emerald"],
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] button[class*="bg-green"] { color: #ffffff !important; }
+div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] button[class*="bg-blue"],
+div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] button[class*="bg-red"],
+div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] button[class*="bg-emerald"],
+div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] button[class*="bg-green"] { color: #ffffff !important; }
 
 /* Focus should remain visible on both light and dark controls. */
 :where(button,a,input,select,textarea):focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
