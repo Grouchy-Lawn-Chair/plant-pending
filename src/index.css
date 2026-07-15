@@ -207,3 +207,22 @@
 .inspector-dark button.bg-gray-100:hover {
   background-color: #334155 !important;
 }
+
+/* White canvas dialogs need explicit dark text because the app shell defaults to light text. */
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] {
+  color: #111827;
+}
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] h1,
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] h2,
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] h3,
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] label {
+  color: #111827;
+}
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] input {
+  background-color: #ffffff;
+  color: #111827;
+  border-color: #64748b;
+}
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] input::placeholder {
+  color: #64748b;
+}
