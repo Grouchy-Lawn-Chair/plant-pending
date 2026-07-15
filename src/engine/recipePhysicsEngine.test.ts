@@ -44,10 +44,11 @@ describe('recipe physics engine', () => {
 
   it('uses fill-settle-prune-refill cycles to approach dense coverage', () => {
     const result = runRecipePhysics({ polygon: rectangle, plants, seed: 55, density: 1, iterations: 300, passes: 2 });
+    const finalCycle = result.diagnostics.cycles[result.diagnostics.cycles.length - 1];
     expect(result.diagnostics.targetCoverage).toBe(90);
     expect(result.diagnostics.cycles.length).toBeGreaterThan(0);
     expect(result.diagnostics.estimatedCoverage).toBeGreaterThanOrEqual(75);
-    expect(result.diagnostics.cycles.at(-1)?.coverage).toBe(result.diagnostics.estimatedCoverage);
+    expect(finalCycle?.coverage).toBe(result.diagnostics.estimatedCoverage);
   });
 
   it('creates deterministic drift centers and seeded group gaps', () => {
