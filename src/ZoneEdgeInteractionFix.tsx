@@ -6,6 +6,10 @@ function isZoneEdgeHitLine(line: SVGLineElement) {
   return label === 'click edge' || label === 'front' || label === 'back';
 }
 
+function isZoneEdgeTarget(target: EventTarget | null): target is SVGLineElement {
+  return target instanceof SVGLineElement && isZoneEdgeHitLine(target);
+}
+
 function makeZoneEdgesClickable() {
   document.querySelectorAll<SVGLineElement>('line[stroke="transparent"]').forEach(line => {
     if (!isZoneEdgeHitLine(line)) return;
@@ -24,7 +28,21 @@ export default function ZoneEdgeInteractionFix() {
       subtree: true,
     });
 
-    return () => observer.disconnect();
+    const stopEdgeClick = (event: MouseEvent) => {
+      if (!isZoneEdgeTarget(event.target)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    };
+
+    document.addEventListener('click', stopEdgeClick, true);
+    document.addEventListener('dblclick', stopEdgeClick, true);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('click', stopEdgeClick, true);
+      document.removeEventListener('dblclick', stopEdgeClick, true);
+    };
   }, []);
 
   return null;
