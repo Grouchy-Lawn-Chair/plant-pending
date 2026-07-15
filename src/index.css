@@ -4,225 +4,84 @@
 
 /* Print styles */
 @media print {
-  body * {
-    visibility: hidden;
-  }
-
+  body * { visibility: hidden; }
   #print-content,
-  #print-content * {
-    visibility: visible;
-  }
-
-  #print-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-
-  @page {
-    size: letter landscape;
-    margin: 0.35in;
-  }
-
-  .print-plan-frame {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
+  #print-content * { visibility: visible; }
+  #print-content { position: absolute; left: 0; top: 0; width: 100%; }
+  @page { size: letter landscape; margin: 0.35in; }
+  .print-plan-frame { page-break-inside: avoid; break-inside: avoid; }
 }
 
 /* Custom scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
-}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #64748b; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
 
 /* Top-down plant plan symbols */
 .plan-icon-svg,
-.plan-icon-svg-fallback {
-  display: block;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.plan-icon-svg svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.plan-icon-svg-fallback {
-  border-radius: 9999px;
-}
-
-
-/* Rock icons: recolor the SVG to the selected/random gray shade. */
+.plan-icon-svg-fallback { display: block; width: 100%; height: 100%; pointer-events: none; }
+.plan-icon-svg svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.plan-icon-svg-fallback { border-radius: 9999px; }
 .plan-icon-svg.rock-plan-icon svg :where(path, polygon, circle, ellipse, rect, polyline, line) {
   fill: var(--plant-fill) !important;
   fill-opacity: var(--plant-fill-opacity) !important;
-  stroke: rgba(31, 41, 55, 0.55) !important;
+  stroke: rgba(31, 41, 55, 0.72) !important;
   stroke-width: 1.5px;
 }
 
-
-/* Dark properties inspector cleanup */
-.inspector-dark {
-  color: #e5e7eb;
-  background: #0f1720;
-}
+/* Dark inspector: keep every common control readable against the dark shell. */
+.inspector-dark { color: #e2e8f0; background: #0f1720; }
 .inspector-dark .bg-white,
 .inspector-dark .bg-slate-50,
-.inspector-dark .bg-gray-50,
-.inspector-dark .bg-gray-100 {
-  background-color: #131c27 !important;
-  color: #e5e7eb !important;
-}
-.inspector-dark .border-b,
-.inspector-dark .border-t,
-.inspector-dark .border,
-.inspector-dark .border-slate-200,
-.inspector-dark .border-gray-100 {
-  border-color: #263241 !important;
-}
-.inspector-dark :is(.text-slate-900, .text-slate-800, .text-slate-700, .text-gray-900, .text-gray-700, .text-gray-600) {
-  color: #f8fafc !important;
-}
-.inspector-dark :is(.text-slate-600, .text-slate-500, .text-gray-500, .text-gray-400) {
-  color: #a7b3c4 !important;
-}
+.inspector-dark .bg-gray-50 { background-color: #111827 !important; color: #f8fafc !important; }
+.inspector-dark .bg-slate-100,
+.inspector-dark .bg-gray-100 { background-color: #1f2937 !important; color: #f8fafc !important; }
+.inspector-dark .bg-blue-50 { background-color: rgba(30, 64, 175, 0.28) !important; }
+.inspector-dark .bg-emerald-50,
+.inspector-dark .bg-green-50 { background-color: rgba(6, 95, 70, 0.3) !important; }
+.inspector-dark .bg-red-50 { background-color: rgba(153, 27, 27, 0.3) !important; }
+.inspector-dark .bg-amber-50 { background-color: rgba(146, 64, 14, 0.32) !important; }
+.inspector-dark :is(.text-slate-900,.text-gray-900,.text-blue-900) { color: #f8fafc !important; }
+.inspector-dark :is(.text-slate-800,.text-gray-700) { color: #e2e8f0 !important; }
+.inspector-dark :is(.text-slate-700,.text-gray-600,.text-slate-600,.text-gray-500) { color: #cbd5e1 !important; }
+.inspector-dark :is(.text-slate-500,.text-slate-400,.text-gray-400) { color: #aebbd0 !important; }
+.inspector-dark :is(.text-blue-700,.text-sky-300) { color: #bfdbfe !important; }
+.inspector-dark :is(.text-emerald-900,.text-emerald-800,.text-emerald-700,.text-green-700) { color: #bbf7d0 !important; }
+.inspector-dark .text-red-700 { color: #fecaca !important; }
+.inspector-dark .text-amber-700 { color: #fde68a !important; }
+.inspector-dark :is(.border-b,.border-t,.border,.border-slate-200,.border-gray-200,.border-gray-100) { border-color: #475569 !important; }
 .inspector-dark input:not([type="range"]):not([type="checkbox"]):not([type="color"]),
 .inspector-dark textarea,
-.inspector-dark select {
-  background-color: #0b1220 !important;
-  color: #f8fafc !important;
-  border-color: #344256 !important;
-}
+.inspector-dark select { background-color: #0b1220 !important; color: #f8fafc !important; border-color: #64748b !important; }
 .inspector-dark input::placeholder,
-.inspector-dark textarea::placeholder {
-  color: #7b8798 !important;
-}
+.inspector-dark textarea::placeholder { color: #a3afc2 !important; opacity: 1; }
 .inspector-dark button.bg-slate-100,
-.inspector-dark button.bg-gray-100 {
-  background-color: #1f2937 !important;
-  color: #e5e7eb !important;
-}
-.inspector-dark .bg-blue-50 {
-  background-color: rgba(37, 99, 235, 0.14) !important;
-}
-.inspector-dark .bg-emerald-50,
-.inspector-dark .bg-green-50 {
-  background-color: rgba(5, 150, 105, 0.14) !important;
-}
-.inspector-dark .bg-red-50 {
-  background-color: rgba(220, 38, 38, 0.14) !important;
-}
-.inspector-dark .text-blue-900,
-.inspector-dark .text-blue-700 {
-  color: #93c5fd !important;
-}
-.inspector-dark .text-emerald-900,
-.inspector-dark .text-emerald-800,
-.inspector-dark .text-emerald-700,
-.inspector-dark .text-green-700 {
-  color: #86efac !important;
-}
-.inspector-dark .text-red-700 {
-  color: #fca5a5 !important;
-}
-
-/* v110 dark inspector polish */
-.inspector-dark {
-  color: #e2e8f0;
-}
-.inspector-dark .bg-white,
-.inspector-dark .bg-slate-50,
-.inspector-dark .bg-gray-50 {
-  background-color: #111827 !important;
-}
-.inspector-dark .bg-slate-100,
-.inspector-dark .bg-gray-100 {
-  background-color: #1f2937 !important;
-}
-.inspector-dark .bg-blue-50 {
-  background-color: rgba(30, 64, 175, 0.22) !important;
-}
-.inspector-dark .bg-emerald-50,
-.inspector-dark .bg-green-50 {
-  background-color: rgba(6, 95, 70, 0.24) !important;
-}
-.inspector-dark .text-slate-900,
-.inspector-dark .text-gray-900,
-.inspector-dark .text-blue-900 {
-  color: #f8fafc !important;
-}
-.inspector-dark .text-slate-800,
-.inspector-dark .text-gray-700 {
-  color: #e2e8f0 !important;
-}
-.inspector-dark .text-slate-700,
-.inspector-dark .text-gray-600,
-.inspector-dark .text-slate-600,
-.inspector-dark .text-gray-500 {
-  color: #cbd5e1 !important;
-}
-.inspector-dark .border-slate-200,
-.inspector-dark .border-gray-200,
-.inspector-dark .border-gray-100,
-.inspector-dark .border {
-  border-color: #334155 !important;
-}
-.inspector-dark input,
-.inspector-dark select,
-.inspector-dark textarea {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-  border-color: #475569 !important;
-}
-.inspector-dark input::placeholder,
-.inspector-dark textarea::placeholder {
-  color: #94a3b8 !important;
-}
-.inspector-dark button.bg-slate-100,
-.inspector-dark button.bg-gray-100 {
-  background-color: #1e293b !important;
-  color: #e2e8f0 !important;
-}
+.inspector-dark button.bg-gray-100 { background-color: #334155 !important; color: #f8fafc !important; border-color: #64748b !important; }
 .inspector-dark button.bg-slate-100:hover,
-.inspector-dark button.bg-gray-100:hover {
-  background-color: #334155 !important;
-}
+.inspector-dark button.bg-gray-100:hover { background-color: #475569 !important; }
+.inspector-dark button:disabled { opacity: 0.62 !important; }
 
-/* White canvas dialogs need explicit dark text because the app shell defaults to light text. */
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] {
-  color: #111827;
+/* White canvas dialogs inherit light text from the dark app shell unless every
+   foreground is reset. These rules cover scale, save/load, confirmations, and
+   any future white modal using the same shell pattern. */
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] { color: #111827 !important; }
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] :is(h1,h2,h3,h4,p,label,span,legend) { color: #111827 !important; }
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] :is(.text-white,.text-slate-100,.text-slate-200,.text-slate-300,.text-slate-400,.text-gray-300,.text-gray-400) { color: #334155 !important; }
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] :is(input,select,textarea) {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #64748b !important;
 }
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] h1,
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] h2,
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] h3,
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] label {
-  color: #111827;
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] :is(input,textarea)::placeholder { color: #64748b !important; opacity: 1; }
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-emerald"]):not([class*="bg-green"]) {
+  color: #0f172a !important;
+  border-color: #64748b !important;
 }
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] input {
-  background-color: #ffffff;
-  color: #111827;
-  border-color: #64748b;
-}
-div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] input::placeholder {
-  color: #64748b;
-}
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] button[class*="bg-blue"],
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] button[class*="bg-red"],
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] button[class*="bg-emerald"],
+div[class~="fixed"][class~="inset-0"] > div[class~="bg-white"] button[class*="bg-green"] { color: #ffffff !important; }
+
+/* Focus should remain visible on both light and dark controls. */
+:where(button,a,input,select,textarea):focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
