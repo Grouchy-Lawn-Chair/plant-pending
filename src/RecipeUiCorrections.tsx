@@ -3,10 +3,13 @@ import type { GardenPlan, GardenZone, PlacedPlant } from './types/plant';
 
 const CURRENT_PLAN_KEY='garden-planner-current';
 const DRIFT_GAP_KEY='plant-pending-drift-gap-feet';
+const PLANT_COLOR_KEY='plant-pending-species-colors';
+const SPECIES_PALETTE=['#D54E27','#A3DECF','#A073C2','#DDE985','#59A5CB','#E8B85C','#B26175','#6CA47F','#88778F','#F6DA7B','#79C7A5','#D76F4C','#8B6FAF','#94B797','#C98A5F','#7FAEBC','#DFA3A3','#B8C96F','#6E8F73','#94AA75'];
 
 type HookNode={memoizedState?:unknown;queue?:{dispatch?:(value:unknown)=>void}|null;next?:HookNode|null};
 type FiberNode={child?:FiberNode|null;sibling?:FiberNode|null;return?:FiberNode|null;memoizedProps?:Record<string,unknown>|null;pendingProps?:Record<string,unknown>|null;memoizedState?:HookNode|null};
 type Point={x:number;y:number};
+type SpeciesColorMap=Record<string,string>;
 
 function setInputValue(input:HTMLInputElement,value:number){
   const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;
@@ -19,6 +22,8 @@ function mixInputFor(card:HTMLElement){
   return label?.querySelector<HTMLInputElement>('input[type="number"]')||null;
 }
 function readPlan():GardenPlan|null{try{const raw=localStorage.getItem(CURRENT_PLAN_KEY);return raw?JSON.parse(raw)as GardenPlan:null;}catch{return null;}}
+function readSpeciesColors():SpeciesColorMap{try{const raw=localStorage.getItem(PLANT_COLOR_KEY);return raw?JSON.parse(raw)as SpeciesColorMap:{};}catch{return {};}}
+function writeSpeciesColors(colors:SpeciesColorMap){localStorage.setItem(PLANT_COLOR_KEY,JSON.stringify(colors));}
 function findFiber(element:Element|null):FiberNode|null{let current=element;while(current){const key=Object.keys(current).find(name=>name.startsWith('__reactFiber$'));if(key)return(current as unknown as Record<string,FiberNode>)[key]||null;current=current.parentElement;}return null;}
 function rootOf(start:FiberNode|null){let root=start;if(!root)return null;while(root.return)root=root.return;return root;}
 function findCallback(start:FiberNode|null,name:string):((plan:GardenPlan)=>void)|null{const root=rootOf(start);if(!root)return null;const stack=[root],seen=new Set<FiberNode>();while(stack.length){const fiber=stack.pop()!;if(seen.has(fiber))continue;seen.add(fiber);const callback=fiber.memoizedProps?.[name]??fiber.pendingProps?.[name];if(typeof callback==='function')return callback as(plan:GardenPlan)=>void;if(fiber.sibling)stack.push(fiber.sibling);if(fiber.child)stack.push(fiber.child);}return null;}
@@ -26,6 +31,24 @@ function applyPlan(plan:GardenPlan){const host=document.querySelector<HTMLElemen
 function pointInPolygon(point:Point,polygon:Point[]){let inside=false;for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){const a=polygon[i],b=polygon[j];if((a.y>point.y)!==(b.y>point.y)&&point.x<((b.x-a.x)*(point.y-a.y))/((b.y-a.y)||1e-9)+a.x)inside=!inside;}return inside;}
 function driftId(plant:PlacedPlant){return plant.notes?.match(/\[drift:([^\]]+)\]/)?.[1]||null;}
 function hash01(text:string){let hash=2166136261;for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619);}return((hash>>>0)%10000)/10000;}
+
+function ensureSpeciesColors(plan:GardenPlan){
+  const colors=readSpeciesColors();
+  const orderedIds:number[]=[];
+  for(const item of plan.placedPlants||[]){if(item.itemType==='rock'||orderedIds.includes(item.plantId))continue;orderedIds.push(item.plantId);}
+  let mapChanged=false;
+  orderedIds.forEach((plantId,index)=>{const key=String(plantId);if(!colors[key]){colors[key]=SPECIES_PALETTE[index%SPECIES_PALETTE.length];mapChanged=true;}});
+  if(mapChanged)writeSpeciesColors(colors);
+  let planChanged=false;
+  const placedPlants=(plan.placedPlants||[]).map(item=>{
+    if(item.itemType==='rock')return item;
+    const color=colors[String(item.plantId)];
+    if(!color||item.customColor===color)return item;
+    planChanged=true;
+    return{...item,customColor:color};
+  });
+  return planChanged?{...plan,placedPlants,updatedAt:new Date().toISOString()}:plan;
+}
 
 function separateDrifts(plan:GardenPlan,gapFeet:number){
   if(gapFeet<=0)return plan;
@@ -84,6 +107,7 @@ export default function RecipeUiCorrections(){
     let balancing=false;
     let colorBefore:GardenPlan|null=null;
     let driftTimer=0;
+    let normalizeTimer=0;
     let lastGenerationSignature='';
 
     const rebalance=(changed:HTMLInputElement)=>{
@@ -106,27 +130,59 @@ export default function RecipeUiCorrections(){
     const syncColorSwatch=(input:HTMLInputElement)=>{
       const row=input.parentElement;if(!row)return;const swatch=[...row.querySelectorAll<HTMLElement>('div')].find(item=>item.classList.contains('rounded-full'));if(swatch){swatch.style.backgroundColor=input.value;swatch.title='Current color for every instance of this plant';}
     };
-    const propagateColor=()=>{
+
+    const captureAndPropagateColor=(reset=false)=>{
       const before=colorBefore;let attempts=0;
-      const retry=window.setInterval(()=>{attempts++;const current=readPlan();if(!before||!current){window.clearInterval(retry);return;}const oldById=new Map(before.placedPlants.map(item=>[item.instanceId,item]));const changed=current.placedPlants.find(item=>oldById.has(item.instanceId)&&oldById.get(item.instanceId)?.customColor!==item.customColor);if(!changed){if(attempts>12)window.clearInterval(retry);return;}window.clearInterval(retry);const next={...current,placedPlants:current.placedPlants.map(item=>item.itemType!=='rock'&&item.plantId===changed.plantId?{...item,customColor:changed.customColor}:item),updatedAt:new Date().toISOString()};applyPlan(next);},80);
+      const retry=window.setInterval(()=>{
+        attempts++;
+        const current=readPlan();
+        if(!before||!current){window.clearInterval(retry);return;}
+        const oldById=new Map(before.placedPlants.map(item=>[item.instanceId,item]));
+        const changed=current.placedPlants.find(item=>oldById.has(item.instanceId)&&oldById.get(item.instanceId)?.customColor!==item.customColor);
+        if(!changed){if(attempts>24)window.clearInterval(retry);return;}
+        window.clearInterval(retry);
+        const colors=readSpeciesColors();
+        const key=String(changed.plantId);
+        if(reset||!changed.customColor)delete colors[key];else colors[key]=changed.customColor;
+        writeSpeciesColors(colors);
+        const fallback=colors[key]||SPECIES_PALETTE[Math.max(0,[...new Set(current.placedPlants.filter(item=>item.itemType!=='rock').map(item=>item.plantId))].indexOf(changed.plantId))%SPECIES_PALETTE.length];
+        if(!colors[key]){colors[key]=fallback;writeSpeciesColors(colors);}
+        const next={...current,placedPlants:current.placedPlants.map(item=>item.itemType!=='rock'&&item.plantId===changed.plantId?{...item,customColor:fallback}:item),updatedAt:new Date().toISOString()};
+        applyPlan(next);
+      },80);
+    };
+
+    const normalizeCurrentPlan=()=>{
+      const plan=readPlan();if(!plan)return;
+      const normalized=ensureSpeciesColors(plan);
+      if(normalized!==plan)applyPlan(normalized);
     };
 
     const onPointerDown=(event:Event)=>{const target=event.target;if(target instanceof HTMLInputElement&&target.type==='color')colorBefore=readPlan();};
     const onInput=(event:Event)=>{const target=event.target;if(target instanceof HTMLInputElement&&target.type==='color')syncColorSwatch(target);};
-    const onChange=(event:Event)=>{const target=event.target;if(target instanceof HTMLInputElement){if(target.type==='number')rebalance(target);if(target.type==='color'){syncColorSwatch(target);propagateColor();}}};
-    const onClick=(event:Event)=>{const button=(event.target as Element|null)?.closest<HTMLButtonElement>('button');if(!button)return;if(button.textContent?.trim()==='Reset'&&button.closest('div')?.parentElement?.textContent?.includes('Symbol color')){colorBefore=readPlan();window.setTimeout(propagateColor,0);}};
+    const onChange=(event:Event)=>{const target=event.target;if(target instanceof HTMLInputElement){if(target.type==='number')rebalance(target);if(target.type==='color'){syncColorSwatch(target);captureAndPropagateColor(false);}}};
+    const onClick=(event:Event)=>{const button=(event.target as Element|null)?.closest<HTMLButtonElement>('button');if(!button)return;if(button.textContent?.trim()==='Reset'&&button.closest('div')?.parentElement?.textContent?.includes('Symbol color')){colorBefore=readPlan();window.setTimeout(()=>captureAndPropagateColor(true),0);}};
 
     const polish=()=>{
       document.querySelectorAll<HTMLInputElement>('input[type="color"]').forEach(input=>{if(input.closest('div')?.parentElement?.textContent?.includes('Symbol color'))syncColorSwatch(input);});
       document.querySelectorAll<HTMLButtonElement>('button').forEach(button=>{if(button.textContent?.trim()==='Delete'&&button.closest('aside'))button.className='flex-1 px-3 py-2 text-xs font-bold bg-red-600 hover:bg-red-500 text-white border border-red-400 rounded-lg shadow-sm';});
       document.querySelectorAll<HTMLElement>('[data-recipe-react-host]').forEach(installDriftGapControl);
-      const plan=readPlan();if(!plan)return;const generated=plan.placedPlants.filter(item=>item.instanceId.startsWith('recipe-run-'));const signature=generated.map(item=>item.instanceId).sort().join('|');if(!signature||signature===lastGenerationSignature)return;lastGenerationSignature=signature;window.clearTimeout(driftTimer);driftTimer=window.setTimeout(()=>{const fresh=readPlan();const gap=Math.max(0,Number(localStorage.getItem(DRIFT_GAP_KEY))||0);if(fresh&&gap>0){const spaced=separateDrifts(fresh,gap);if(spaced!==fresh)applyPlan(spaced);}},1800);
+      const plan=readPlan();if(!plan)return;
+      const generated=plan.placedPlants.filter(item=>item.instanceId.startsWith('recipe-run-'));
+      const signature=generated.map(item=>item.instanceId).sort().join('|');
+      if(signature&&signature!==lastGenerationSignature){
+        lastGenerationSignature=signature;
+        window.clearTimeout(normalizeTimer);
+        normalizeTimer=window.setTimeout(normalizeCurrentPlan,250);
+        window.clearTimeout(driftTimer);
+        driftTimer=window.setTimeout(()=>{const fresh=readPlan();const gap=Math.max(0,Number(localStorage.getItem(DRIFT_GAP_KEY))||0);if(fresh&&gap>0){const spaced=separateDrifts(fresh,gap);if(spaced!==fresh)applyPlan(spaced);}},1800);
+      }
     };
 
     const observer=new MutationObserver(polish);observer.observe(document.body,{childList:true,subtree:true});
-    const timer=window.setInterval(polish,500);polish();
+    const timer=window.setInterval(polish,500);polish();normalizeCurrentPlan();
     document.addEventListener('pointerdown',onPointerDown,true);document.addEventListener('input',onInput,true);document.addEventListener('change',onChange,true);document.addEventListener('click',onClick,true);
-    return()=>{observer.disconnect();window.clearInterval(timer);window.clearTimeout(driftTimer);document.removeEventListener('pointerdown',onPointerDown,true);document.removeEventListener('input',onInput,true);document.removeEventListener('change',onChange,true);document.removeEventListener('click',onClick,true);};
+    return()=>{observer.disconnect();window.clearInterval(timer);window.clearTimeout(driftTimer);window.clearTimeout(normalizeTimer);document.removeEventListener('pointerdown',onPointerDown,true);document.removeEventListener('input',onInput,true);document.removeEventListener('change',onChange,true);document.removeEventListener('click',onClick,true);};
   },[]);
   return null;
 }
