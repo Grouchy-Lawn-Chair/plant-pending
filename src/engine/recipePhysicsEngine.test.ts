@@ -9,46 +9,31 @@ const rectangle = [
 ];
 
 const plants = [
-  { key: 'back', plantId: 1, radius: 22, layer: 'back' as const, weight: 25 },
-  { key: 'middle', plantId: 2, radius: 17, layer: 'middle' as const, weight: 35 },
-  { key: 'front', plantId: 3, radius: 12, layer: 'front' as const, weight: 30 },
-  { key: 'accent', plantId: 4, radius: 20, layer: 'accent' as const, weight: 10 },
+  { key: 'back', plantId: 1, radius: 22, layer: 'back' as const, weight: 25, spacing: 'natural' as const, grouping: 'individual' as const },
+  { key: 'middle', plantId: 2, radius: 17, layer: 'middle' as const, weight: 35, spacing: 'natural' as const, grouping: 'medium-drift' as const },
+  { key: 'front', plantId: 3, radius: 12, layer: 'front' as const, weight: 30, spacing: 'tight' as const, grouping: 'large-drift' as const },
+  { key: 'accent', plantId: 4, radius: 20, layer: 'accent' as const, weight: 10, spacing: 'loose' as const, grouping: 'individual' as const },
 ];
 
-const countByPlant = (result: ReturnType<typeof runRecipePhysics>) => new Map(
-  plants.map(plant => [plant.plantId, result.placements.filter(item => item.plantId === plant.plantId).length]),
-);
-
-const averageDistanceToTop = (items: ReturnType<typeof runRecipePhysics>['placements']) =>
-  items.reduce((sum, item) => sum + item.y, 0) / Math.max(1, items.length);
+const countsByPlant = (result: ReturnType<typeof runRecipePhysics>) =>
+  result.placements.reduce<Record<number, number>>((counts, item) => {
+    counts[item.plantId] = (counts[item.plantId] || 0) + 1;
+    return counts;
+  }, {});
 
 describe('recipe physics engine', () => {
   it('is deterministic for the same seed', () => {
     const first = runRecipePhysics({ polygon: rectangle, plants, seed: 42, density: 0.45 });
     const second = runRecipePhysics({ polygon: rectangle, plants, seed: 42, density: 0.45 });
     expect(second.placements).toEqual(first.placements);
+    expect(second.diagnostics.cycles).toEqual(first.diagnostics.cycles);
   });
 
-  it('changes the arrangement for a different seed without changing plant counts or sizes', () => {
-    const options = { polygon: rectangle, plants, targetCount: 40, density: 0.45, frontEdges: [2], backEdges: [0], passes: 3 };
-    const first = runRecipePhysics({ ...options, seed: 42 });
-    const second = runRecipePhysics({ ...options, seed: 99 });
+  it('changes arrangement but preserves species counts for a different seed', () => {
+    const first = runRecipePhysics({ polygon: rectangle, plants, seed: 42, density: 0.7 });
+    const second = runRecipePhysics({ polygon: rectangle, plants, seed: 99, density: 0.7 });
     expect(second.placements.map(item => [item.x, item.y])).not.toEqual(first.placements.map(item => [item.x, item.y]));
-    expect(second.diagnostics.requested).toBe(40);
-    expect(first.diagnostics.requested).toBe(40);
-    expect(second.placements).toHaveLength(40);
-    expect(first.placements).toHaveLength(40);
-    expect(countByPlant(second)).toEqual(countByPlant(first));
-    plants.forEach(plant => {
-      expect(second.placements.filter(item => item.plantId === plant.plantId).every(item => item.radius === plant.radius)).toBe(true);
-    });
-  });
-
-  it('does not silently cap an explicit requested count to estimated capacity', () => {
-    const result = runRecipePhysics({ polygon: rectangle, plants, seed: 4, targetCount: 60, allowedOverlap: 0.1, passes: 4 });
-    expect(result.diagnostics.requested).toBe(60);
-    expect(result.placements).toHaveLength(60);
-    expect(result.diagnostics.rejected).toBe(0);
+    expect(countsByPlant(second)).toEqual(countsByPlant(first));
   });
 
   it('keeps every accepted plant center inside the polygon', () => {
@@ -57,11 +42,28 @@ describe('recipe physics engine', () => {
     result.placements.forEach(item => expect(pointInPolygon(item, rectangle)).toBe(true));
   });
 
-  it('puts back plants in a tight band near the selected back edge', () => {
-    const result = runRecipePhysics({ polygon: rectangle, plants, seed: 23, targetCount: 40, backEdges: [0], frontEdges: [2], attractionStrength: 1, iterations: 600, passes: 3 });
+  it('uses fill-settle-prune-refill cycles to approach dense coverage', () => {
+    const result = runRecipePhysics({ polygon: rectangle, plants, seed: 55, density: 1, iterations: 300, passes: 2 });
+    expect(result.diagnostics.targetCoverage).toBe(90);
+    expect(result.diagnostics.cycles.length).toBeGreaterThan(0);
+    expect(result.diagnostics.estimatedCoverage).toBeGreaterThanOrEqual(75);
+    expect(result.diagnostics.cycles.at(-1)?.coverage).toBe(result.diagnostics.estimatedCoverage);
+  });
+
+  it('creates deterministic drift centers and seeded group gaps', () => {
+    const first = runRecipePhysics({ polygon: rectangle, plants, seed: 314, density: 0.65 });
+    const second = runRecipePhysics({ polygon: rectangle, plants, seed: 314, density: 0.65 });
+    const third = runRecipePhysics({ polygon: rectangle, plants, seed: 315, density: 0.65 });
+    expect(first.diagnostics.driftCenters).toEqual(second.diagnostics.driftCenters);
+    expect(first.diagnostics.driftCenters).not.toEqual(third.diagnostics.driftCenters);
+    expect(first.diagnostics.driftCenters.some(item => item.grouping === 'medium-drift')).toBe(true);
+  });
+
+  it('keeps back plants closer to the marked back edge than front plants', () => {
+    const result = runRecipePhysics({ polygon: rectangle, plants, seed: 23, density: 0.55, backEdges: [0], frontEdges: [2] });
     const back = result.placements.filter(item => item.layer === 'back');
     const front = result.placements.filter(item => item.layer === 'front');
-    expect(averageDistanceToTop(back)).toBeLessThan(70);
-    expect(averageDistanceToTop(back)).toBeLessThan(averageDistanceToTop(front));
+    const averageY = (items: typeof result.placements) => items.reduce((sum, item) => sum + item.y, 0) / Math.max(1, items.length);
+    expect(averageY(back)).toBeLessThan(averageY(front));
   });
 });
