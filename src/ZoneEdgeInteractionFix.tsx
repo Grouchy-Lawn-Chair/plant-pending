@@ -12,6 +12,8 @@ type FiberNode = {
   pendingProps?: Record<string, unknown> | null;
 };
 
+type UpdateZone = (zoneId: string, updates: Partial<GardenZone>) => void;
+
 function readPlan(): GardenPlan | null {
   try {
     const raw = localStorage.getItem(CURRENT_PLAN_KEY);
@@ -37,7 +39,7 @@ function rootOf(start: FiberNode | null) {
   return root;
 }
 
-function findCallback(start: FiberNode | null, name: string): ((plan: GardenPlan) => void) | null {
+function findFunction(start: FiberNode | null, name: string): Function | null {
   const root = rootOf(start);
   if (!root) return null;
   const stack = [root];
@@ -47,39 +49,19 @@ function findCallback(start: FiberNode | null, name: string): ((plan: GardenPlan
     if (seen.has(fiber)) continue;
     seen.add(fiber);
     const callback = fiber.memoizedProps?.[name] ?? fiber.pendingProps?.[name];
-    if (typeof callback === 'function') return callback as (plan: GardenPlan) => void;
+    if (typeof callback === 'function') return callback as Function;
     if (fiber.sibling) stack.push(fiber.sibling);
     if (fiber.child) stack.push(fiber.child);
   }
   return null;
 }
 
-function applyPlan(plan: GardenPlan) {
-  const root = document.getElementById('root');
-  const callback = findCallback(findFiber(root), 'onImportPlan') || findCallback(findFiber(root), 'onLoadPlan');
-  if (!callback) return false;
-  callback(plan);
-  localStorage.setItem(CURRENT_PLAN_KEY, JSON.stringify(plan));
-  return true;
-}
-
-function samePoint(a: Point, b: Point) {
-  return Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5;
-}
-
-function findZoneEdge(plan: GardenPlan, line: SVGLineElement): { zone: GardenZone; edgeIndex: number } | null {
-  const a = { x: Number(line.getAttribute('x1')), y: Number(line.getAttribute('y1')) };
-  const b = { x: Number(line.getAttribute('x2')), y: Number(line.getAttribute('y2')) };
-  for (const zone of plan.zones || []) {
-    for (let index = 0; index < zone.points.length; index += 1) {
-      const start = zone.points[index];
-      const end = zone.points[(index + 1) % zone.points.length];
-      if ((samePoint(a, start) && samePoint(b, end)) || (samePoint(a, end) && samePoint(b, start))) {
-        return { zone, edgeIndex: index };
-      }
-    }
-  }
-  return null;
+function pointToSegmentDistance(point: Point, start: Point, end: Point) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  if (dx === 0 && dy === 0) return Math.hypot(point.x - start.x, point.y - start.y);
+  const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
 }
 
 function nextRole(zone: GardenZone, edgeIndex: number): 'front' | 'back' | '' {
@@ -93,11 +75,29 @@ function updatedRoles(zone: GardenZone, edgeIndex: number, role: 'front' | 'back
   const back = (zone.edgeRoles?.back || []).filter(index => index !== edgeIndex);
   if (role === 'front') front.push(edgeIndex);
   if (role === 'back') back.push(edgeIndex);
-  return { front: [...new Set(front)].sort((a, b) => a - b), back: [...new Set(back)].sort((a, b) => a - b) };
+  return {
+    front: [...new Set(front)].sort((a, b) => a - b),
+    back: [...new Set(back)].sort((a, b) => a - b),
+  };
 }
 
-function isEdgeHitLine(target: EventTarget | null): target is SVGLineElement {
-  return target instanceof SVGLineElement && target.getAttribute('stroke') === 'transparent';
+function selectedZoneFromRenderedEdges(plan: GardenPlan) {
+  const firstHitLine = document.querySelector<SVGLineElement>('line[stroke="transparent"]');
+  if (!firstHitLine) return null;
+  const x1 = Number(firstHitLine.getAttribute('x1'));
+  const y1 = Number(firstHitLine.getAttribute('y1'));
+  return (plan.zones || []).find(zone => zone.points.some(point => Math.abs(point.x - x1) < 0.5 && Math.abs(point.y - y1) < 0.5)) || null;
+}
+
+function worldPointForEvent(event: MouseEvent, svg: SVGSVGElement): Point | null {
+  const rect = svg.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  const width = svg.viewBox.baseVal.width || svg.width.baseVal.value || rect.width;
+  const height = svg.viewBox.baseVal.height || svg.height.baseVal.value || rect.height;
+  return {
+    x: (event.clientX - rect.left) * (width / rect.width),
+    y: (event.clientY - rect.top) * (height / rect.height),
+  };
 }
 
 export default function ZoneEdgeInteractionFix() {
@@ -110,25 +110,55 @@ export default function ZoneEdgeInteractionFix() {
     };
 
     const onMouseDown = (event: MouseEvent) => {
-      if (!isEdgeHitLine(event.target) || event.button !== 0) return;
+      if (event.button !== 0) return;
       const plan = readPlan();
       if (!plan) return;
-      const match = findZoneEdge(plan, event.target);
-      if (!match) return;
+      const zone = selectedZoneFromRenderedEdges(plan);
+      if (!zone || zone.points.length < 2) return;
+
+      const hitLine = document.querySelector<SVGLineElement>('line[stroke="transparent"]');
+      const svg = hitLine?.ownerSVGElement;
+      if (!svg) return;
+      const point = worldPointForEvent(event, svg);
+      if (!point) return;
+
+      const rect = svg.getBoundingClientRect();
+      const worldWidth = svg.viewBox.baseVal.width || svg.width.baseVal.value || rect.width;
+      const pixelsToWorld = worldWidth / rect.width;
+      const hitDistance = 24 * pixelsToWorld;
+
+      let nearestIndex = -1;
+      let nearestDistance = Infinity;
+      zone.points.forEach((start, index) => {
+        const end = zone.points[(index + 1) % zone.points.length];
+        const distance = pointToSegmentDistance(point, start, end);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = index;
+        }
+      });
+
+      if (nearestIndex < 0 || nearestDistance > hitDistance) return;
 
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
 
-      const role = nextRole(match.zone, match.edgeIndex);
+      const role = nextRole(zone, nearestIndex);
+      const updateZone = findFunction(findFiber(document.getElementById('root')), 'onUpdateZone') as UpdateZone | null;
+      if (updateZone) {
+        updateZone(zone.id, { edgeRoles: updatedRoles(zone, nearestIndex, role) });
+        return;
+      }
+
       const nextPlan: GardenPlan = {
         ...plan,
-        zones: plan.zones.map(zone => zone.id === match.zone.id
-          ? { ...zone, edgeRoles: updatedRoles(zone, match.edgeIndex, role) }
-          : zone),
+        zones: (plan.zones || []).map(item => item.id === zone.id
+          ? { ...item, edgeRoles: updatedRoles(item, nearestIndex, role) }
+          : item),
         updatedAt: new Date().toISOString(),
       };
-      applyPlan(nextPlan);
+      localStorage.setItem(CURRENT_PLAN_KEY, JSON.stringify(nextPlan));
     };
 
     const observer = new MutationObserver(widenTargets);
