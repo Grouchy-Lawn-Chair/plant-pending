@@ -3,7 +3,6 @@ import type { GardenPlan, GardenZone } from './types/plant';
 
 const CURRENT_PLAN_KEY = 'garden-planner-current';
 
-type Point = { x: number; y: number };
 type FiberNode = {
   child?: FiberNode | null;
   sibling?: FiberNode | null;
@@ -56,14 +55,6 @@ function findFunction(start: FiberNode | null, name: string): Function | null {
   return null;
 }
 
-function pointToSegmentDistance(point: Point, start: Point, end: Point) {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  if (dx === 0 && dy === 0) return Math.hypot(point.x - start.x, point.y - start.y);
-  const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)));
-  return Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
-}
-
 function nextRole(zone: GardenZone, edgeIndex: number): 'front' | 'back' | '' {
   if (zone.edgeRoles?.front?.includes(edgeIndex)) return 'back';
   if (zone.edgeRoles?.back?.includes(edgeIndex)) return '';
@@ -91,95 +82,136 @@ function getZoneEdgeHitLines() {
   return [...document.querySelectorAll<SVGLineElement>('line[stroke="transparent"]')].filter(isZoneEdgeHitLine);
 }
 
-function findRenderedZone(plan: GardenPlan, line: SVGLineElement) {
+function findZoneAndEdge(plan: GardenPlan, line: SVGLineElement) {
   const x1 = Number(line.getAttribute('x1'));
   const y1 = Number(line.getAttribute('y1'));
-  return (plan.zones || []).find(zone => zone.points.some(point => Math.abs(point.x - x1) < 0.5 && Math.abs(point.y - y1) < 0.5)) || null;
+  const x2 = Number(line.getAttribute('x2'));
+  const y2 = Number(line.getAttribute('y2'));
+  for (const zone of plan.zones || []) {
+    for (let index = 0; index < zone.points.length; index += 1) {
+      const start = zone.points[index];
+      const end = zone.points[(index + 1) % zone.points.length];
+      const forward = Math.abs(start.x - x1) < 0.5 && Math.abs(start.y - y1) < 0.5 && Math.abs(end.x - x2) < 0.5 && Math.abs(end.y - y2) < 0.5;
+      const reverse = Math.abs(start.x - x2) < 0.5 && Math.abs(start.y - y2) < 0.5 && Math.abs(end.x - x1) < 0.5 && Math.abs(end.y - y1) < 0.5;
+      if (forward || reverse) return { zone, edgeIndex: index };
+    }
+  }
+  return null;
 }
 
-function worldPointForEvent(event: MouseEvent, svg: SVGSVGElement, zone: GardenZone): Point | null {
-  const rect = svg.getBoundingClientRect();
-  if (!rect.width || !rect.height) return null;
-  const maxX = Math.max(...zone.points.map(point => point.x), 1);
-  const maxY = Math.max(...zone.points.map(point => point.y), 1);
-  const worldWidth = svg.viewBox.baseVal.width || svg.width.baseVal.value || Math.max(maxX, rect.width);
-  const worldHeight = svg.viewBox.baseVal.height || svg.height.baseVal.value || Math.max(maxY, rect.height);
-  return {
-    x: (event.clientX - rect.left) * (worldWidth / rect.width),
-    y: (event.clientY - rect.top) * (worldHeight / rect.height),
-  };
+function screenPoint(line: SVGLineElement, x: number, y: number) {
+  const svg = line.ownerSVGElement;
+  const matrix = line.getScreenCTM();
+  if (!svg || !matrix) return null;
+  const point = svg.createSVGPoint();
+  point.x = x;
+  point.y = y;
+  return point.matrixTransform(matrix);
 }
 
 export default function ZoneEdgeInteractionFix() {
   useEffect(() => {
-    const widenTargets = () => {
-      getZoneEdgeHitLines().forEach(line => {
-        line.setAttribute('stroke-width', '46');
-        line.setAttribute('pointer-events', 'stroke');
-      });
-    };
+    const overlayRoot = document.createElement('div');
+    overlayRoot.dataset.zoneEdgeOverlayRoot = 'true';
+    overlayRoot.style.position = 'fixed';
+    overlayRoot.style.inset = '0';
+    overlayRoot.style.pointerEvents = 'none';
+    overlayRoot.style.zIndex = '2147483646';
+    document.body.appendChild(overlayRoot);
 
-    const onMouseDown = (event: MouseEvent) => {
-      if (event.button !== 0) return;
+    const renderOverlays = () => {
+      overlayRoot.replaceChildren();
       const plan = readPlan();
       if (!plan) return;
 
-      const lines = getZoneEdgeHitLines();
-      if (!lines.length) return;
-      const line = lines[0];
-      const zone = findRenderedZone(plan, line);
-      const svg = line.ownerSVGElement;
-      if (!zone || !svg || zone.points.length < 2) return;
+      for (const line of getZoneEdgeHitLines()) {
+        const match = findZoneAndEdge(plan, line);
+        if (!match) continue;
 
-      const point = worldPointForEvent(event, svg, zone);
-      if (!point) return;
-      const rect = svg.getBoundingClientRect();
-      const maxX = Math.max(...zone.points.map(item => item.x), 1);
-      const worldWidth = svg.viewBox.baseVal.width || svg.width.baseVal.value || Math.max(maxX, rect.width);
-      const hitDistance = 28 * (worldWidth / rect.width);
+        const x1 = Number(line.getAttribute('x1'));
+        const y1 = Number(line.getAttribute('y1'));
+        const x2 = Number(line.getAttribute('x2'));
+        const y2 = Number(line.getAttribute('y2'));
+        const start = screenPoint(line, x1, y1);
+        const end = screenPoint(line, x2, y2);
+        if (!start || !end) continue;
 
-      let nearestIndex = -1;
-      let nearestDistance = Infinity;
-      zone.points.forEach((start, index) => {
-        const end = zone.points[(index + 1) % zone.points.length];
-        const distance = pointToSegmentDistance(point, start, end);
-        if (distance < nearestDistance) {
-          nearestDistance = distance;
-          nearestIndex = index;
-        }
-      });
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const length = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const role = match.zone.edgeRoles?.front?.includes(match.edgeIndex)
+          ? 'front'
+          : match.zone.edgeRoles?.back?.includes(match.edgeIndex)
+            ? 'back'
+            : 'click edge';
 
-      if (nearestIndex < 0 || nearestDistance > hitDistance) return;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.zoneEdgeIndex = String(match.edgeIndex);
+        button.title = `Set edge role: ${role} → ${role === 'click edge' ? 'front' : role === 'front' ? 'back' : 'unmarked'}`;
+        button.setAttribute('aria-label', button.title);
+        button.style.position = 'fixed';
+        button.style.left = `${(start.x + end.x) / 2}px`;
+        button.style.top = `${(start.y + end.y) / 2}px`;
+        button.style.width = `${Math.max(44, length)}px`;
+        button.style.height = '44px';
+        button.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+        button.style.transformOrigin = 'center';
+        button.style.pointerEvents = 'auto';
+        button.style.cursor = 'pointer';
+        button.style.border = '0';
+        button.style.padding = '0';
+        button.style.margin = '0';
+        button.style.background = 'transparent';
 
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+        button.addEventListener('mousedown', event => {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+        }, true);
 
-      const role = nextRole(zone, nearestIndex);
-      const updateZone = findFunction(findFiber(document.getElementById('root')), 'onUpdateZone') as UpdateZone | null;
-      if (updateZone) {
-        updateZone(zone.id, { edgeRoles: updatedRoles(zone, nearestIndex, role) });
-        return;
+        button.addEventListener('click', event => {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+
+          const freshPlan = readPlan();
+          const freshZone = freshPlan?.zones?.find(zone => zone.id === match.zone.id);
+          if (!freshPlan || !freshZone) return;
+          const roleValue = nextRole(freshZone, match.edgeIndex);
+          const edgeRoles = updatedRoles(freshZone, match.edgeIndex, roleValue);
+          const updateZone = findFunction(findFiber(document.getElementById('root')), 'onUpdateZone') as UpdateZone | null;
+          if (updateZone) {
+            updateZone(freshZone.id, { edgeRoles });
+          } else {
+            const nextPlan: GardenPlan = {
+              ...freshPlan,
+              zones: (freshPlan.zones || []).map(zone => zone.id === freshZone.id ? { ...zone, edgeRoles } : zone),
+              updatedAt: new Date().toISOString(),
+            };
+            localStorage.setItem(CURRENT_PLAN_KEY, JSON.stringify(nextPlan));
+          }
+          window.setTimeout(renderOverlays, 0);
+        }, true);
+
+        overlayRoot.appendChild(button);
       }
-
-      const nextPlan: GardenPlan = {
-        ...plan,
-        zones: (plan.zones || []).map(item => item.id === zone.id
-          ? { ...item, edgeRoles: updatedRoles(item, nearestIndex, role) }
-          : item),
-        updatedAt: new Date().toISOString(),
-      };
-      localStorage.setItem(CURRENT_PLAN_KEY, JSON.stringify(nextPlan));
     };
 
-    const observer = new MutationObserver(widenTargets);
-    observer.observe(document.body, { childList: true, subtree: true });
-    widenTargets();
-    document.addEventListener('mousedown', onMouseDown, true);
+    const observer = new MutationObserver(renderOverlays);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['transform', 'style'] });
+    const timer = window.setInterval(renderOverlays, 250);
+    window.addEventListener('resize', renderOverlays);
+    window.addEventListener('scroll', renderOverlays, true);
+    renderOverlays();
 
     return () => {
       observer.disconnect();
-      document.removeEventListener('mousedown', onMouseDown, true);
+      window.clearInterval(timer);
+      window.removeEventListener('resize', renderOverlays);
+      window.removeEventListener('scroll', renderOverlays, true);
+      overlayRoot.remove();
     };
   }, []);
 
