@@ -29,9 +29,6 @@ function symbolScale(radius: number): number {
 }
 
 function visibleRadius(radius: number): number {
-  // Use the clump silhouette footprint, which is a little more generous than the
-  // old icon-inset footprint. The previous threshold missed visually touching
-  // pairs, especially compact 2 ft plants such as Caladium.
   return Math.max(8, radius * Math.max(0.78, symbolScale(radius)));
 }
 
@@ -65,7 +62,13 @@ export function buildPlantDriftClusters(
     const silhouetteUrl = getPlacedPlantSilhouetteUrl(plant, placed);
     if (!silhouetteUrl) continue;
 
-    const radius = getPlantRadius(plant);
+    // Merged silhouettes must use the maintained/display width saved on each
+    // placement. Falling back to the catalog mature width made a trimmed 2 ft
+    // hedge become a giant mature-width mega-shrub as soon as it merged.
+    const radiusPlant = placed.displayWidthFt
+      ? { ...plant, matureWidthFt: placed.displayWidthFt }
+      : plant;
+    const radius = getPlantRadius(radiusPlant);
     const placementIndex = plantPlacementOrder.get(placed.plantId) ?? 0;
     const color = getPlacedPlantColor(plant, placed, placementIndex);
     const member: DriftMember = {
@@ -99,8 +102,6 @@ export function buildPlantDriftClusters(
           const dx = current.x - candidate.x;
           const dy = current.y - candidate.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          // Slightly stricter than before so the clump form starts only once the
-          // visible plant bodies actually touch.
           const touchDistance = (visibleRadius(current.radius) + visibleRadius(candidate.radius)) * strengthMultiplier;
           if (distance <= touchDistance) {
             visited.add(candidate.instanceId);
