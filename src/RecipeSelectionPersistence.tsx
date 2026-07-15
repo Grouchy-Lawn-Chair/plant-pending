@@ -24,7 +24,13 @@ function restoreRecipeSelection(): void {
 
   const plan = readCurrentPlan();
   const zone = ((plan?.zones || []) as RecipeZone[]).find(item => item.name === zoneName);
-  const savedRecipeId = zone?.plantingRecipeId;
+  if (!zone) return;
+
+  const restoreKey = `${zone.id}:${zone.plantingRecipeId || ''}`;
+  if (host.dataset.recipeSelectionRestored === restoreKey) return;
+  host.dataset.recipeSelectionRestored = restoreKey;
+
+  const savedRecipeId = zone.plantingRecipeId;
   if (!savedRecipeId || select.value === savedRecipeId) return;
   if (![...select.options].some(option => option.value === savedRecipeId)) return;
 
