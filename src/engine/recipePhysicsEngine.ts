@@ -1,251 +1,38 @@
 import Matter from 'matter-js';
 import { getRecipePhysicsProfile } from '../data/recipePhysicsProfiles';
 
-export type PhysicsPoint = { x: number; y: number };
-export type RecipePhysicsLayer = 'front' | 'middle' | 'back' | 'accent';
-export type RecipeLayoutBehavior = 'natural' | 'clumps' | 'even' | 'stacked' | 'spread';
+export type PhysicsPoint={x:number;y:number};
+export type RecipePhysicsLayer='front'|'middle'|'back'|'accent';
+export type RecipeLayoutBehavior='natural'|'clumps'|'even'|'stacked'|'spread';
+export type RecipePlacementMode='scatter'|'stack'|'front-fill'|'back-attract';
+export type RecipeDropOrder='random'|'grouped';
+export type OpenSpaceFill='off'|'light'|'medium'|'strong';
 
-export interface RecipePhysicsPlant {
-  key: string;
-  plantId: number;
-  radius: number;
-  layer: RecipePhysicsLayer;
-  weight: number;
-  clump?: number;
-  count?: number;
-  enabled?: boolean;
-  frontAttraction?: number;
-  backAttraction?: number;
-  edgeAttraction?: number;
-  repetition?: string;
-}
+export interface RecipePhysicsPlant{key:string;plantId:number;radius:number;layer:RecipePhysicsLayer;weight:number;clump?:number;count?:number;enabled?:boolean;frontAttraction?:number;backAttraction?:number;edgeAttraction?:number;repetition?:string;mode?:RecipePlacementMode;}
+export interface RecipePhysicsOptions{polygon:PhysicsPoint[];plants:RecipePhysicsPlant[];seed:number;density?:number;targetCount?:number;frontEdges?:number[];backEdges?:number[];iterations?:number;passes?:number;padding?:number;allowedOverlap?:number;attractionStrength?:number;clumpStrength?:number;layoutBehavior?:RecipeLayoutBehavior;keepCentersInside?:boolean;dropOrder?:RecipeDropOrder;physicsScale?:number;spacingPad?:number;openSpaceFill?:OpenSpaceFill;}
+export interface RecipePhysicsPlacement{key:string;plantId:number;layer:RecipePhysicsLayer;x:number;y:number;radius:number;rotationDeg:number;}
+export interface RecipePhysicsResult{placements:RecipePhysicsPlacement[];diagnostics:{requested:number;placed:number;rejected:number;unresolvedOverlaps:number;seed:number;capacity:number;capacityLimited:boolean;estimatedCoverage:number;passes:number;};}
 
-export interface RecipePhysicsOptions {
-  polygon: PhysicsPoint[];
-  plants: RecipePhysicsPlant[];
-  seed: number;
-  density?: number;
-  targetCount?: number;
-  frontEdges?: number[];
-  backEdges?: number[];
-  iterations?: number;
-  passes?: number;
-  padding?: number;
-  allowedOverlap?: number;
-  attractionStrength?: number;
-  clumpStrength?: number;
-  layoutBehavior?: RecipeLayoutBehavior;
-  keepCentersInside?: boolean;
-}
-
-export interface RecipePhysicsPlacement {
-  key: string;
-  plantId: number;
-  layer: RecipePhysicsLayer;
-  x: number;
-  y: number;
-  radius: number;
-  rotationDeg: number;
-}
-
-export interface RecipePhysicsResult {
-  placements: RecipePhysicsPlacement[];
-  diagnostics: {
-    requested: number;
-    placed: number;
-    rejected: number;
-    unresolvedOverlaps: number;
-    seed: number;
-    capacity: number;
-    capacityLimited: boolean;
-    estimatedCoverage: number;
-    passes: number;
-  };
-}
-
-function seededRandom(seed: number): () => number {
-  let value = seed >>> 0;
-  return () => {
-    value += 0x6d2b79f5;
-    let t = value;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
-
-export function pointInPolygon(point: PhysicsPoint, polygon: PhysicsPoint[]): boolean {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const a = polygon[i]; const b = polygon[j];
-    const intersects = a.y > point.y !== b.y > point.y && point.x < ((b.x - a.x) * (point.y - a.y)) / ((b.y - a.y) || 1e-9) + a.x;
-    if (intersects) inside = !inside;
-  }
-  return inside;
-}
-
-function polygonArea(points: PhysicsPoint[]): number {
-  let area = 0;
-  for (let i = 0, j = points.length - 1; i < points.length; j = i++) area += points[j].x * points[i].y - points[i].x * points[j].y;
-  return Math.abs(area / 2);
-}
-
-function distanceToSegment(point: PhysicsPoint, a: PhysicsPoint, b: PhysicsPoint): number {
-  const dx = b.x - a.x; const dy = b.y - a.y; const lengthSquared = dx * dx + dy * dy || 1;
-  const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared));
-  return Math.hypot(point.x - (a.x + dx * t), point.y - (a.y + dy * t));
-}
-
-function distanceToPolygonEdge(point: PhysicsPoint, polygon: PhysicsPoint[]): number {
-  return Math.min(...polygon.map((a, index) => distanceToSegment(point, a, polygon[(index + 1) % polygon.length])));
-}
-
-function distanceToMarkedEdges(point: PhysicsPoint, polygon: PhysicsPoint[], indexes?: number[]): number {
-  if (!indexes?.length) return Number.POSITIVE_INFINITY;
-  return Math.min(...indexes.map(index => distanceToSegment(point, polygon[index], polygon[(index + 1) % polygon.length])));
-}
-
-function boundsOf(polygon: PhysicsPoint[]) {
-  return { minX: Math.min(...polygon.map(p => p.x)), maxX: Math.max(...polygon.map(p => p.x)), minY: Math.min(...polygon.map(p => p.y)), maxY: Math.max(...polygon.map(p => p.y)) };
-}
-
-function resolvedPlant(plant: RecipePhysicsPlant): RecipePhysicsPlant {
-  const profile = getRecipePhysicsProfile(plant.key);
-  return {
-    ...plant,
-    layer: profile?.role ?? plant.layer,
-    clump: plant.clump ?? profile?.clumpStrength,
-    frontAttraction: plant.frontAttraction ?? profile?.frontAttraction,
-    backAttraction: plant.backAttraction ?? profile?.backAttraction,
-    edgeAttraction: plant.edgeAttraction ?? profile?.edgeAttraction,
-    repetition: plant.repetition ?? profile?.repetition,
-  };
-}
-
-function targetForPlant(
-  plant: RecipePhysicsPlant,
-  polygon: PhysicsPoint[],
-  random: () => number,
-  frontEdges?: number[],
-  backEdges?: number[],
-  layout: RecipeLayoutBehavior = 'natural',
-): PhysicsPoint {
-  const bounds = boundsOf(polygon); const width = Math.max(1, bounds.maxX - bounds.minX); const height = Math.max(1, bounds.maxY - bounds.minY); const span = Math.max(width, height);
-  const frontPull = clamp01(plant.frontAttraction ?? (plant.layer === 'front' ? 1 : plant.layer === 'middle' ? .35 : 0));
-  const backPull = clamp01(plant.backAttraction ?? (plant.layer === 'back' ? 1 : plant.layer === 'middle' ? .35 : 0));
-  const edgePull = clamp01(plant.edgeAttraction ?? 0);
-
-  if (layout === 'stacked') {
-    const yRatio = plant.layer === 'back' ? .2 : plant.layer === 'middle' ? .5 : plant.layer === 'front' ? .8 : .5;
-    return { x: bounds.minX + width * (.15 + random() * .7), y: bounds.minY + height * yRatio };
-  }
-
-  let best: PhysicsPoint | null = null; let bestScore = Number.POSITIVE_INFINITY;
-  for (let attempt = 0; attempt < 220; attempt += 1) {
-    const candidate = { x: bounds.minX + random() * width, y: bounds.minY + random() * height };
-    if (!pointInPolygon(candidate, polygon)) continue;
-    if (layout === 'spread') return candidate;
-    const frontDistance = distanceToMarkedEdges(candidate, polygon, frontEdges);
-    const backDistance = distanceToMarkedEdges(candidate, polygon, backEdges);
-    const fallbackFront = bounds.maxY - candidate.y; const fallbackBack = candidate.y - bounds.minY;
-    const normalizedFront = Math.min(1, (Number.isFinite(frontDistance) ? frontDistance : fallbackFront) / span);
-    const normalizedBack = Math.min(1, (Number.isFinite(backDistance) ? backDistance : fallbackBack) / span);
-    const normalizedOuterEdge = Math.min(1, distanceToPolygonEdge(candidate, polygon) / span);
-    const centerX = (bounds.minX + bounds.maxX) / 2; const centerY = (bounds.minY + bounds.maxY) / 2;
-    const centerDistance = Math.min(1, Math.hypot(candidate.x - centerX, candidate.y - centerY) / span);
-    const accentCenterPreference = plant.layer === 'accent' ? (1 - centerDistance) * .12 : 0;
-    const score = normalizedFront * frontPull + normalizedBack * backPull + normalizedOuterEdge * edgePull - accentCenterPreference + random() * .08;
-    if (score < bestScore) { bestScore = score; best = candidate; }
-  }
-  return best ?? { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
-}
-
-function estimateCapacity(plants: RecipePhysicsPlant[], polygon: PhysicsPoint[]): number {
-  const active = plants.filter(p => p.enabled !== false).map(resolvedPlant);
-  const totalWeight = active.reduce((sum, p) => sum + Math.max(0, p.weight), 0) || 1;
-  const weightedArea = active.reduce((sum, p) => sum + Math.PI * Math.max(3, p.radius) ** 2 * (Math.max(0, p.weight) / totalWeight), 0);
-  return weightedArea > 0 ? Math.max(active.length, Math.floor((polygonArea(polygon) * .68) / weightedArea)) : active.length;
-}
-
-function expandPlants(options: RecipePhysicsOptions) {
-  const plants = options.plants.filter(p => p.enabled !== false).map(resolvedPlant);
-  const totalWeight = plants.reduce((sum, p) => sum + Math.max(0, p.weight), 0) || 1;
-  const desired = options.targetCount ?? Math.max(plants.length, Math.round(10 + Math.max(.05, Math.min(1, options.density ?? .5)) * 30));
-  const capacity = estimateCapacity(plants, options.polygon); const target = Math.min(desired, capacity); const expanded: RecipePhysicsPlant[] = [];
-  const explicit = plants.some(p => typeof p.count === 'number');
-  plants.forEach(p => {
-    const count = explicit ? Math.max(0, Math.round(p.count ?? 0)) : Math.max(1, Math.round((p.weight / totalWeight) * target));
-    for (let i = 0; i < count; i += 1) expanded.push(p);
-  });
-  while (expanded.length > capacity && expanded.length > plants.length) expanded.pop();
-  return { expanded, capacity, capacityLimited: desired > capacity };
-}
-
-function repetitionJitter(plant: RecipePhysicsPlant, radius: number, layout: RecipeLayoutBehavior): number {
-  if (layout === 'even') return radius * 4;
-  if (layout === 'clumps') return radius * .55;
-  const repetition = plant.repetition || '';
-  if (/hedge|row|ribbon|edge|paired/.test(repetition)) return radius * .8;
-  if (/isolated|anchor|spaced/.test(repetition)) return radius * 4.2;
-  if (/drift|mass|clump|matrix|wave/.test(repetition)) return radius * 1.25;
-  return radius * (plant.clump ?? 1.2);
-}
-
-function runPass(options: RecipePhysicsOptions, seed: number): RecipePhysicsResult {
-  const random = seededRandom(seed); const padding = Math.max(0, options.padding ?? 2); const iterations = Math.max(30, options.iterations ?? 180);
-  const overlapRatio = Math.max(0, Math.min(.35, options.allowedOverlap ?? .08)); const attraction = Math.max(.1, options.attractionStrength ?? 1);
-  const globalClump = Math.max(0, options.clumpStrength ?? 1); const layout = options.layoutBehavior ?? 'natural'; const keepInside = options.keepCentersInside !== false;
-  const { expanded, capacity, capacityLimited } = expandPlants(options);
-  const engine = Matter.Engine.create({ gravity: { x: 0, y: 0 } }); engine.positionIterations = 12; engine.velocityIterations = 10; engine.constraintIterations = 4;
-  const bodies: Matter.Body[] = []; const metadata = new Map<number, { plant: RecipePhysicsPlant; target: PhysicsPoint; rotationDeg: number }>(); let rejected = 0;
-  expanded.forEach((plant, index) => {
-    const effectiveRadius = Math.max(3, plant.radius * (1 - overlapRatio)); let start: PhysicsPoint | null = null;
-    const target = targetForPlant(plant, options.polygon, random, options.frontEdges, options.backEdges, layout);
-    for (let attempt = 0; attempt < 300; attempt += 1) {
-      const baseJitter = repetitionJitter(plant, effectiveRadius, layout);
-      const localClump = Math.max(.15, (plant.clump ?? .65) * Math.max(.25, globalClump));
-      const jitter = Math.max(2, /isolated|anchor|spaced/.test(plant.repetition || '') ? baseJitter : baseJitter / localClump);
-      const candidate = { x: target.x + (random() - .5) * jitter, y: target.y + (random() - .5) * jitter };
-      if ((!keepInside || pointInPolygon(candidate, options.polygon)) && distanceToPolygonEdge(candidate, options.polygon) >= effectiveRadius + padding) { start = candidate; break; }
-    }
-    if (!start) { rejected += 1; return; }
-    const body = Matter.Bodies.circle(start.x, start.y, effectiveRadius, { restitution: .05, friction: .05, frictionAir: layout === 'even' ? .25 : .18, density: .002, label: `recipe:${plant.key}:${index}` });
-    bodies.push(body); metadata.set(body.id, { plant, target, rotationDeg: Math.round(random() * 359) });
-  });
-  Matter.Composite.add(engine.world, bodies);
-  for (let step = 0; step < iterations; step += 1) {
-    bodies.forEach(body => {
-      const info = metadata.get(body.id); if (!info) return;
-      const intentStrength = .45 + Math.max(info.plant.frontAttraction ?? 0, info.plant.backAttraction ?? 0, info.plant.edgeAttraction ?? 0) * .75;
-      const pull = layout === 'spread' ? .0002 : .00055 * attraction * intentStrength;
-      Matter.Body.applyForce(body, body.position, { x: (info.target.x - body.position.x) * pull, y: (info.target.y - body.position.y) * pull });
-      if (keepInside && (!pointInPolygon(body.position, options.polygon) || distanceToPolygonEdge(body.position, options.polygon) < body.circleRadius! + padding)) {
-        const b = boundsOf(options.polygon); const center = { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 };
-        Matter.Body.applyForce(body, body.position, { x: (center.x - body.position.x) * .0025, y: (center.y - body.position.y) * .0025 });
-      }
-    });
-    Matter.Engine.update(engine, 1000 / 60);
-  }
-  const valid = bodies.filter(body => !keepInside || (pointInPolygon(body.position, options.polygon) && distanceToPolygonEdge(body.position, options.polygon) >= body.circleRadius! * .9));
-  let unresolvedOverlaps = 0;
-  for (let i = 0; i < valid.length; i += 1) for (let j = i + 1; j < valid.length; j += 1) {
-    const actual = Matter.Vector.magnitude(Matter.Vector.sub(valid[i].position, valid[j].position));
-    if (actual < (valid[i].circleRadius! + valid[j].circleRadius!) * .92) unresolvedOverlaps += 1;
-  }
-  const placements = valid.map(body => { const info = metadata.get(body.id)!; return { key: info.plant.key, plantId: info.plant.plantId, layer: info.plant.layer, x: body.position.x, y: body.position.y, radius: info.plant.radius, rotationDeg: info.rotationDeg }; });
-  const occupied = placements.reduce((sum, p) => sum + Math.PI * p.radius * p.radius, 0); Matter.Engine.clear(engine);
-  return { placements, diagnostics: { requested: expanded.length, placed: placements.length, rejected: rejected + (bodies.length - valid.length), unresolvedOverlaps, seed, capacity, capacityLimited, estimatedCoverage: Math.min(100, Math.round((occupied / Math.max(1, polygonArea(options.polygon))) * 100)), passes: 1 } };
-}
-
-export function runRecipePhysics(options: RecipePhysicsOptions): RecipePhysicsResult {
-  if (options.polygon.length < 3) throw new Error('Recipe physics requires a polygon with at least three points.');
-  if (!options.plants.some(p => p.enabled !== false)) return { placements: [], diagnostics: { requested: 0, placed: 0, rejected: 0, unresolvedOverlaps: 0, seed: options.seed, capacity: 0, capacityLimited: false, estimatedCoverage: 0, passes: 0 } };
-  const passes = Math.max(1, Math.min(8, Math.round(options.passes ?? 1))); let best: RecipePhysicsResult | null = null;
-  for (let pass = 0; pass < passes; pass += 1) {
-    const result = runPass(options, options.seed + pass * 7919);
-    if (!best || result.diagnostics.unresolvedOverlaps < best.diagnostics.unresolvedOverlaps || (result.diagnostics.unresolvedOverlaps === best.diagnostics.unresolvedOverlaps && result.diagnostics.placed > best.diagnostics.placed)) best = result;
-  }
-  best!.diagnostics.seed = options.seed; best!.diagnostics.passes = passes; return best!;
-}
+const clamp=(v:number,min=0,max=1)=>Math.max(min,Math.min(max,v));
+function rng(seed:number){let v=seed>>>0;return()=>{v+=0x6d2b79f5;let t=v;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
+function shuffle<T>(items:T[],random:()=>number){const out=[...items];for(let i=out.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;}
+export function pointInPolygon(p:PhysicsPoint,poly:PhysicsPoint[]){let hit=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a.y>p.y)!==(b.y>p.y)&&p.x<((b.x-a.x)*(p.y-a.y))/((b.y-a.y)||1e-9)+a.x)hit=!hit;}return hit;}
+function area(poly:PhysicsPoint[]){let n=0;for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length];n+=a.x*b.y-b.x*a.y;}return Math.abs(n/2);}
+function centroid(poly:PhysicsPoint[]){return poly.reduce((s,p)=>({x:s.x+p.x/poly.length,y:s.y+p.y/poly.length}),{x:0,y:0});}
+function nearestPoint(p:PhysicsPoint,a:PhysicsPoint,b:PhysicsPoint){const dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy||1,t=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/l);return{x:a.x+t*dx,y:a.y+t*dy};}
+function distanceToSegment(p:PhysicsPoint,a:PhysicsPoint,b:PhysicsPoint){const n=nearestPoint(p,a,b);return Math.hypot(p.x-n.x,p.y-n.y);}
+function edgeDistance(p:PhysicsPoint,poly:PhysicsPoint[]){return Math.min(...poly.map((a,i)=>distanceToSegment(p,a,poly[(i+1)%poly.length])));}
+function inward(poly:PhysicsPoint[],index:number){const a=poly[index],b=poly[(index+1)%poly.length],m={x:(a.x+b.x)/2,y:(a.y+b.y)/2},c=centroid(poly),dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1,n1={x:-dy/l,y:dx/l},n2={x:dy/l,y:-dx/l},to={x:c.x-m.x,y:c.y-m.y};return n1.x*to.x+n1.y*to.y>0?n1:n2;}
+function pointAcross(poly:PhysicsPoint[],indexes:number[],t:number,offset:number){const usable=indexes.length?indexes:[0];const segments=usable.map(i=>({i,a:poly[i],b:poly[(i+1)%poly.length]}));const lengths=segments.map(s=>Math.hypot(s.b.x-s.a.x,s.b.y-s.a.y));const total=lengths.reduce((a,b)=>a+b,0)||1;let d=clamp(t)*total,segment=segments[segments.length-1],u=1;for(let i=0;i<segments.length;i++){if(d<=lengths[i]){segment=segments[i];u=lengths[i]?d/lengths[i]:0;break;}d-=lengths[i];}const n=inward(poly,segment.i);return{x:segment.a.x+(segment.b.x-segment.a.x)*u+n.x*offset,y:segment.a.y+(segment.b.y-segment.a.y)*u+n.y*offset};}
+function resolvedPlant(p:RecipePhysicsPlant):RecipePhysicsPlant{const profile=getRecipePhysicsProfile(p.key);return{...p,layer:profile?.role??p.layer,clump:p.clump??profile?.clumpStrength,frontAttraction:p.frontAttraction??profile?.frontAttraction,backAttraction:p.backAttraction??profile?.backAttraction,edgeAttraction:p.edgeAttraction??profile?.edgeAttraction,repetition:p.repetition??profile?.repetition};}
+function modeFor(p:RecipePhysicsPlant):RecipePlacementMode{if(p.mode)return p.mode;const repetition=p.repetition||'';if(p.layer==='back'||/hedge|row/.test(repetition))return'back-attract';if(p.layer==='front'||/ribbon|edge/.test(repetition))return'front-fill';if(/matrix|stack/.test(repetition))return'stack';return'scatter';}
+function counts(plants:RecipePhysicsPlant[],total:number){const sum=plants.reduce((a,p)=>a+Math.max(0,p.weight),0)||1;const raw=plants.map(p=>total*Math.max(0,p.weight)/sum),base=raw.map(Math.floor);let left=total-base.reduce((a,b)=>a+b,0);const order=raw.map((v,i)=>({i,r:v-Math.floor(v)})).sort((a,b)=>b.r-a.r);for(let i=0;i<left;i++)base[order[i%order.length].i]++;return base;}
+function expand(options:RecipePhysicsOptions,random:()=>number){const plants=options.plants.filter(p=>p.enabled!==false).map(resolvedPlant);const desired=options.targetCount??Math.max(plants.length,Math.round(10+clamp(options.density??.5,.05,1)*30));const capacity=Math.max(plants.length,Math.floor(area(options.polygon)*.68/(plants.reduce((s,p)=>s+Math.PI*Math.max(3,p.radius)**2*(Math.max(0,p.weight)/(plants.reduce((a,x)=>a+Math.max(0,x.weight),0)||1)),0)||1)));const target=Math.min(desired,capacity);const explicit=plants.some(p=>typeof p.count==='number');const c=explicit?plants.map(p=>Math.max(0,Math.round(p.count??0))):counts(plants,target);let expanded=plants.flatMap((p,i)=>Array.from({length:c[i]},()=>p));if(options.dropOrder!=='grouped')expanded=shuffle(expanded,random);return{expanded,capacity,capacityLimited:desired>capacity};}
+function targetFor(p:RecipePhysicsPlant,index:number,total:number,poly:PhysicsPoint[],front:number[],back:number[],random:()=>number){const mode=modeFor(p),radius=p.radius;const t=(index+1)/(total+1);if(mode==='back-attract')return pointAcross(poly,back,t,radius+8);
+if(mode==='front-fill'){const depth=index%3;return pointAcross(poly,front,clamp(t+(random()-.5)*.08),radius+8+depth*radius*1.35);}
+if(mode==='stack'){const edge=p.layer==='back'?back:p.layer==='front'?front:[];if(edge.length)return pointAcross(poly,edge,clamp(t+(random()-.5)*.06),radius*2.2);}
+const xs=poly.map(x=>x.x),ys=poly.map(x=>x.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);for(let tries=0;tries<400;tries++){const q={x:minX+random()*(maxX-minX),y:minY+random()*(maxY-minY)};if(pointInPolygon(q,poly)&&edgeDistance(q,poly)>=radius+4)return q;}return centroid(poly);}
+function wall(engine:Matter.Engine,a:PhysicsPoint,b:PhysicsPoint){const dx=b.x-a.x,dy=b.y-a.y;Matter.Composite.add(engine.world,Matter.Bodies.rectangle((a.x+b.x)/2,(a.y+b.y)/2,Math.hypot(dx,dy),10,{isStatic:true,angle:Math.atan2(dy,dx),friction:.5,restitution:0,label:'zone-wall'}));}
+function openSpaceRelax(records:Array<{body:Matter.Body;plant:RecipePhysicsPlant}>,poly:PhysicsPoint[],level:OpenSpaceFill,random:()=>number){const moves={off:0,light:3,medium:6,strong:10}[level];if(!moves)return;const xs=poly.map(x=>x.x),ys=poly.map(x=>x.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);for(let pass=0;pass<moves;pass++){let gap:PhysicsPoint|null=null,best=-Infinity;for(let i=0;i<80;i++){const p={x:minX+random()*(maxX-minX),y:minY+random()*(maxY-minY)};if(!pointInPolygon(p,poly))continue;const clearance=Math.min(...records.map(r=>Math.hypot(p.x-r.body.position.x,p.y-r.body.position.y)-(r.body.circleRadius||0)));if(clearance>best){best=clearance;gap=p;}}if(!gap)break;const movable=records.filter(r=>modeFor(r.plant)!=='back-attract');if(!movable.length)break;const nearest=movable.reduce((a,b)=>Math.hypot(a.body.position.x-gap!.x,a.body.position.y-gap!.y)<Math.hypot(b.body.position.x-gap!.x,b.body.position.y-gap!.y)?a:b);Matter.Body.setPosition(nearest.body,{x:nearest.body.position.x+(gap.x-nearest.body.position.x)*.22,y:nearest.body.position.y+(gap.y-nearest.body.position.y)*.22});}}
+function runPass(options:RecipePhysicsOptions,seed:number):RecipePhysicsResult{const random=rng(seed),scale=clamp(options.physicsScale??1,1,1.2),pad=Math.max(0,options.spacingPad??options.padding??0),front=options.frontEdges||[],back=options.backEdges||[],keepInside=options.keepCentersInside!==false;const{expanded,capacity,capacityLimited}=expand(options,random);const engine=Matter.Engine.create({gravity:{x:0,y:0}});options.polygon.forEach((a,i)=>wall(engine,a,options.polygon[(i+1)%options.polygon.length]));const records:Array<{body:Matter.Body;plant:RecipePhysicsPlant;target:PhysicsPoint;rotationDeg:number}>=[];let rejected=0;expanded.forEach((plant,index)=>{const radius=Math.max(3,plant.radius*scale*(1-clamp(options.allowedOverlap??.08,0,.35)));const same=expanded.filter(p=>p.key===plant.key),localIndex=expanded.slice(0,index+1).filter(p=>p.key===plant.key).length-1,target=targetFor({...plant,radius},localIndex,same.length,options.polygon,front,back,random);let start:PhysicsPoint|null=null;for(let tries=0;tries<220;tries++){const jitter=modeFor(plant)==='scatter'?radius*(1.5+random()*2):radius*.35;const q={x:target.x+(random()-.5)*jitter,y:target.y+(random()-.5)*jitter};if((!keepInside||pointInPolygon(q,options.polygon))&&edgeDistance(q,options.polygon)>=radius+pad){start=q;break;}}if(!start){rejected++;return;}const body=Matter.Bodies.circle(start.x,start.y,radius,{friction:.05,frictionAir:.2,restitution:.03,density:.002,label:`recipe:${plant.key}:${index}`});Matter.Composite.add(engine.world,body);records.push({body,plant,target,rotationDeg:Math.round(random()*359)});});const attraction=Math.max(.1,options.attractionStrength??1);for(let step=0;step<Math.max(120,options.iterations??900);step++){records.forEach(r=>{const mode=modeFor(r.plant),dx=r.target.x-r.body.position.x,dy=r.target.y-r.body.position.y,d=Math.hypot(dx,dy)||1,base=mode==='front-fill'?.0022:mode==='back-attract'?.0012:.00028;Matter.Body.applyForce(r.body,r.body.position,{x:dx/d*r.body.mass*base*attraction,y:dy/d*r.body.mass*base*attraction});});Matter.Engine.update(engine,1000/120);}openSpaceRelax(records,options.polygon,options.openSpaceFill??'light',random);for(let i=0;i<180;i++)Matter.Engine.update(engine,1000/120);const valid=records.filter(r=>!keepInside||(pointInPolygon(r.body.position,options.polygon)&&edgeDistance(r.body.position,options.polygon)>=(r.body.circleRadius||0)+1));let overlaps=0;for(let i=0;i<valid.length;i++)for(let j=i+1;j<valid.length;j++){const d=Math.hypot(valid[i].body.position.x-valid[j].body.position.x,valid[i].body.position.y-valid[j].body.position.y);if(d<((valid[i].body.circleRadius||0)+(valid[j].body.circleRadius||0))*.92)overlaps++;}const placements=valid.map(r=>({key:r.plant.key,plantId:r.plant.plantId,layer:r.plant.layer,x:r.body.position.x,y:r.body.position.y,radius:r.plant.radius,rotationDeg:r.rotationDeg}));const occupied=placements.reduce((s,p)=>s+Math.PI*p.radius*p.radius,0);Matter.Engine.clear(engine);return{placements,diagnostics:{requested:expanded.length,placed:placements.length,rejected:rejected+records.length-valid.length,unresolvedOverlaps:overlaps,seed,capacity,capacityLimited,estimatedCoverage:Math.min(100,Math.round(occupied/Math.max(1,area(options.polygon))*100)),passes:1}};}
+export function runRecipePhysics(options:RecipePhysicsOptions):RecipePhysicsResult{if(options.polygon.length<3)throw new Error('Recipe physics requires a polygon with at least three points.');if(!options.plants.some(p=>p.enabled!==false))return{placements:[],diagnostics:{requested:0,placed:0,rejected:0,unresolvedOverlaps:0,seed:options.seed,capacity:0,capacityLimited:false,estimatedCoverage:0,passes:0}};const passes=Math.max(1,Math.min(8,Math.round(options.passes??1)));let best:RecipePhysicsResult|null=null;for(let pass=0;pass<passes;pass++){const result=runPass(options,options.seed+pass*7919);if(!best||result.diagnostics.unresolvedOverlaps<best.diagnostics.unresolvedOverlaps||(result.diagnostics.unresolvedOverlaps===best.diagnostics.unresolvedOverlaps&&result.diagnostics.placed>best.diagnostics.placed))best=result;}best!.diagnostics.seed=options.seed;best!.diagnostics.passes=passes;return best!;}
