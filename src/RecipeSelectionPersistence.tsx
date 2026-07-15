@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type { GardenPlan, GardenZone } from './types/plant';
 
 const CURRENT_PLAN_KEY = 'garden-planner-current';
+type RecipeZone = GardenZone & { plantingRecipeId?: string };
 
 function readCurrentPlan(): Partial<GardenPlan> | null {
   try {
@@ -22,7 +23,7 @@ function restoreRecipeSelection(): void {
   if (!zoneName) return;
 
   const plan = readCurrentPlan();
-  const zone = ((plan?.zones || []) as GardenZone[]).find(item => item.name === zoneName);
+  const zone = ((plan?.zones || []) as RecipeZone[]).find(item => item.name === zoneName);
   const savedRecipeId = zone?.plantingRecipeId;
   if (!savedRecipeId || select.value === savedRecipeId) return;
   if (![...select.options].some(option => option.value === savedRecipeId)) return;
