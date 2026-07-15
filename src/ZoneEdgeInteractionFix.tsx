@@ -81,31 +81,41 @@ function updatedRoles(zone: GardenZone, edgeIndex: number, role: 'front' | 'back
   };
 }
 
-function selectedZoneFromRenderedEdges(plan: GardenPlan) {
-  const firstHitLine = document.querySelector<SVGLineElement>('line[stroke="transparent"]');
-  if (!firstHitLine) return null;
-  const x1 = Number(firstHitLine.getAttribute('x1'));
-  const y1 = Number(firstHitLine.getAttribute('y1'));
+function isZoneEdgeHitLine(line: SVGLineElement) {
+  if (line.getAttribute('stroke') !== 'transparent') return false;
+  const label = line.parentElement?.querySelector('text')?.textContent?.trim().toLowerCase();
+  return label === 'click edge' || label === 'front' || label === 'back';
+}
+
+function getZoneEdgeHitLines() {
+  return [...document.querySelectorAll<SVGLineElement>('line[stroke="transparent"]')].filter(isZoneEdgeHitLine);
+}
+
+function findRenderedZone(plan: GardenPlan, line: SVGLineElement) {
+  const x1 = Number(line.getAttribute('x1'));
+  const y1 = Number(line.getAttribute('y1'));
   return (plan.zones || []).find(zone => zone.points.some(point => Math.abs(point.x - x1) < 0.5 && Math.abs(point.y - y1) < 0.5)) || null;
 }
 
-function worldPointForEvent(event: MouseEvent, svg: SVGSVGElement): Point | null {
+function worldPointForEvent(event: MouseEvent, svg: SVGSVGElement, zone: GardenZone): Point | null {
   const rect = svg.getBoundingClientRect();
   if (!rect.width || !rect.height) return null;
-  const width = svg.viewBox.baseVal.width || svg.width.baseVal.value || rect.width;
-  const height = svg.viewBox.baseVal.height || svg.height.baseVal.value || rect.height;
+  const maxX = Math.max(...zone.points.map(point => point.x), 1);
+  const maxY = Math.max(...zone.points.map(point => point.y), 1);
+  const worldWidth = svg.viewBox.baseVal.width || svg.width.baseVal.value || Math.max(maxX, rect.width);
+  const worldHeight = svg.viewBox.baseVal.height || svg.height.baseVal.value || Math.max(maxY, rect.height);
   return {
-    x: (event.clientX - rect.left) * (width / rect.width),
-    y: (event.clientY - rect.top) * (height / rect.height),
+    x: (event.clientX - rect.left) * (worldWidth / rect.width),
+    y: (event.clientY - rect.top) * (worldHeight / rect.height),
   };
 }
 
 export default function ZoneEdgeInteractionFix() {
   useEffect(() => {
     const widenTargets = () => {
-      document.querySelectorAll<SVGLineElement>('line[stroke="transparent"]').forEach(line => {
+      getZoneEdgeHitLines().forEach(line => {
         line.setAttribute('stroke-width', '46');
-        line.style.pointerEvents = 'stroke';
+        line.setAttribute('pointer-events', 'stroke');
       });
     };
 
@@ -113,19 +123,20 @@ export default function ZoneEdgeInteractionFix() {
       if (event.button !== 0) return;
       const plan = readPlan();
       if (!plan) return;
-      const zone = selectedZoneFromRenderedEdges(plan);
-      if (!zone || zone.points.length < 2) return;
 
-      const hitLine = document.querySelector<SVGLineElement>('line[stroke="transparent"]');
-      const svg = hitLine?.ownerSVGElement;
-      if (!svg) return;
-      const point = worldPointForEvent(event, svg);
+      const lines = getZoneEdgeHitLines();
+      if (!lines.length) return;
+      const line = lines[0];
+      const zone = findRenderedZone(plan, line);
+      const svg = line.ownerSVGElement;
+      if (!zone || !svg || zone.points.length < 2) return;
+
+      const point = worldPointForEvent(event, svg, zone);
       if (!point) return;
-
       const rect = svg.getBoundingClientRect();
-      const worldWidth = svg.viewBox.baseVal.width || svg.width.baseVal.value || rect.width;
-      const pixelsToWorld = worldWidth / rect.width;
-      const hitDistance = 24 * pixelsToWorld;
+      const maxX = Math.max(...zone.points.map(item => item.x), 1);
+      const worldWidth = svg.viewBox.baseVal.width || svg.width.baseVal.value || Math.max(maxX, rect.width);
+      const hitDistance = 28 * (worldWidth / rect.width);
 
       let nearestIndex = -1;
       let nearestDistance = Infinity;
