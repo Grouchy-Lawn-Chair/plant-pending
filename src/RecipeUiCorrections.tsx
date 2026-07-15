@@ -6,10 +6,10 @@ const DRIFT_GAP_KEY='plant-pending-drift-gap-feet';
 const PLANT_COLOR_KEY='plant-pending-species-colors';
 const SPECIES_PALETTE=['#D54E27','#A3DECF','#A073C2','#DDE985','#59A5CB','#E8B85C','#B26175','#6CA47F','#88778F','#F6DA7B','#79C7A5','#D76F4C','#8B6FAF','#94B797','#C98A5F','#7FAEBC','#DFA3A3','#B8C96F','#6E8F73','#94AA75'];
 
-type HookNode={memoizedState?:unknown;queue?:{dispatch?:(value:unknown)=>void}|null;next?:HookNode|null};
-type FiberNode={child?:FiberNode|null;sibling?:FiberNode|null;return?:FiberNode|null;memoizedProps?:Record<string,unknown>|null;pendingProps?:Record<string,unknown>|null;memoizedState?:HookNode|null};
+type FiberNode={child?:FiberNode|null;sibling?:FiberNode|null;return?:FiberNode|null;memoizedProps?:Record<string,unknown>|null;pendingProps?:Record<string,unknown>|null};
 type SpeciesColorMap=Record<string,string>;
 type NamedPlacedPlant=PlacedPlant&{plantName?:string};
+type UpdatePlacedPlant=(instanceId:string,updates:Partial<PlacedPlant>)=>void;
 
 function setInputValue(input:HTMLInputElement,value:number){const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,String(value));input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));}
 function mixInputFor(card:HTMLElement){const label=[...card.querySelectorAll('label')].find(item=>item.textContent?.trim().startsWith('Mix %'));return label?.querySelector<HTMLInputElement>('input[type="number"]')||null;}
@@ -18,14 +18,13 @@ function readSpeciesColors():SpeciesColorMap{try{const raw=localStorage.getItem(
 function writeSpeciesColors(colors:SpeciesColorMap){localStorage.setItem(PLANT_COLOR_KEY,JSON.stringify(colors));}
 function findFiber(element:Element|null):FiberNode|null{let current=element;while(current){const key=Object.keys(current).find(name=>name.startsWith('__reactFiber$'));if(key)return(current as unknown as Record<string,FiberNode>)[key]||null;current=current.parentElement;}return null;}
 function rootOf(start:FiberNode|null){let root=start;if(!root)return null;while(root.return)root=root.return;return root;}
-function findCallback(start:FiberNode|null,name:string):((plan:GardenPlan)=>void)|null{const root=rootOf(start);if(!root)return null;const stack=[root],seen=new Set<FiberNode>();while(stack.length){const fiber=stack.pop()!;if(seen.has(fiber))continue;seen.add(fiber);const callback=fiber.memoizedProps?.[name]??fiber.pendingProps?.[name];if(typeof callback==='function')return callback as(plan:GardenPlan)=>void;if(fiber.sibling)stack.push(fiber.sibling);if(fiber.child)stack.push(fiber.child);}return null;}
-function applyPlan(plan:GardenPlan){const host=document.querySelector<HTMLElement>('[data-recipe-react-host]')||document.getElementById('root');const callback=findCallback(findFiber(host),'onImportPlan')||findCallback(findFiber(host),'onLoadPlan');if(!callback)return false;callback(plan);localStorage.setItem(CURRENT_PLAN_KEY,JSON.stringify(plan));return true;}
+function findFunction(start:FiberNode|null,name:string):Function|null{const root=rootOf(start);if(!root)return null;const stack=[root],seen=new Set<FiberNode>();while(stack.length){const fiber=stack.pop()!;if(seen.has(fiber))continue;seen.add(fiber);const callback=fiber.memoizedProps?.[name]??fiber.pendingProps?.[name];if(typeof callback==='function')return callback as Function;if(fiber.sibling)stack.push(fiber.sibling);if(fiber.child)stack.push(fiber.child);}return null;}
+function applyPlan(plan:GardenPlan){const host=document.querySelector<HTMLElement>('[data-recipe-react-host]')||document.getElementById('root');const callback=findFunction(findFiber(host),'onImportPlan')||findFunction(findFiber(host),'onLoadPlan');if(!callback)return false;callback(plan);localStorage.setItem(CURRENT_PLAN_KEY,JSON.stringify(plan));return true;}
 function driftId(plant:PlacedPlant){return plant.notes?.match(/\[drift:([^\]]+)\]/)?.[1]||null;}
 function hash01(text:string){let hash=2166136261;for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619);}return((hash>>>0)%10000)/10000;}
 
-function normalizeSpeciesColors(plan:GardenPlan,preferred?:{plantId:number;color:string|null}){
+function normalizeSpeciesColors(plan:GardenPlan){
   const colors=readSpeciesColors();
-  if(preferred?.color)colors[String(preferred.plantId)]=preferred.color;
   const orderedIds:number[]=[];
   for(const item of plan.placedPlants||[]){if(item.itemType==='rock'||orderedIds.includes(item.plantId))continue;orderedIds.push(item.plantId);}
   orderedIds.forEach((plantId,index)=>{const key=String(plantId);if(!colors[key])colors[key]=SPECIES_PALETTE[index%SPECIES_PALETTE.length];});
@@ -43,10 +42,14 @@ function resolvePlantIdFromDetails(input:HTMLInputElement,plan:GardenPlan){
   return unique.length===1?unique[0]:null;
 }
 
-function applySpeciesColor(plantId:number,color:string){
+function applySpeciesColor(input:HTMLInputElement,plantId:number,color:string){
   const colors=readSpeciesColors();colors[String(plantId)]=color;writeSpeciesColors(colors);
-  const apply=()=>{const plan=readPlan();if(!plan)return;const next={...plan,placedPlants:(plan.placedPlants||[]).map(item=>item.itemType!=='rock'&&item.plantId===plantId?{...item,customColor:color}:item),updatedAt:new Date().toISOString()};applyPlan(next);};
-  apply();window.setTimeout(apply,60);window.setTimeout(apply,180);
+  const plan=readPlan();if(!plan)return;
+  const update=findFunction(findFiber(input),'onUpdatePlacedPlant') as UpdatePlacedPlant|null;
+  const matches=(plan.placedPlants||[]).filter(item=>item.itemType!=='rock'&&item.plantId===plantId);
+  if(update){matches.forEach(item=>update(item.instanceId,{customColor:color}));return;}
+  const next={...plan,placedPlants:(plan.placedPlants||[]).map(item=>item.itemType!=='rock'&&item.plantId===plantId?{...item,customColor:color}:item),updatedAt:new Date().toISOString()};
+  applyPlan(next);
 }
 
 function pruneDriftGaps(plan:GardenPlan,gapFeet:number){
@@ -86,15 +89,14 @@ function installDriftGapControl(host:HTMLElement){if(host.querySelector('[data-d
 
 export default function RecipeUiCorrections(){
   useEffect(()=>{
-    let balancing=false,colorBefore:GardenPlan|null=null,driftTimer=0,lastGenerationSignature='',normalizing=false;
+    let balancing=false,driftTimer=0,lastGenerationSignature='',normalizing=false;
     const rebalance=(changed:HTMLInputElement)=>{if(balancing)return;const host=changed.closest<HTMLElement>('[data-recipe-react-host]'),card=changed.closest<HTMLElement>('div.rounded-xl');if(!host||!card||mixInputFor(card)!==changed)return;const cards=[...host.querySelectorAll<HTMLElement>('div.rounded-xl')],enabled=cards.filter(item=>item.querySelector<HTMLInputElement>('input[type="checkbox"]')?.checked),entries=enabled.map(item=>mixInputFor(item)).filter((item):item is HTMLInputElement=>Boolean(item));if(entries.length<2)return;const selected=Math.max(0,Math.min(100,Math.round(Number(changed.value)||0))),others=entries.filter(item=>item!==changed),remaining=100-selected,oldTotal=others.reduce((sum,item)=>sum+Math.max(0,Number(item.value)||0),0);let assigned=0;balancing=true;others.forEach((item,index)=>{const next=index===others.length-1?remaining-assigned:Math.max(0,Math.round(oldTotal>0?remaining*((Number(item.value)||0)/oldTotal):remaining/others.length));assigned+=next;setInputValue(item,next);});if(Number(changed.value)!==selected)setInputValue(changed,selected);balancing=false;};
     const syncColorSwatch=(input:HTMLInputElement)=>{const row=input.parentElement;if(!row)return;const swatch=[...row.querySelectorAll<HTMLElement>('div')].find(item=>item.classList.contains('rounded-full'));if(swatch){swatch.style.backgroundColor=input.value;swatch.title='Current color for every instance of this plant';}};
-    const propagateColorFallback=()=>{const before=colorBefore;if(!before)return;let attempts=0;const retry=window.setInterval(()=>{attempts++;const current=readPlan();if(!current){window.clearInterval(retry);return;}const oldById=new Map((before.placedPlants||[]).map(item=>[item.instanceId,item]));const changed=(current.placedPlants||[]).find(item=>oldById.has(item.instanceId)&&oldById.get(item.instanceId)?.customColor!==item.customColor);if(!changed){if(attempts>30)window.clearInterval(retry);return;}window.clearInterval(retry);applySpeciesColor(changed.plantId,changed.customColor||SPECIES_PALETTE[0]);},60);};
-    const onPointerDown=(event:Event)=>{const target=event.target;if(target instanceof HTMLInputElement&&target.type==='color')colorBefore=readPlan();};
-    const onInput=(event:Event)=>{const target=event.target;if(!(target instanceof HTMLInputElement)||target.type!=='color')return;syncColorSwatch(target);const plan=readPlan();const plantId=plan?resolvePlantIdFromDetails(target,plan):null;if(plantId!==null)applySpeciesColor(plantId,target.value);};
-    const onChange=(event:Event)=>{const target=event.target;if(!(target instanceof HTMLInputElement))return;if(target.type==='number')rebalance(target);if(target.type==='color'){syncColorSwatch(target);const plan=readPlan();const plantId=plan?resolvePlantIdFromDetails(target,plan):null;if(plantId!==null)applySpeciesColor(plantId,target.value);else propagateColorFallback();}};
+    const updateColor=(target:HTMLInputElement)=>{syncColorSwatch(target);const plan=readPlan();const plantId=plan?resolvePlantIdFromDetails(target,plan):null;if(plantId!==null)applySpeciesColor(target,plantId,target.value);};
+    const onInput=(event:Event)=>{const target=event.target;if(target instanceof HTMLInputElement&&target.type==='color')updateColor(target);};
+    const onChange=(event:Event)=>{const target=event.target;if(!(target instanceof HTMLInputElement))return;if(target.type==='number')rebalance(target);if(target.type==='color')updateColor(target);};
     const polish=()=>{document.querySelectorAll<HTMLInputElement>('input[type="color"]').forEach(input=>{if(input.closest('div')?.parentElement?.textContent?.includes('Symbol color'))syncColorSwatch(input);});document.querySelectorAll<HTMLButtonElement>('button').forEach(button=>{if(button.textContent?.trim()==='Delete'&&button.closest('aside'))button.className='flex-1 px-3 py-2 text-xs font-bold bg-red-600 hover:bg-red-500 text-white border border-red-400 rounded-lg shadow-sm';});document.querySelectorAll<HTMLElement>('[data-recipe-react-host]').forEach(installDriftGapControl);const plan=readPlan();if(!plan||normalizing)return;let next:GardenPlan={...plan,zones:(plan.zones||[]).map(zone=>Math.abs((zone.opacity??.28)-.28)<.001?{...zone,opacity:.1}:zone)};next=normalizeSpeciesColors(next);const zoneChanged=(plan.zones||[]).some(zone=>Math.abs((zone.opacity??.28)-.28)<.001);if(next!==plan||zoneChanged){normalizing=true;applyPlan({...next,updatedAt:new Date().toISOString()});window.setTimeout(()=>{normalizing=false;},120);return;}const generated=(plan.placedPlants||[]).filter(item=>item.instanceId.startsWith('recipe-run-')),signature=generated.map(item=>item.instanceId).sort().join('|');if(!signature||signature===lastGenerationSignature)return;lastGenerationSignature=signature;window.clearTimeout(driftTimer);driftTimer=window.setTimeout(()=>{const fresh=readPlan(),gap=Math.max(0,Number(localStorage.getItem(DRIFT_GAP_KEY))||0);if(fresh&&gap>0){const pruned=pruneDriftGaps(fresh,gap);if(pruned!==fresh)applyPlan(pruned);}},1800);};
-    const observer=new MutationObserver(polish);observer.observe(document.body,{childList:true,subtree:true});const timer=window.setInterval(polish,300);polish();document.addEventListener('pointerdown',onPointerDown,true);document.addEventListener('input',onInput,true);document.addEventListener('change',onChange,true);return()=>{observer.disconnect();window.clearInterval(timer);window.clearTimeout(driftTimer);document.removeEventListener('pointerdown',onPointerDown,true);document.removeEventListener('input',onInput,true);document.removeEventListener('change',onChange,true);};
+    const observer=new MutationObserver(polish);observer.observe(document.body,{childList:true,subtree:true});const timer=window.setInterval(polish,300);polish();document.addEventListener('input',onInput,true);document.addEventListener('change',onChange,true);return()=>{observer.disconnect();window.clearInterval(timer);window.clearTimeout(driftTimer);document.removeEventListener('input',onInput,true);document.removeEventListener('change',onChange,true);};
   },[]);
   return null;
 }
