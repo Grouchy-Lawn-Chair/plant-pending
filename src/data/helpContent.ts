@@ -8,8 +8,8 @@ export const WELCOME_STEPS: Array<[string, string]> = [
   ['2. Set the scale', 'Mark a known distance so mature plant sizes, spacing, quantities, and print measurements are accurate.'],
   ['3. Draw planting zones', 'Outline beds, slopes, pool planters, hedge strips, and other planting areas. Add exclusion zones for patios, fire pits, and places plants should fear to tread.'],
   ['4. Describe the zone', 'Set sun, afternoon exposure, water needs, and zone purpose. Mark front and back edges when plant height or layout direction matters.'],
-  ['5. Choose plants or a recipe', 'Select plants yourself, create a planting group, or choose a professionally sourced recipe from the Recipe Engine.'],
-  ['6. Generate and adjust', 'Set fullness, variety, and seed, then generate a layout. Try another seed, move plants manually, or regenerate until the shrubs stop arguing.'],
+  ['5. Choose plants or a recipe', 'Select plants yourself, create a planting group, choose a recipe, or add any catalog plant to a recipe before generating.'],
+  ['6. Generate and adjust', 'Set fullness, variety, and seed, then generate a layout. The app fits as many mature plants as possible without stacking them.'],
   ['7. Save, export, or print', 'Save plans in this browser, export an editable JSON file, or create a printable plan set with zone sheets, quantities, and costs.'],
 ];
 
@@ -52,7 +52,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     title: 'Using the Recipe Engine',
-    body: 'Recipes are curated plant combinations with layout guidance. Choose a recipe in the Recipe Engine, review the matched Green Acres plants, adjust counts or controls, then generate the arrangement inside the selected zone.',
+    body: 'Recipes are curated plant combinations with layout guidance. Choose a recipe, adjust its plants and controls, or search the full plant catalog and add another plant to that generation. Added plants can be assigned a width, layer, placement style, grouping, spacing, weight, or exact count before generating.',
   },
   {
     title: 'Recipe substitutions and unavailable plants',
@@ -60,7 +60,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     title: 'Fullness, variety, and quantities',
-    body: 'Fullness controls how much of the zone is occupied. Variety controls whether the layout uses a tighter repeated palette or more plant types. Mature plant size still limits how many plants can safely fit.',
+    body: 'Fullness is a target for how much of the zone should be occupied. Even at 100%, the generator will not stack mature plant circles. When the requested plants cannot fit safely, it places fewer plants and reports the shortfall.',
   },
   {
     title: 'Seed and layout variations',
@@ -76,7 +76,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     title: 'Mature size, spacing, and overlap',
-    body: 'Plant circles represent mature spread. Normal plants should not generate on top of one another. If the requested count cannot fit, the generator should place fewer plants instead of inventing extra yard.',
+    body: 'Plant circles represent mature spread. Generated plants never occupy the same space. Tight spacing means circles may touch, not overlap. If the requested count or fullness cannot fit, the generator prunes the conflicting plants instead of inventing extra yard.',
   },
   {
     title: 'Moving, rotating, resizing, duplicating, and deleting items',
@@ -84,7 +84,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     title: 'Clumping and merged shrub display',
-    body: 'Visual clumping can make overlapping shrubs read as one connected mass. This changes the drawing style, not the real mature spacing rule. Use it for hedge or groundcover effects, not as permission to stack plants.',
+    body: 'Visual clumping can make nearby shrubs read as one connected mass. This changes the drawing style only. Recipe generation still keeps every mature plant circle separate and never uses clumping as permission to stack plants.',
   },
   {
     title: 'Plant colors, labels, images, and symbols',
@@ -116,7 +116,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     title: 'Troubleshooting generated layouts',
-    body: 'If a layout is too sparse, raise fullness or use spreading plants. If it is crowded, reduce fullness, reduce counts, or use smaller plants. Try another seed for a different arrangement. Check zone scale, exclusions, and front or back edges before blaming the shrubs.',
+    body: 'If a layout places fewer plants than requested, the zone ran out of valid non-overlapping space. Reduce fullness or exact counts, use smaller maintained widths, or try another seed. Also check scale, exclusions, rocks, and front or back edges before blaming the shrubs.',
   },
   {
     title: 'About plant data and mature sizes',
