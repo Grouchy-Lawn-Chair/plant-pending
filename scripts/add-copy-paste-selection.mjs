@@ -11,21 +11,23 @@ function updateApp() {
   const path = 'src/App.tsx';
   let source = fs.readFileSync(path, 'utf8');
 
-  const refsAnchor = `  const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);\n`;
   if (!source.includes('const copiedPlacedPlantsRef = useRef<PlacedPlant[]>([]);')) {
-    if (!source.includes(refsAnchor)) throw new Error('Selection state anchor not found.');
+    const refsPattern = /(\s*const \[selectedInstanceIds, setSelectedInstanceIds\] = useState<string\[\]>\(\[\]\);\r?\n)/;
+    if (!refsPattern.test(source)) throw new Error('Selection state anchor not found.');
     source = source.replace(
-      refsAnchor,
-      `${refsAnchor}  const copiedPlacedPlantsRef = useRef<PlacedPlant[]>([]);\n  const pasteGenerationRef = useRef(0);\n`,
+      refsPattern,
+      `$1  const copiedPlacedPlantsRef = useRef<PlacedPlant[]>([]);\n  const pasteGenerationRef = useRef(0);\n`,
     );
   }
 
   if (!source.includes('const handleCopySelectedPlacedPlants = useCallback')) {
-    const insertBefore = `  const handleCreatePlantingGroup = useCallback((name: string) => {`;
-    const index = source.indexOf(insertBefore);
-    if (index === -1) throw new Error('Planting group anchor not found.');
+    const insertPattern = /\s*const handleCreatePlantingGroup = useCallback\(\(name: string\) => \{/;
+    const match = source.match(insertPattern);
+    if (!match || match.index === undefined) throw new Error('Planting group anchor not found.');
+    const index = match.index;
 
-    const block = `  const handleCopySelectedPlacedPlants = useCallback(() => {
+    const block = `
+  const handleCopySelectedPlacedPlants = useCallback(() => {
     const ids = selectedInstanceIds.length > 0
       ? selectedInstanceIds
       : selectedInstanceId
@@ -58,22 +60,15 @@ function updateApp() {
       return Math.max(largest, widthFt * pixelsPerDesignFoot);
     }, 0);
     const offset = Math.max(36, largestDiameterPx + 16) * pasteGenerationRef.current;
-    const newIds: string[] = [];
+    const clones = copied.map(item => ({
+      ...item,
+      instanceId: generateId(),
+      x: item.x + offset,
+      y: item.y + offset,
+    }));
+    const newIds = clones.map(item => item.instanceId);
 
-    setPlacedPlants(prev => {
-      const clones = copied.map(item => {
-        const instanceId = generateId();
-        newIds.push(instanceId);
-        return {
-          ...item,
-          instanceId,
-          x: item.x + offset,
-          y: item.y + offset,
-        };
-      });
-      return [...prev, ...clones];
-    });
-
+    setPlacedPlants(prev => [...prev, ...clones]);
     setSelectedInstanceIds(newIds);
     setSelectedInstanceId(newIds[0] || null);
     if (newIds.length > 0) setRightInspectorSection('item');
