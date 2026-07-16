@@ -97,33 +97,24 @@ function pointInPolygon(point: Point, polygon: Point[]) {
 }
 function bounds(points: Point[]) {
   return {
-    minX: Math.min(...points.map(p => p.x)),
-    maxX: Math.max(...points.map(p => p.x)),
-    minY: Math.min(...points.map(p => p.y)),
-    maxY: Math.max(...points.map(p => p.y)),
+    minX: Math.min(...points.map(point => point.x)),
+    maxX: Math.max(...points.map(point => point.x)),
+    minY: Math.min(...points.map(point => point.y)),
+    maxY: Math.max(...points.map(point => point.y)),
   };
 }
 function distanceToSegment(point: Point, a: Point, b: Point) {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
-  const l2 = dx * dx + dy * dy || 1;
-  const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / l2));
+  const lengthSquared = dx * dx + dy * dy || 1;
+  const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared));
   return Math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy));
 }
 function edgeDistance(point: Point, polygon: Point[]) {
-  return Math.min(...polygon.map((a, i) => distanceToSegment(point, a, polygon[(i + 1) % polygon.length])));
+  return Math.min(...polygon.map((a, index) => distanceToSegment(point, a, polygon[(index + 1) % polygon.length])));
 }
-function radius(plant: PlacedPlant, ppf: number) {
-  return Math.max(5, ((plant.displayWidthFt || 2) * ppf) / 2);
-}
-function isMergeable(plant: PlacedPlant) {
-  return plant.notes?.includes('[mergeable]') ?? false;
-}
-function driftId(plant: PlacedPlant) {
-  return plant.notes?.match(/\[drift:([^\]]+)\]/)?.[1] || null;
-}
-function sameMergeDrift(a: PlacedPlant, b: PlacedPlant) {
-  return a.plantId === b.plantId && isMergeable(a) && isMergeable(b) && driftId(a) && driftId(a) === driftId(b);
+function radius(plant: PlacedPlant, pixelsPerFoot: number) {
+  return Math.max(5, ((plant.displayWidthFt || 2) * pixelsPerFoot) / 2);
 }
 function relevantExclusions(plan: GardenPlan, zone: GardenZone) {
   const zoneBounds = bounds(zone.points);
@@ -133,15 +124,15 @@ function relevantExclusions(plan: GardenPlan, zone: GardenZone) {
     return candidateBounds.maxX >= zoneBounds.minX && candidateBounds.minX <= zoneBounds.maxX && candidateBounds.maxY >= zoneBounds.minY && candidateBounds.minY <= zoneBounds.maxY;
   });
 }
-function rockRadius(rock: PlacedPlant, ppf: number) {
-  return Math.max(6, ((rock.rockSizeFt || 2) * ppf) / 2);
+function rockRadius(rock: PlacedPlant, pixelsPerFoot: number) {
+  return Math.max(6, ((rock.rockSizeFt || 2) * pixelsPerFoot) / 2);
 }
-function validCenter(point: Point, r: number, zone: GardenZone, exclusions: GardenZone[], rocks: PlacedPlant[], ppf: number) {
-  if (!pointInPolygon(point, zone.points) || edgeDistance(point, zone.points) < r) return false;
+function validCenter(point: Point, plantRadius: number, zone: GardenZone, exclusions: GardenZone[], rocks: PlacedPlant[], pixelsPerFoot: number) {
+  if (!pointInPolygon(point, zone.points) || edgeDistance(point, zone.points) < plantRadius) return false;
   for (const exclusion of exclusions) {
-    if (pointInPolygon(point, exclusion.points) || edgeDistance(point, exclusion.points) < r) return false;
+    if (pointInPolygon(point, exclusion.points) || edgeDistance(point, exclusion.points) < plantRadius) return false;
   }
-  return rocks.every(rock => Math.hypot(point.x - rock.x, point.y - rock.y) >= r + rockRadius(rock, ppf));
+  return rocks.every(rock => Math.hypot(point.x - rock.x, point.y - rock.y) >= plantRadius + rockRadius(rock, pixelsPerFoot));
 }
 function collectPlantCards(host: HTMLElement): PlantCardInfo[] {
   return [...host.querySelectorAll<HTMLElement>('div.rounded-xl')].flatMap(card => {
@@ -156,7 +147,7 @@ function collectPlantCards(host: HTMLElement): PlantCardInfo[] {
       : [];
   });
 }
-function maximumClearDiameter(zone: GardenZone, exclusions: GardenZone[], rocks: PlacedPlant[], ppf: number) {
+function maximumClearDiameter(zone: GardenZone, exclusions: GardenZone[], rocks: PlacedPlant[], pixelsPerFoot: number) {
   const box = bounds(zone.points);
   let best = 0;
   for (let yi = 0; yi <= 36; yi++) {
@@ -166,13 +157,13 @@ function maximumClearDiameter(zone: GardenZone, exclusions: GardenZone[], rocks:
         y: box.minY + yi / 36 * (box.maxY - box.minY),
       };
       if (!pointInPolygon(point, zone.points)) continue;
-      let r = edgeDistance(point, zone.points);
-      for (const exclusion of exclusions) r = pointInPolygon(point, exclusion.points) ? 0 : Math.min(r, edgeDistance(point, exclusion.points));
-      for (const rock of rocks) r = Math.min(r, Math.max(0, Math.hypot(point.x - rock.x, point.y - rock.y) - rockRadius(rock, ppf)));
-      best = Math.max(best, r);
+      let availableRadius = edgeDistance(point, zone.points);
+      for (const exclusion of exclusions) availableRadius = pointInPolygon(point, exclusion.points) ? 0 : Math.min(availableRadius, edgeDistance(point, exclusion.points));
+      for (const rock of rocks) availableRadius = Math.min(availableRadius, Math.max(0, Math.hypot(point.x - rock.x, point.y - rock.y) - rockRadius(rock, pixelsPerFoot)));
+      best = Math.max(best, availableRadius);
     }
   }
-  return best * 2 / ppf * 12;
+  return best * 2 / pixelsPerFoot * 12;
 }
 function setInputValue(input: HTMLInputElement, value: string) {
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
@@ -180,9 +171,13 @@ function setInputValue(input: HTMLInputElement, value: string) {
   input.dispatchEvent(new Event('input', { bubbles: true }));
   input.dispatchEvent(new Event('change', { bubbles: true }));
 }
+function overlapsAny(plant: PlacedPlant, accepted: PlacedPlant[], pixelsPerFoot: number) {
+  const plantRadius = radius(plant, pixelsPerFoot);
+  return accepted.some(other => Math.hypot(plant.x - other.x, plant.y - other.y) < plantRadius + radius(other, pixelsPerFoot) - 0.01);
+}
 
 async function cleanGeneratedZone(plan: GardenPlan, zone: GardenZone, progress: (value: number) => void) {
-  const ppf = plan.scalePixelsPerFoot || 20;
+  const pixelsPerFoot = plan.scalePixelsPerFoot || 20;
   const all = plan.placedPlants || [];
   const plants = all.filter(item => item.zone === zone.id && item.itemType !== 'rock').map(item => ({ ...item }));
   const rocks = all.filter(item => item.itemType === 'rock' && (pointInPolygon(item, zone.points) || item.zone === zone.id));
@@ -191,8 +186,8 @@ async function cleanGeneratedZone(plan: GardenPlan, zone: GardenZone, progress: 
 
   for (let index = 0; index < plants.length; index++) {
     const plant = plants[index];
-    const plantRadius = radius(plant, ppf);
-    if (validCenter(plant, plantRadius, zone, exclusions, rocks, ppf)) continue;
+    const plantRadius = radius(plant, pixelsPerFoot);
+    if (validCenter(plant, plantRadius, zone, exclusions, rocks, pixelsPerFoot)) continue;
     const box = bounds(zone.points);
     let best: Point | null = null;
     let score = Infinity;
@@ -202,7 +197,7 @@ async function cleanGeneratedZone(plan: GardenPlan, zone: GardenZone, progress: 
           x: box.minX + xi / 42 * (box.maxX - box.minX),
           y: box.minY + yi / 42 * (box.maxY - box.minY),
         };
-        if (!validCenter(candidate, plantRadius, zone, exclusions, rocks, ppf)) continue;
+        if (!validCenter(candidate, plantRadius, zone, exclusions, rocks, pixelsPerFoot)) continue;
         const distance = Math.hypot(candidate.x - plant.x, candidate.y - plant.y);
         if (distance < score) {
           score = distance;
@@ -218,32 +213,39 @@ async function cleanGeneratedZone(plan: GardenPlan, zone: GardenZone, progress: 
     }
   }
 
-  for (let pass = 0; pass < 24; pass++) {
+  for (let pass = 0; pass < 30; pass++) {
     for (let i = 0; i < plants.length; i++) {
       for (let j = i + 1; j < plants.length; j++) {
         const a = plants[i];
         const b = plants[j];
-        if (rejected.has(a.instanceId) || rejected.has(b.instanceId) || sameMergeDrift(a, b)) continue;
-        const ra = radius(a, ppf);
-        const rb = radius(b, ppf);
+        if (rejected.has(a.instanceId) || rejected.has(b.instanceId)) continue;
+        const radiusA = radius(a, pixelsPerFoot);
+        const radiusB = radius(b, pixelsPerFoot);
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const distance = Math.hypot(dx, dy) || 0.001;
-        const preferred = (ra + rb) * 0.9;
+        const preferred = radiusA + radiusB;
         if (distance >= preferred) continue;
-        const push = (preferred - distance) * 0.35;
-        const ux = dx / distance;
-        const uy = dy / distance;
-        const qa = { x: a.x - ux * push, y: a.y - uy * push };
-        const qb = { x: b.x + ux * push, y: b.y + uy * push };
-        if (validCenter(qa, ra, zone, exclusions, rocks, ppf)) Object.assign(a, qa);
-        if (validCenter(qb, rb, zone, exclusions, rocks, ppf)) Object.assign(b, qb);
+        const push = (preferred - distance) * 0.55;
+        const unitX = dx / distance;
+        const unitY = dy / distance;
+        const candidateA = { x: a.x - unitX * push, y: a.y - unitY * push };
+        const candidateB = { x: b.x + unitX * push, y: b.y + unitY * push };
+        if (validCenter(candidateA, radiusA, zone, exclusions, rocks, pixelsPerFoot)) Object.assign(a, candidateA);
+        if (validCenter(candidateB, radiusB, zone, exclusions, rocks, pixelsPerFoot)) Object.assign(b, candidateB);
       }
     }
     if (pass % 6 === 0) await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
   }
 
-  const replacements = new Map(plants.map(item => [item.instanceId, item]));
+  const accepted: PlacedPlant[] = [];
+  for (const plant of plants) {
+    if (rejected.has(plant.instanceId)) continue;
+    if (overlapsAny(plant, accepted, pixelsPerFoot)) rejected.add(plant.instanceId);
+    else accepted.push(plant);
+  }
+
+  const replacements = new Map(accepted.map(item => [item.instanceId, item]));
   return {
     ...plan,
     placedPlants: all.flatMap(item => rejected.has(item.instanceId) ? [] : [replacements.get(item.instanceId) || item]),
@@ -318,9 +320,9 @@ export default function RecipeGenerationEnhancements() {
       if (!plan || !zone) return;
       const cards = collectPlantCards(host).filter(item => item.enabled);
       const exclusions = relevantExclusions(plan, zone);
-      const ppf = plan.scalePixelsPerFoot || 20;
+      const pixelsPerFoot = plan.scalePixelsPerFoot || 20;
       const rocks = plan.placedPlants.filter(item => item.itemType === 'rock' && (pointInPolygon(item, zone.points) || item.zone === zone.id));
-      const available = maximumClearDiameter(zone, exclusions, rocks, ppf);
+      const available = maximumClearDiameter(zone, exclusions, rocks, pixelsPerFoot);
       const issues = cards.filter(item => item.widthInches > available * 1.02).map(plant => ({ plant, availableInches: available }));
       const hedgePlants = cards.filter(item => item.placement === 'back-attract');
       if (issues.length || hedgePlants.length) {
