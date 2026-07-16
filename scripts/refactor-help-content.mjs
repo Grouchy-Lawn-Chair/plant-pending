@@ -34,3 +34,5 @@ source = source.slice(0, refreshedHelpStart) + helpReplacement + source.slice(ab
 
 fs.writeFileSync(path, source);
 console.log('Moved welcome and help UI out of App.tsx and refreshed Version 2.0 help content.');
+
+// This file is intentionally kept as a one-time, auditable migration helper.
