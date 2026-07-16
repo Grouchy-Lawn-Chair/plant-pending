@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { plantRecipes } from './plantRecipes';
 
+const EXPECTED_RECIPE_COUNT = 49;
+
 describe('reviewed recipe data', () => {
-  it('keeps all 41 recipes with unique IDs', () => {
-    expect(plantRecipes).toHaveLength(41);
-    expect(new Set(plantRecipes.map(recipe => recipe.id)).size).toBe(41);
+  it('keeps every reviewed recipe with a unique ID', () => {
+    expect(plantRecipes).toHaveLength(EXPECTED_RECIPE_COUNT);
+    expect(new Set(plantRecipes.map(recipe => recipe.id)).size).toBe(EXPECTED_RECIPE_COUNT);
   });
 
   it('uses complete final production records', () => {
