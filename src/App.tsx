@@ -3283,7 +3283,7 @@ function App() {
               <img src={`${import.meta.env.BASE_URL}brand/app-icon.svg`} alt="Plant Pending app icon" className="h-full w-full object-contain" />
             </div>
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold text-white">Plant Pending <span className="text-sm font-normal text-slate-400">v 1.0</span></h1>
+              <h1 className="truncate text-lg font-semibold text-white">Plant Pending <span className="text-sm font-normal text-slate-400">v 2.0</span></h1>
               <p className="text-xs text-slate-400">Probably needs a shrub</p>
             </div>
           </div>
