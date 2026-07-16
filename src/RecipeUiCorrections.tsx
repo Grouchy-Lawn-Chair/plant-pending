@@ -5,19 +5,19 @@ const CURRENT_PLAN_KEY='garden-planner-current';
 const DRIFT_GAP_KEY='plant-pending-drift-gap-feet';
 
 type FiberNode={child?:FiberNode|null;sibling?:FiberNode|null;return?:FiberNode|null;memoizedProps?:Record<string,unknown>|null;pendingProps?:Record<string,unknown>|null};
-type ColorPlan=GardenPlan&{plantColors?:Record<string,string>};
+type UpdatePlacedPlant=(instanceId:string,updates:Partial<PlacedPlant>)=>void;
 
 function setInputValue(input:HTMLInputElement,value:number){const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,String(value));input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));}
 function mixInputFor(card:HTMLElement){const label=[...card.querySelectorAll('label')].find(item=>item.textContent?.trim().startsWith('Mix %'));return label?.querySelector<HTMLInputElement>('input[type="number"]')||null;}
-function readPlan():ColorPlan|null{try{const raw=localStorage.getItem(CURRENT_PLAN_KEY);return raw?JSON.parse(raw)as ColorPlan:null;}catch{return null;}}
+function readPlan():GardenPlan|null{try{const raw=localStorage.getItem(CURRENT_PLAN_KEY);return raw?JSON.parse(raw)as GardenPlan:null;}catch{return null;}}
 function findFiber(element:Element|null):FiberNode|null{let current=element;while(current){const key=Object.keys(current).find(name=>name.startsWith('__reactFiber$'));if(key)return(current as unknown as Record<string,FiberNode>)[key]||null;current=current.parentElement;}return null;}
 function rootOf(start:FiberNode|null){let root=start;if(!root)return null;while(root.return)root=root.return;return root;}
 function findFunction(start:FiberNode|null,name:string):Function|null{const root=rootOf(start);if(!root)return null;const stack=[root],seen=new Set<FiberNode>();while(stack.length){const fiber=stack.pop()!;if(seen.has(fiber))continue;seen.add(fiber);const callback=fiber.memoizedProps?.[name]??fiber.pendingProps?.[name];if(typeof callback==='function')return callback as Function;if(fiber.sibling)stack.push(fiber.sibling);if(fiber.child)stack.push(fiber.child);}return null;}
-function applyPlan(plan:ColorPlan){const host=document.querySelector<HTMLElement>('[data-recipe-react-host]')||document.getElementById('root');const callback=findFunction(findFiber(host),'onImportPlan')||findFunction(findFiber(host),'onLoadPlan');if(!callback)return false;callback(plan);localStorage.setItem(CURRENT_PLAN_KEY,JSON.stringify(plan));return true;}
+function applyPlan(plan:GardenPlan){const host=document.querySelector<HTMLElement>('[data-recipe-react-host]')||document.getElementById('root');const callback=findFunction(findFiber(host),'onImportPlan')||findFunction(findFiber(host),'onLoadPlan');if(!callback)return false;callback(plan);localStorage.setItem(CURRENT_PLAN_KEY,JSON.stringify(plan));return true;}
 function driftId(plant:PlacedPlant){return plant.notes?.match(/\[drift:([^\]]+)\]/)?.[1]||null;}
 function hash01(text:string){let hash=2166136261;for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619);}return((hash>>>0)%10000)/10000;}
 
-function changedPlantId(before:ColorPlan|null,after:ColorPlan,color:string){
+function changedPlantId(before:GardenPlan|null,after:GardenPlan,color:string){
   const oldColors=new Map((before?.placedPlants||[]).map(item=>[item.instanceId,item.customColor]));
   const changed=(after.placedPlants||[]).filter(item=>item.itemType!=='rock'&&item.customColor===color&&oldColors.get(item.instanceId)!==color);
   const ids=[...new Set(changed.map(item=>item.plantId))];
@@ -26,15 +26,19 @@ function changedPlantId(before:ColorPlan|null,after:ColorPlan,color:string){
   return matching.length===1?matching[0]:null;
 }
 
-function applySpeciesColor(plantId:number,color:string,plan:ColorPlan){
-  const key=String(plantId);
-  const next:ColorPlan={
+function applySpeciesColor(plantId:number,color:string,plan:GardenPlan){
+  const root=document.getElementById('root');
+  const update=findFunction(findFiber(root),'onUpdatePlacedPlant') as UpdatePlacedPlant|null;
+  const matching=(plan.placedPlants||[]).filter(item=>item.itemType!=='rock'&&item.plantId===plantId);
+  if(update){
+    matching.forEach(item=>update(item.instanceId,{customColor:color}));
+    return;
+  }
+  applyPlan({
     ...plan,
-    plantColors:{...(plan.plantColors||{}),[key]:color},
     placedPlants:(plan.placedPlants||[]).map(item=>item.itemType!=='rock'&&item.plantId===plantId?{...item,customColor:color}:item),
     updatedAt:new Date().toISOString(),
-  };
-  applyPlan(next);
+  });
 }
 
 function pruneDriftGaps(plan:GardenPlan,gapFeet:number){
@@ -75,10 +79,10 @@ function installDriftGapControl(host:HTMLElement){if(host.querySelector('[data-d
 export default function RecipeUiCorrections(){
   useEffect(()=>{
     let balancing=false,driftTimer=0,colorTimer=0,lastGenerationSignature='';
-    let colorPlanBefore:ColorPlan|null=null;
+    let colorPlanBefore:GardenPlan|null=null;
     const rebalance=(changed:HTMLInputElement)=>{if(balancing)return;const host=changed.closest<HTMLElement>('[data-recipe-react-host]'),card=changed.closest<HTMLElement>('div.rounded-xl');if(!host||!card||mixInputFor(card)!==changed)return;const cards=[...host.querySelectorAll<HTMLElement>('div.rounded-xl')],enabled=cards.filter(item=>item.querySelector<HTMLInputElement>('input[type="checkbox"]')?.checked),entries=enabled.map(item=>mixInputFor(item)).filter((item):item is HTMLInputElement=>Boolean(item));if(entries.length<2)return;const selected=Math.max(0,Math.min(100,Math.round(Number(changed.value)||0))),others=entries.filter(item=>item!==changed),remaining=100-selected,oldTotal=others.reduce((sum,item)=>sum+Math.max(0,Number(item.value)||0),0);let assigned=0;balancing=true;others.forEach((item,index)=>{const next=index===others.length-1?remaining-assigned:Math.max(0,Math.round(oldTotal>0?remaining*((Number(item.value)||0)/oldTotal):remaining/others.length));assigned+=next;setInputValue(item,next);});if(Number(changed.value)!==selected)setInputValue(changed,selected);balancing=false;};
     const onInputCapture=(event:Event)=>{const target=event.target;if(target instanceof HTMLInputElement&&target.type==='color'&&!colorPlanBefore)colorPlanBefore=readPlan();};
-    const scheduleSpeciesColor=(target:HTMLInputElement)=>{const color=target.value,before=colorPlanBefore;colorPlanBefore=null;window.clearTimeout(colorTimer);colorTimer=window.setTimeout(()=>{const plan=readPlan();if(!plan)return;const plantId=changedPlantId(before,plan,color);if(plantId!==null)applySpeciesColor(plantId,color,plan);},120);};
+    const scheduleSpeciesColor=(target:HTMLInputElement)=>{const color=target.value,before=colorPlanBefore;colorPlanBefore=null;window.clearTimeout(colorTimer);colorTimer=window.setTimeout(()=>{const plan=readPlan();if(!plan)return;const plantId=changedPlantId(before,plan,color);if(plantId!==null)applySpeciesColor(plantId,color,plan);},180);};
     const onChange=(event:Event)=>{const target=event.target;if(!(target instanceof HTMLInputElement))return;if(target.type==='number')rebalance(target);if(target.type==='color')scheduleSpeciesColor(target);};
     const polish=()=>{document.querySelectorAll<HTMLButtonElement>('button').forEach(button=>{if(button.textContent?.trim()==='Delete'&&button.closest('aside'))button.className='flex-1 px-3 py-2 text-xs font-bold bg-red-600 hover:bg-red-500 text-white border border-red-400 rounded-lg shadow-sm';});document.querySelectorAll<HTMLElement>('[data-recipe-react-host]').forEach(installDriftGapControl);const plan=readPlan();if(!plan)return;const generated=(plan.placedPlants||[]).filter(item=>item.instanceId.startsWith('recipe-run-')),signature=generated.map(item=>item.instanceId).sort().join('|');if(!signature||signature===lastGenerationSignature)return;lastGenerationSignature=signature;window.clearTimeout(driftTimer);driftTimer=window.setTimeout(()=>{const fresh=readPlan(),gap=Math.max(0,Number(localStorage.getItem(DRIFT_GAP_KEY))||0);if(fresh&&gap>0){const pruned=pruneDriftGaps(fresh,gap);if(pruned!==fresh)applyPlan(pruned);}},1800);};
     const observer=new MutationObserver(polish);observer.observe(document.body,{childList:true,subtree:true});const timer=window.setInterval(polish,150);polish();document.addEventListener('input',onInputCapture,true);document.addEventListener('change',onChange,false);return()=>{observer.disconnect();window.clearInterval(timer);window.clearTimeout(driftTimer);window.clearTimeout(colorTimer);document.removeEventListener('input',onInputCapture,true);document.removeEventListener('change',onChange,false);};
