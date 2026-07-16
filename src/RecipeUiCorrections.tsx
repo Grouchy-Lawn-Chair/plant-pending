@@ -5,7 +5,6 @@ const CURRENT_PLAN_KEY='garden-planner-current';
 const DRIFT_GAP_KEY='plant-pending-drift-gap-feet';
 
 type FiberNode={child?:FiberNode|null;sibling?:FiberNode|null;return?:FiberNode|null;memoizedProps?:Record<string,unknown>|null;pendingProps?:Record<string,unknown>|null};
-type NamedPlacedPlant=PlacedPlant&{plantName?:string};
 type ColorPlan=GardenPlan&{plantColors?:Record<string,string>};
 
 function setInputValue(input:HTMLInputElement,value:number){const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,String(value));input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));}
@@ -18,16 +17,16 @@ function applyPlan(plan:ColorPlan){const host=document.querySelector<HTMLElement
 function driftId(plant:PlacedPlant){return plant.notes?.match(/\[drift:([^\]]+)\]/)?.[1]||null;}
 function hash01(text:string){let hash=2166136261;for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619);}return((hash>>>0)%10000)/10000;}
 
-function resolvePlantIdFromDetails(input:HTMLInputElement,plan:ColorPlan){
-  const details=input.closest('aside')||input.closest('[class*="fixed"]');
-  const text=details?.textContent||'';
-  const named=((plan.placedPlants||[])as NamedPlacedPlant[]).filter(item=>item.itemType!=='rock'&&item.plantName&&text.includes(item.plantName));
-  const unique=[...new Set(named.map(item=>item.plantId))];
-  return unique.length===1?unique[0]:null;
+function changedPlantId(before:ColorPlan|null,after:ColorPlan,color:string){
+  const oldColors=new Map((before?.placedPlants||[]).map(item=>[item.instanceId,item.customColor]));
+  const changed=(after.placedPlants||[]).filter(item=>item.itemType!=='rock'&&item.customColor===color&&oldColors.get(item.instanceId)!==color);
+  const ids=[...new Set(changed.map(item=>item.plantId))];
+  if(ids.length===1)return ids[0];
+  const matching=[...new Set((after.placedPlants||[]).filter(item=>item.itemType!=='rock'&&item.customColor===color).map(item=>item.plantId))];
+  return matching.length===1?matching[0]:null;
 }
 
-function applySpeciesColor(plantId:number,color:string){
-  const plan=readPlan();if(!plan)return;
+function applySpeciesColor(plantId:number,color:string,plan:ColorPlan){
   const key=String(plantId);
   const next:ColorPlan={
     ...plan,
@@ -76,11 +75,13 @@ function installDriftGapControl(host:HTMLElement){if(host.querySelector('[data-d
 export default function RecipeUiCorrections(){
   useEffect(()=>{
     let balancing=false,driftTimer=0,colorTimer=0,lastGenerationSignature='';
+    let colorPlanBefore:ColorPlan|null=null;
     const rebalance=(changed:HTMLInputElement)=>{if(balancing)return;const host=changed.closest<HTMLElement>('[data-recipe-react-host]'),card=changed.closest<HTMLElement>('div.rounded-xl');if(!host||!card||mixInputFor(card)!==changed)return;const cards=[...host.querySelectorAll<HTMLElement>('div.rounded-xl')],enabled=cards.filter(item=>item.querySelector<HTMLInputElement>('input[type="checkbox"]')?.checked),entries=enabled.map(item=>mixInputFor(item)).filter((item):item is HTMLInputElement=>Boolean(item));if(entries.length<2)return;const selected=Math.max(0,Math.min(100,Math.round(Number(changed.value)||0))),others=entries.filter(item=>item!==changed),remaining=100-selected,oldTotal=others.reduce((sum,item)=>sum+Math.max(0,Number(item.value)||0),0);let assigned=0;balancing=true;others.forEach((item,index)=>{const next=index===others.length-1?remaining-assigned:Math.max(0,Math.round(oldTotal>0?remaining*((Number(item.value)||0)/oldTotal):remaining/others.length));assigned+=next;setInputValue(item,next);});if(Number(changed.value)!==selected)setInputValue(changed,selected);balancing=false;};
-    const scheduleSpeciesColor=(target:HTMLInputElement)=>{const color=target.value;window.clearTimeout(colorTimer);colorTimer=window.setTimeout(()=>{const plan=readPlan();const plantId=plan?resolvePlantIdFromDetails(target,plan):null;if(plantId!==null)applySpeciesColor(plantId,color);},80);};
+    const onInputCapture=(event:Event)=>{const target=event.target;if(target instanceof HTMLInputElement&&target.type==='color'&&!colorPlanBefore)colorPlanBefore=readPlan();};
+    const scheduleSpeciesColor=(target:HTMLInputElement)=>{const color=target.value,before=colorPlanBefore;colorPlanBefore=null;window.clearTimeout(colorTimer);colorTimer=window.setTimeout(()=>{const plan=readPlan();if(!plan)return;const plantId=changedPlantId(before,plan,color);if(plantId!==null)applySpeciesColor(plantId,color,plan);},120);};
     const onChange=(event:Event)=>{const target=event.target;if(!(target instanceof HTMLInputElement))return;if(target.type==='number')rebalance(target);if(target.type==='color')scheduleSpeciesColor(target);};
     const polish=()=>{document.querySelectorAll<HTMLButtonElement>('button').forEach(button=>{if(button.textContent?.trim()==='Delete'&&button.closest('aside'))button.className='flex-1 px-3 py-2 text-xs font-bold bg-red-600 hover:bg-red-500 text-white border border-red-400 rounded-lg shadow-sm';});document.querySelectorAll<HTMLElement>('[data-recipe-react-host]').forEach(installDriftGapControl);const plan=readPlan();if(!plan)return;const generated=(plan.placedPlants||[]).filter(item=>item.instanceId.startsWith('recipe-run-')),signature=generated.map(item=>item.instanceId).sort().join('|');if(!signature||signature===lastGenerationSignature)return;lastGenerationSignature=signature;window.clearTimeout(driftTimer);driftTimer=window.setTimeout(()=>{const fresh=readPlan(),gap=Math.max(0,Number(localStorage.getItem(DRIFT_GAP_KEY))||0);if(fresh&&gap>0){const pruned=pruneDriftGaps(fresh,gap);if(pruned!==fresh)applyPlan(pruned);}},1800);};
-    const observer=new MutationObserver(polish);observer.observe(document.body,{childList:true,subtree:true});const timer=window.setInterval(polish,150);polish();document.addEventListener('change',onChange,false);return()=>{observer.disconnect();window.clearInterval(timer);window.clearTimeout(driftTimer);window.clearTimeout(colorTimer);document.removeEventListener('change',onChange,false);};
+    const observer=new MutationObserver(polish);observer.observe(document.body,{childList:true,subtree:true});const timer=window.setInterval(polish,150);polish();document.addEventListener('input',onInputCapture,true);document.addEventListener('change',onChange,false);return()=>{observer.disconnect();window.clearInterval(timer);window.clearTimeout(driftTimer);window.clearTimeout(colorTimer);document.removeEventListener('input',onInputCapture,true);document.removeEventListener('change',onChange,false);};
   },[]);
   return null;
 }
