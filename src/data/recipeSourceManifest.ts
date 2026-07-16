@@ -1,4 +1,4 @@
-export type RecipeSourceType = 'monrovia' | 'gardenia';
+export type RecipeSourceType = 'monrovia' | 'gardenia' | 'backyard';
 
 export interface RecipeSourceRecord {
   id: string;
@@ -11,9 +11,18 @@ export interface RecipeSourceRecord {
 
 const M = (id: string, name: string, source: string, sourcePage: number, pattern: string): RecipeSourceRecord => ({ id, name, source, sourcePage, sourceType: 'monrovia', pattern });
 const G = (id: string, name: string, pattern: string): RecipeSourceRecord => ({ id, name, source: 'Gardenia supplied URL set', sourcePage: 0, sourceType: 'gardenia', pattern });
+const B = (id: string, name: string, pattern: string): RecipeSourceRecord => ({ id, name, source: 'Mitchell backyard plan', sourcePage: 0, sourceType: 'backyard', pattern });
 
-/** Complete expected source set: 30 Monrovia plans + 11 Gardenia entries. */
+/** Complete expected source set: 30 Monrovia plans + 11 Gardenia entries + 8 backyard recipes. */
 export const recipeSourceManifest: RecipeSourceRecord[] = [
+  B('backyard-pool-clean-evergreen-screen', '- Pool, Clean Evergreen Screen', 'linear-border'),
+  B('backyard-retaining-wall-foliage', '- Retaining Wall, Colorful Foliage', 'cascade-wall'),
+  B('backyard-fire-pit-color-border', '- Fire Pit, Colorful Compact Border', 'ring'),
+  B('backyard-back-fence-hedge', '- Back Fence, Narrow Evergreen Hedge', 'hedge-border'),
+  B('backyard-south-privacy-screen', '- South Privacy Screen', 'hedge-border'),
+  B('backyard-slope-drift', '- Slope, Low-Water Flowering Drift', 'meadow'),
+  B('backyard-vegetable-garden-flowers', '- Vegetable Garden, Flower Border', 'layered-border'),
+  B('backyard-vegetable-garden-edge', '- Vegetable Garden, Compact Edge', 'linear-border'),
   M('monrovia-2023-fire-pit', 'Fire Pit', 'Ultimate Spring Planning Guide 2023', 4, 'ring'),
   M('monrovia-2023-water-feature-pool', 'Water Feature or Pool', 'Ultimate Spring Planning Guide 2023', 6, 'layered-ring'),
   M('monrovia-2023-dining-room', 'Dining Room', 'Ultimate Spring Planning Guide 2023', 8, 'formal-symmetry'),
@@ -59,4 +68,5 @@ export const recipeSourceManifest: RecipeSourceRecord[] = [
 
 export const EXPECTED_MONROVIA_RECIPE_COUNT = 30;
 export const EXPECTED_GARDENIA_RECIPE_COUNT = 11;
-export const EXPECTED_RECIPE_COUNT = 41;
+export const EXPECTED_BACKYARD_RECIPE_COUNT = 8;
+export const EXPECTED_RECIPE_COUNT = 49;
