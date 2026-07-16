@@ -2076,9 +2076,35 @@ function App() {
 
   const handleUpdatePlacedPlant = useCallback((instanceId: string, updates: Partial<PlacedPlant>) => {
     const before = placedPlants.find(item => item.instanceId === instanceId);
-    setPlacedPlants(prev =>
-      prev.map(p => (p.instanceId === instanceId ? { ...p, ...updates } : p))
-    );
+
+    setPlacedPlants(prev => {
+      const selected = prev.find(item => item.instanceId === instanceId);
+      if (!selected) return prev;
+
+      if (updates.customColor !== undefined && selected.itemType !== 'rock') {
+        return prev.map(item => {
+          if (item.instanceId === instanceId) {
+            return { ...item, ...updates };
+          }
+
+          if (item.itemType !== 'rock' && item.plantId === selected.plantId) {
+            return {
+              ...item,
+              customColor: updates.customColor ?? null,
+            };
+          }
+
+          return item;
+        });
+      }
+
+      return prev.map(item =>
+        item.instanceId === instanceId
+          ? { ...item, ...updates }
+          : item
+      );
+    });
+
     if (updates.displayWidthFt !== undefined || updates.rockSizeFt !== undefined) awardScore(`resize:${instanceId}:${updates.displayWidthFt ?? updates.rockSizeFt}`, 10, 'Mature size acknowledged.');
     if (updates.customColor !== undefined) awardScore(`color:${instanceId}:${updates.customColor}`, 2, 'The botanical mood has shifted.');
     addTestLog('plant.updated', {
