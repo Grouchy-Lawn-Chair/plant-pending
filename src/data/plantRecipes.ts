@@ -8,7 +8,8 @@ import { weekendRecipes } from './weekendRecipes';
 import { habitatRecipes } from './habitatRecipes';
 import { best2025Recipes } from './best2025Recipes';
 import { gardeniaRecipes } from './gardeniaRecipes';
+import { backyardRecipes } from './backyardRecipes';
 
 /** Final production recipes. Contains only approved Green Acres plants. */
-export const plantRecipes:PlantRecipe[]=[...springRecipes,...fallRecipes,...weekendRecipes,...habitatRecipes,...best2025Recipes,...gardeniaRecipes];
+export const plantRecipes:PlantRecipe[]=[...backyardRecipes,...springRecipes,...fallRecipes,...weekendRecipes,...habitatRecipes,...best2025Recipes,...gardeniaRecipes];
 export const getPlantRecipe=(id:string)=>plantRecipes.find(recipe=>recipe.id===id);
