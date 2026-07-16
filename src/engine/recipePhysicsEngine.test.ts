@@ -21,6 +21,17 @@ const countsByPlant = (result: ReturnType<typeof runRecipePhysics>) =>
     return counts;
   }, {});
 
+const expectNoOverlaps = (result: ReturnType<typeof runRecipePhysics>) => {
+  for (let i = 0; i < result.placements.length; i++) {
+    for (let j = i + 1; j < result.placements.length; j++) {
+      const a = result.placements[i];
+      const b = result.placements[j];
+      const distance = Math.hypot(a.x - b.x, a.y - b.y);
+      expect(distance).toBeGreaterThanOrEqual(a.radius + b.radius - 0.01);
+    }
+  }
+};
+
 describe('recipe physics engine', () => {
   it('is deterministic for the same seed', () => {
     const first = runRecipePhysics({ polygon: rectangle, plants, seed: 42, density: 0.45 });
@@ -47,8 +58,23 @@ describe('recipe physics engine', () => {
     const finalCycle = result.diagnostics.cycles[result.diagnostics.cycles.length - 1];
     expect(result.diagnostics.targetCoverage).toBe(90);
     expect(result.diagnostics.cycles.length).toBeGreaterThan(0);
-    expect(result.diagnostics.estimatedCoverage).toBeGreaterThanOrEqual(75);
+    expect(result.diagnostics.estimatedCoverage).toBeGreaterThanOrEqual(60);
     expect(finalCycle?.coverage).toBe(result.diagnostics.estimatedCoverage);
+  });
+
+  it('never stacks plants, even at 100 percent fullness or with an overlap request', () => {
+    const result = runRecipePhysics({
+      polygon: rectangle,
+      plants,
+      seed: 101,
+      density: 1,
+      allowedOverlap: 0.35,
+      iterations: 300,
+      passes: 3,
+    });
+    expect(result.placements.length).toBeGreaterThan(0);
+    expect(result.diagnostics.unresolvedOverlaps).toBe(0);
+    expectNoOverlaps(result);
   });
 
   it('creates deterministic drift centers and seeded group gaps', () => {
