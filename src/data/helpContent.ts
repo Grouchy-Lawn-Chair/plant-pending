@@ -9,7 +9,7 @@ export const WELCOME_STEPS: Array<[string, string]> = [
   ['3. Draw planting zones', 'Outline beds, slopes, pool planters, hedge strips, and other planting areas. Add exclusion zones for patios, fire pits, and places plants should fear to tread.'],
   ['4. Describe the zone', 'Set sun, afternoon exposure, water needs, and zone purpose. Mark front and back edges when plant height or layout direction matters.'],
   ['5. Choose plants or a recipe', 'Select plants yourself, create a planting group, choose a recipe, or add any catalog plant to a recipe before generating.'],
-  ['6. Generate and adjust', 'Set fullness, variety, and seed, then generate a layout. The app fits as many mature plants as possible without stacking them.'],
+  ['6. Generate and adjust', 'Set fullness, variety, and seed, then generate a layout. Adjust maintained widths for plants you plan to keep clipped, such as a narrow hedge.'],
   ['7. Save, export, or print', 'Save plans in this browser, export an editable JSON file, or create a printable plan set with zone sheets, quantities, and costs.'],
 ];
 
@@ -44,7 +44,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     title: 'Choosing plants manually',
-    body: 'Open the plant library, search or filter, click a plant card, then click the plan to place it. Plants appear at mature spread so you can see what future you is actually signing up for.',
+    body: 'Open the plant library, search or filter, click a plant card, then click the plan to place it. Plants begin at mature spread. After placement, select a plant and change its maintained width when you intend to keep it smaller through pruning.',
   },
   {
     title: 'Creating planting groups',
@@ -52,7 +52,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     title: 'Using the Recipe Engine',
-    body: 'Recipes are curated plant combinations with layout guidance. Choose a recipe, adjust its plants and controls, or search the full plant catalog and add another plant to that generation. Added plants can be assigned a width, layer, placement style, grouping, spacing, weight, or exact count before generating.',
+    body: 'Recipes are curated plant combinations with layout guidance. Choose a recipe, adjust its plants and controls, or search the full plant catalog and add another plant to that generation. Added plants can be assigned a maintained width, layer, placement style, grouping, spacing, weight, or exact count before generating.',
   },
   {
     title: 'Recipe substitutions and unavailable plants',
@@ -60,7 +60,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     title: 'Fullness, variety, and quantities',
-    body: 'Fullness is a target for how much of the zone should be occupied. Even at 100%, the generator will not stack mature plant circles. When the requested plants cannot fit safely, it places fewer plants and reports the shortfall.',
+    body: 'Fullness is a target for how much of the zone should be occupied. Even at 100%, the generator will not stack plant circles. When the requested plants cannot fit safely at their mature or maintained widths, it places fewer plants and reports the shortfall.',
   },
   {
     title: 'Seed and layout variations',
@@ -75,20 +75,24 @@ export const HELP_SECTIONS: HelpSection[] = [
     body: 'When regenerating, choose whether the new layout should replace plants already assigned to that zone or preserve them. Use replace when testing variations and preserve when adding around established placements.',
   },
   {
+    title: 'Mature width and maintained width',
+    body: 'Mature width is the catalog estimate for an unrestrained plant. Maintained width is the size you plan to hold through pruning, and it controls the circle shown on the plan. Select a placed plant and enter the maintained width in feet. For example, a Red Tip Photinia that can mature to 15 feet wide can be shown as 2 feet wide when planned as a hedge kept at 24 inches.',
+  },
+  {
     title: 'Mature size, spacing, and overlap',
-    body: 'Plant circles represent mature spread. Generated plants never occupy the same space. Tight spacing means circles may touch, not overlap. If the requested count or fullness cannot fit, the generator prunes the conflicting plants instead of inventing extra yard.',
+    body: 'Plant circles use the selected maintained width when one is set, otherwise they use mature spread. Generated plants never occupy the same space. Tight spacing means circles may touch, not overlap. If the requested count or fullness cannot fit, the generator prunes the conflicting plants instead of inventing extra yard.',
   },
   {
     title: 'Moving, rotating, resizing, duplicating, and deleting items',
-    body: 'Select an item to edit it. Drag to move, use the inspector for rotation and size, duplicate repeated elements, or delete the plant that has failed the interview.',
+    body: 'Select an item to edit it. Drag to move, set a maintained width in the Selection panel, adjust rotation and color, duplicate repeated elements, or delete the plant that has failed the interview.',
   },
   {
     title: 'Clumping and merged shrub display',
-    body: 'Visual clumping can make nearby shrubs read as one connected mass. This changes the drawing style only. Recipe generation still keeps every mature plant circle separate and never uses clumping as permission to stack plants.',
+    body: 'Visual clumping can make nearby shrubs read as one connected mass. This changes the drawing style only. Recipe generation still keeps every plant circle separate and never uses clumping as permission to stack plants.',
   },
   {
     title: 'Plant colors, labels, images, and symbols',
-    body: 'Use the canvas and selected-item controls to change display mode, symbol color, labels, opacity, rotation, and notes. Icons are planning symbols, not promises that the plant will behave.',
+    body: 'Use the canvas and selected-item controls to change display mode, symbol color, labels, opacity, rotation, maintained width, and notes. Icons are planning symbols, not promises that the plant will behave.',
   },
   {
     title: 'Adding rocks and other objects',
@@ -120,6 +124,6 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     title: 'About plant data and mature sizes',
-    body: 'Plant Pending uses the Green Acres catalog and source-backed planning fields where available. Mature sizes, prices, availability, substitutions, and growing behavior are planning guides. Actual plants may have irrigation, pruning, climate, and ambition.',
+    body: 'Plant Pending uses the Green Acres catalog and source-backed planning fields where available. Mature sizes, prices, availability, substitutions, and growing behavior are planning guides. Maintained width is a design choice, not a claim that the plant naturally stays that size.',
   },
 ];
