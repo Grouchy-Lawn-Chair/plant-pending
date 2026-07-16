@@ -1185,6 +1185,8 @@ function App() {
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
+  const copiedPlacedPlantsRef = useRef<PlacedPlant[]>([]);
+  const pasteGenerationRef = useRef(0);
   const [placingRock, setPlacingRock] = useState(false);
   const nextRockIndexRef = useRef(0);
   const appLoadLoggedRef = useRef(false);
@@ -2171,6 +2173,75 @@ function App() {
       return [...prev, newPlaced];
     });
   }, [placedPlants, getNextRockRotation, getPlantPlacementRotation, getRandomRockColor, addTestLog, awardScore]);
+  const handleCopySelectedPlacedPlants = useCallback(() => {
+    const ids = selectedInstanceIds.length > 0
+      ? selectedInstanceIds
+      : selectedInstanceId
+        ? [selectedInstanceId]
+        : [];
+    if (ids.length === 0) return false;
+
+    const selected = ids
+      .map(id => placedPlants.find(item => item.instanceId === id))
+      .filter((item): item is PlacedPlant => Boolean(item));
+    if (selected.length === 0) return false;
+
+    copiedPlacedPlantsRef.current = selected.map(item => ({ ...item }));
+    pasteGenerationRef.current = 0;
+    setCommentaryMessage(selected.length === 1 ? 'Copy, paste, shrub.' : 'Many duplicates are now possible.');
+    addTestLog('selection.copied', { count: selected.length, instanceIds: ids });
+    return true;
+  }, [selectedInstanceIds, selectedInstanceId, placedPlants, addTestLog]);
+
+  const handlePasteCopiedPlacedPlants = useCallback(() => {
+    const copied = copiedPlacedPlantsRef.current;
+    if (copied.length === 0) return false;
+
+    pasteGenerationRef.current += 1;
+    const pixelsPerDesignFoot = pixelsPerFoot || 20;
+    const largestDiameterPx = copied.reduce((largest, item) => {
+      if (item.itemType === 'rock') return Math.max(largest, (item.rockSizeFt || 2) * pixelsPerDesignFoot);
+      const plant = plants.find(candidate => candidate.id === item.plantId);
+      const widthFt = item.displayWidthFt || plant?.matureWidthFt || plant?.minimumSpacingFt || 2;
+      return Math.max(largest, widthFt * pixelsPerDesignFoot);
+    }, 0);
+    const offset = Math.max(36, largestDiameterPx + 16) * pasteGenerationRef.current;
+    const clones = copied.map(item => ({
+      ...item,
+      instanceId: generateId(),
+      x: item.x + offset,
+      y: item.y + offset,
+    }));
+    const newIds = clones.map(item => item.instanceId);
+
+    setPlacedPlants(prev => [...prev, ...clones]);
+    setSelectedInstanceIds(newIds);
+    setSelectedInstanceId(newIds[0] || null);
+    if (newIds.length > 0) setRightInspectorSection('item');
+    setCommentaryMessage(newIds.length === 1 ? 'Repetition is design.' : 'Several plants have entered the situation.');
+    addTestLog('selection.pasted', { count: newIds.length, newInstanceIds: newIds, offset });
+    return true;
+  }, [pixelsPerFoot, plants, addTestLog]);
+
+  useEffect(() => {
+    const onClipboardKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) return;
+      if (!(event.ctrlKey || event.metaKey)) return;
+
+      const key = event.key.toLowerCase();
+      if (key === 'c') {
+        if (handleCopySelectedPlacedPlants()) event.preventDefault();
+      } else if (key === 'v') {
+        if (handlePasteCopiedPlacedPlants()) event.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', onClipboardKeyDown);
+    return () => window.removeEventListener('keydown', onClipboardKeyDown);
+  }, [handleCopySelectedPlacedPlants, handlePasteCopiedPlacedPlants]);
+
+
 
   const handleCreatePlantingGroup = useCallback((name: string) => {
     const trimmed = name.trim();
