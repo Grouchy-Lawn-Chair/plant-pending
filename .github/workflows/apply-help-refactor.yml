@@ -1,0 +1,35 @@
+name: Apply Version 2.0 help refactor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/refactor-help-content.mjs
+      - src/components/WelcomeGuide.tsx
+      - src/components/HelpCenter.tsx
+      - src/data/helpContent.ts
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: node scripts/refactor-help-content.mjs
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Commit refactor
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx
+          git commit -m "Refactor welcome and help content for Version 2.0"
+          git push
