@@ -22,78 +22,13 @@ import { FilterPanel } from './components/FilterPanel';
 import { GardenCanvas } from './components/GardenCanvas';
 import { PlanDetails } from './components/PlanDetails';
 import { PrintView } from './components/PrintView';
+import { WelcomeGuide } from './components/WelcomeGuide';
+import { HelpCenter } from './components/HelpCenter';
 import { DEFAULT_FILTERS } from './types/plant';
 
 
 
 const WELCOME_SETTING_KEY = 'plant-pending-show-welcome-guide';
-
-const HELP_SECTIONS = [
-  {
-    title: 'Getting started',
-    body: 'The basic loop is simple: add a yard image, set scale, draw zones, then start placing plants until the yard stops looking like a beige rectangle with trust issues.',
-  },
-  {
-    title: 'Uploading and positioning a yard image',
-    body: 'Use Change image to add a top-down yard image. Lock the image when it is positioned so you do not accidentally drag your entire property into a new emotional state.',
-  },
-  {
-    title: 'Setting and changing scale',
-    body: 'Set scale by clicking two points with a known real-world distance. This keeps mature plant sizes, spacing, and print estimates from becoming botanical fan fiction.',
-  },
-  {
-    title: 'Drawing and editing zones',
-    body: 'Draw zones around planting areas like beds, slopes, pool planters, hedges, and suspicious empty corners. Click a zone to open settings and tune site info or generation options.',
-  },
-  {
-    title: 'Adding plants',
-    body: 'Open the plant library, search or filter, click a plant card, then click the plan to place it. The plant will appear at mature spread so you can see what future you is signing up for.',
-  },
-  {
-    title: 'Plant sizes, colors, symbols, and images',
-    body: 'Use the selected item panel to change symbol color, rotation, display mode, notes, and zone assignment. Icons are planning symbols, not promises that the plant will behave.',
-  },
-  {
-    title: 'Adding rocks and other objects',
-    body: 'Use the rock tool from the left rail and click the plan. Rocks are the plants of the mineral kingdom and they ask for very little.',
-  },
-  {
-    title: 'Moving, rotating, resizing, duplicating, and deleting items',
-    body: 'Select an item to edit it. Drag to move, use the inspector for rotation and details, duplicate when you mean it, delete when the shrub has failed the interview.',
-  },
-  {
-    title: 'Layers and visibility',
-    body: 'Use the Canvas panel on the right rail for labels, icon opacity, merge behavior, display mode, and zoom. This is where visual chaos is politely asked to form a line.',
-  },
-  {
-    title: 'Plant spacing and quantities',
-    body: 'Fullness controls fewer plants versus more plants. Variety controls tighter repeated palettes versus more plant types. Mature size still matters because tiny nursery pots are liars.',
-  },
-  {
-    title: 'Cost estimates',
-    body: 'The total in the header estimates placed plant cost using available Green Acres catalog prices. It is a planning estimate, not a binding financial prophecy.',
-  },
-  {
-    title: 'Saving, opening, renaming, and deleting plans',
-    body: 'Use File to save, open, import, export, print, or start fresh. Saved plans live in this browser on this computer unless exported as JSON.',
-  },
-  {
-    title: 'Printing and exporting',
-    body: 'Print creates a plan set with a master plan, zone sheets, plant schedule, costs, and Plant Pending branding. Export JSON saves the editable plan file.',
-  },
-  {
-    title: 'Keyboard shortcuts',
-    body: 'Escape cancels placement or drawing. Delete removes selected items. Backspace removes the last zone point. Shift-drag selects multiple items. Ctrl/Cmd plus, minus, and 0 control zoom.',
-  },
-  {
-    title: 'Troubleshooting',
-    body: 'If search feels slow, clear filters or narrow the query. If a saved plan seems missing, use File > Open / load plan. If the yard looks weird, it may need scale, zones, or a snack.',
-  },
-  {
-    title: 'About plant data and mature sizes',
-    body: 'Plant Pending uses the Green Acres catalog and source-backed planning fields where available. Mature sizes are planning guides; actual plants may have opinions, irrigation, pruning, and ambition.',
-  },
-];
 
 const SCORE_TITLES = [
   { score: 10000, title: 'Supreme Yard Authority' },
@@ -3268,11 +3203,6 @@ function App() {
       : `$${planPriceRange.min.toFixed(2)}–$${planPriceRange.max.toFixed(2)}`;
 
   const scoreTitle = getScoreTitle(shrubScore);
-  const visibleHelpSections = HELP_SECTIONS.filter(section => {
-    const query = helpSearch.trim().toLowerCase();
-    if (!query) return true;
-    return section.title.toLowerCase().includes(query) || section.body.toLowerCase().includes(query);
-  });
 
   return (
     <div className="h-screen flex flex-col bg-[#0f141b] text-slate-100">
@@ -3775,92 +3705,26 @@ function App() {
         </aside>
       </div>
 
-      {showWelcomeGuide && (
-        <div className="fixed inset-0 z-[92] flex items-center justify-center bg-black/60 p-6" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setShowWelcomeGuide(false);
-        }}>
-          <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-700 bg-slate-950 text-slate-100 shadow-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-800 px-6 py-5">
-              <div className="flex items-center gap-4">
-                <img src={`${import.meta.env.BASE_URL}brand/logo-DarkBG.svg`} alt="Plant Pending" className="h-16 w-auto" />
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300">First-time yard panic reducer</div>
-                  <h2 className="mt-1 text-2xl font-black text-white">Welcome to Plant Pending</h2>
-                  <p className="mt-1 text-sm text-slate-400">A small guide so the app does not just stare at you with a blank canvas.</p>
-                </div>
-              </div>
-              <button type="button" onClick={() => setShowWelcomeGuide(false)} className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">Close</button>
-            </div>
-            <div className="grid gap-3 px-6 py-5 text-sm text-slate-300">
-              {[
-                ['1. Add your yard', 'Upload a photo, load the example plan, or start with a blank canvas.'],
-                ['2. Set the scale', 'Draw a known distance so plant sizes and spacing are accurate.'],
-                ['3. Mark planting areas', 'Draw zones for beds, slopes, pool planters, hedges, or other spaces.'],
-                ['4. Add plants and objects', 'Choose plants, rocks, notes, and other items, then place them on your plan.'],
-                ['5. Save or print', 'Save different versions and create a printable layout when the yard has been sufficiently negotiated.'],
-              ].map(([title, body]) => (
-                <div key={title} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-                  <div className="font-bold text-white">{title}</div>
-                  <div className="mt-1 text-slate-400">{body}</div>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 px-6 py-4">
-              <label className="flex items-center gap-2 text-sm text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={showWelcomeOnStartup}
-                  onChange={(event) => {
-                    const checked = event.target.checked;
-                    setShowWelcomeOnStartup(checked);
-                    localStorage.setItem(WELCOME_SETTING_KEY, checked ? 'true' : 'false');
-                  }}
-                />
-                Show this when the app opens
-              </label>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => { setShowWelcomeGuide(false); setShowHelpCenter(true); }} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-800">View full guide</button>
-                <button type="button" onClick={() => setShowWelcomeGuide(false)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Start planning</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <WelcomeGuide
+        open={showWelcomeGuide}
+        showOnStartup={showWelcomeOnStartup}
+        onShowOnStartupChange={(checked) => {
+          setShowWelcomeOnStartup(checked);
+          localStorage.setItem(WELCOME_SETTING_KEY, checked ? 'true' : 'false');
+        }}
+        onClose={() => setShowWelcomeGuide(false)}
+        onOpenHelp={() => {
+          setShowWelcomeGuide(false);
+          setShowHelpCenter(true);
+        }}
+      />
 
-      {showHelpCenter && (
-        <div className="fixed inset-y-0 right-0 z-[91] flex w-full max-w-[30rem] flex-col border-l border-slate-700 bg-slate-950 text-slate-100 shadow-2xl">
-          <div className="border-b border-slate-800 px-5 py-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300">Help center</div>
-                <h2 className="mt-1 text-xl font-black">How to make the yard less suspicious</h2>
-                <p className="mt-1 text-xs text-slate-400">The welcome guide teaches the workflow. This panel explains the controls.</p>
-              </div>
-              <button type="button" onClick={() => setShowHelpCenter(false)} className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">Close</button>
-            </div>
-            <input
-              type="text"
-              value={helpSearch}
-              onChange={(event) => setHelpSearch(event.target.value)}
-              placeholder="Search help..."
-              className="mt-4 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            />
-          </div>
-          <div className="flex-1 overflow-y-auto p-5">
-            <div className="space-y-3">
-              {visibleHelpSections.map(section => (
-                <details key={section.title} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4" open={!helpSearch.trim()}>
-                  <summary className="cursor-pointer text-sm font-bold text-white">{section.title}</summary>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">{section.body}</p>
-                </details>
-              ))}
-              {visibleHelpSections.length === 0 && (
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-sm text-slate-400">No help topics match that search. Even the help has boundaries.</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <HelpCenter
+        open={showHelpCenter}
+        search={helpSearch}
+        onSearchChange={setHelpSearch}
+        onClose={() => setShowHelpCenter(false)}
+      />
 
       {/* About modal */}
       {showAbout && (
