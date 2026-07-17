@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import ColorDiagnostics from './ColorDiagnostics';
+import MobilePanelAccess from './MobilePanelAccess';
 import MobileUiDiagnostics from './MobileUiDiagnostics';
 import RecipeAppIntegration from './RecipeAppIntegration';
 import RecipeGenerationEnhancements from './RecipeGenerationEnhancements';
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
     <RecipeUiCorrections />
     <ColorDiagnostics />
     <MobileUiDiagnostics />
+    <MobilePanelAccess />
     <ZoneEdgeInteractionFix />
     <RecipeAppIntegration />
   </StrictMode>,
