@@ -60,6 +60,22 @@ Do not add top-level workspace tabs or create separate app modes for Yard, Areas
 
 New UI components must receive existing state and callbacks through props. They must not recreate or move business logic unless explicitly approved.
 
+## Complete user-facing changes
+
+Small technical changes are good. Half-finished user experiences are not.
+
+When changing visible terminology, navigation, labels, or interaction language:
+
+1. Treat the change as one complete user-facing batch.
+2. Check the top toolbar, side rails, inspector, modals, menus, tooltips, empty states, confirmations, help center, onboarding, print view, and accessibility labels.
+3. Use one consistent user-facing term everywhere.
+4. Keep internal TypeScript names and saved-data fields unchanged unless a logic refactor is explicitly approved.
+5. Do not ship a partial rename that leaves conflicting language in another visible part of the app.
+
+For this app, the user-facing term is **Area**, not **Zone**. Internal names such as `GardenZone`, `selectedZoneId`, and `zoneType` remain unchanged.
+
+Break work into meaningful, testable UI batches, not isolated one-label edits. Each batch should deliver a complete improvement a user can recognize.
+
 ## Large-file rule
 
 If a file is difficult or risky to edit because it is too large:
@@ -101,12 +117,13 @@ The center canvas must remain mounted while UI panels open, close, or change con
 
 1. Remove obsolete workspace-tab code.
 2. Verify all existing actions still work.
-3. Improve contextual visibility without rewriting behavior.
-4. Consolidate duplicate UI access points carefully.
-5. Extract oversized UI sections when helpful.
-6. Polish labels, spacing, and onboarding last.
+3. Complete terminology and navigation consistency as one batch.
+4. Improve contextual visibility without rewriting behavior.
+5. Consolidate duplicate UI access points carefully.
+6. Extract oversized UI sections when helpful.
+7. Polish spacing, hierarchy, onboarding, and help.
 
-Do not combine multiple risky phases into one large change.
+Do not combine multiple risky logic phases into one large change. Do combine closely related user-facing wording and navigation changes when splitting them would leave an inconsistent interface.
 
 ## Required verification
 
