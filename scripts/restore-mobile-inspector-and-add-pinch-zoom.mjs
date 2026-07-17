@@ -90,26 +90,26 @@ if (!canvasText.includes('const handleViewportTouchStart')) {
   canvasText = canvasText.replace(anchor, `${pinchHandlers}\n${anchor}`);
 }
 
-canvasText = replaceOnce(
-  canvasText,
-  '<div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800 bg-[#111827] text-slate-200 flex-wrap">',
-  '<div className="canvas-control-bar flex items-center gap-2 px-3 py-2 border-b border-slate-800 bg-[#111827] text-slate-200 flex-wrap">',
-  'canvas toolbar class',
-);
+if (!canvasText.includes('canvas-control-bar')) {
+  const toolbarCandidates = [
+    '<div className="canvas-setup-toolbar flex items-center gap-2 px-3 py-2 border-b border-slate-800 bg-[#111827] text-slate-200 flex-wrap">',
+    '<div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800 bg-[#111827] text-slate-200 flex-wrap">',
+  ];
+  const toolbarAnchor = toolbarCandidates.find(candidate => canvasText.includes(candidate));
+  if (!toolbarAnchor) throw new Error('canvas toolbar class anchor not found. No files written.');
+  const toolbarReplacement = toolbarAnchor.replace('className="', 'className="canvas-control-bar ');
+  canvasText = canvasText.replace(toolbarAnchor, toolbarReplacement);
+}
 
-canvasText = replaceOnce(
-  canvasText,
-  `        onMouseLeave={stopViewportPan}
-        className={\`relative flex-1 bg-[#d9dde3] overflow-auto p-6 \${panDrag ? 'cursor-grabbing' : isSpacePanning ? 'cursor-grab' : isDrawingZone || selectedPlant || placingRock ? 'cursor-crosshair' : 'cursor-default'}\`}`,
-  `        onMouseLeave={stopViewportPan}
-        onTouchStart={handleViewportTouchStart}
-        onTouchMove={handleViewportTouchMove}
-        onTouchEnd={handleViewportTouchEnd}
-        onTouchCancel={handleViewportTouchEnd}
-        className={\`relative flex-1 bg-[#d9dde3] overflow-auto p-6 \${panDrag ? 'cursor-grabbing' : isSpacePanning ? 'cursor-grab' : isDrawingZone || selectedPlant || placingRock ? 'cursor-crosshair' : 'cursor-default'}\`}
-        style={{ touchAction: 'pan-x pan-y' }}`,
-  'viewport touch handlers',
-);
+if (!canvasText.includes('onTouchStart={handleViewportTouchStart}')) {
+  const viewportPattern = /(\s*onMouseLeave=\{stopViewportPan\}\n)(\s*)(className=\{`relative flex-1 bg\[#d9dde3\] overflow-auto p-6[^\n]*\}\`\})/;
+  const viewportMatch = canvasText.match(viewportPattern);
+  if (!viewportMatch) throw new Error('viewport touch handler anchor not found. No files written.');
+  canvasText = canvasText.replace(
+    viewportPattern,
+    `$1$2onTouchStart={handleViewportTouchStart}\n$2onTouchMove={handleViewportTouchMove}\n$2onTouchEnd={handleViewportTouchEnd}\n$2onTouchCancel={handleViewportTouchEnd}\n$2$3\n$2style={{ touchAction: 'pan-x pan-y' }}`,
+  );
+}
 
 const css = read(cssFile);
 let cssText = css.text;
