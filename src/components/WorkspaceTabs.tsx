@@ -2,6 +2,8 @@ import { useState } from 'react';
 
 export type WorkspaceId = 'yard' | 'areas' | 'plants' | 'generate' | 'plan';
 
+export const WORKSPACE_CHANGE_EVENT = 'plant-pending-workspace-change';
+
 const WORKSPACES: { id: WorkspaceId; label: string }[] = [
   { id: 'yard', label: 'Yard' },
   { id: 'areas', label: 'Areas' },
@@ -12,6 +14,11 @@ const WORKSPACES: { id: WorkspaceId; label: string }[] = [
 
 export function WorkspaceTabs() {
   const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceId>('plants');
+
+  const selectWorkspace = (workspace: WorkspaceId) => {
+    setActiveWorkspace(workspace);
+    window.dispatchEvent(new CustomEvent<WorkspaceId>(WORKSPACE_CHANGE_EVENT, { detail: workspace }));
+  };
 
   return (
     <nav
@@ -26,7 +33,7 @@ export function WorkspaceTabs() {
               key={workspace.id}
               type="button"
               aria-current={isActive ? 'page' : undefined}
-              onClick={() => setActiveWorkspace(workspace.id)}
+              onClick={() => selectWorkspace(workspace.id)}
               className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
                 isActive
                   ? 'bg-emerald-500/20 text-emerald-100 ring-1 ring-emerald-400/60'
