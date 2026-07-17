@@ -2074,6 +2074,7 @@ function App() {
       opacity: 0.10,
       visible: true,
       zoneType: 'planting',
+      surfaceType: 'planting',
       sunExposure: 'unknown',
       sunNotes: '',
       waterNeed: 'noPreference',

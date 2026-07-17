@@ -12,6 +12,7 @@ export type ZoneLayoutMode = 'fill' | 'edge' | 'cornerAnchors' | 'groundcoverFil
 export type ZonePlantingType = 'mixedBorder' | 'flowerBed' | 'hedgeRow' | 'grassDrift' | 'slopePlanting' | 'poolPlanter' | 'rockGarden';
 export type ZonePlantVariety = 'low' | 'medium' | 'high';
 export type ZoneType = 'planting' | 'exclusion';
+export type ZoneSurfaceType = 'planting' | 'pool' | 'concrete' | 'pavers' | 'gravel' | 'rockMulch' | 'barkMulch' | 'lawn' | 'firePit' | 'furniture' | 'structure' | 'exclusion';
 
 export interface PlantingGroup {
   id: string;
@@ -137,6 +138,7 @@ export interface GardenZone {
   opacity: number;
   visible: boolean;
   zoneType?: ZoneType;
+  surfaceType?: ZoneSurfaceType;
   points: { x: number; y: number }[];
   sunExposure?: ZoneSunExposure;
   sunNotes?: string;

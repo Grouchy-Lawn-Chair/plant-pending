@@ -1,7 +1,7 @@
 // PlanDetails component - right sidebar for plan management and plant details
 
 import { useEffect, useState, useRef, type PointerEvent as ReactPointerEvent } from 'react';
-import { Plant, PlacedPlant, Warning, GardenPlan, GardenZone, ZoneSunExposure, ZoneWaterNeed, ZoneAfternoonSun, ZoneType, PlantingGroup, ZoneLayoutMode, ZonePlantingType, ZonePlantVariety, TestLogEntry, TestSnapshot, DisplayMode, PlantLabelMode, PlantClumpStrength } from '../types/plant';
+import { Plant, PlacedPlant, Warning, GardenPlan, GardenZone, ZoneSunExposure, ZoneWaterNeed, ZoneAfternoonSun, ZoneType, ZoneSurfaceType, PlantingGroup, ZoneLayoutMode, ZonePlantingType, ZonePlantVariety, TestLogEntry, TestSnapshot, DisplayMode, PlantLabelMode, PlantClumpStrength } from '../types/plant';
 import { importPlanFromJSON } from '../utils/storage';
 import { hasPlantImage, getPlantImageUrl, getPlantCategoryColor, getPlantSymbolColor } from '../utils/imageUtils';
 import { PlanIconSvg } from './PlanIconSvg';
@@ -41,6 +41,29 @@ const ZONE_PLANTING_TYPE_OPTIONS: { value: ZonePlantingType; label: string; help
   { value: 'rockGarden', label: 'Rock garden', helper: 'Sparse low plants, succulents, and architectural accents' },
 ];
 
+
+const ZONE_SURFACE_OPTIONS: { value: ZoneSurfaceType; label: string; helper: string }[] = [
+  { value: 'planting', label: 'Planting bed', helper: 'Normal planting zone with generation and site controls.' },
+  { value: 'pool', label: 'Pool / water feature', helper: 'Blue water fill with ripple lines. Plants are excluded.' },
+  { value: 'concrete', label: 'Concrete', helper: 'Light gray speckled hardscape. Plants are excluded.' },
+  { value: 'pavers', label: 'Pavers', helper: 'Repeating block pattern. Plants are excluded.' },
+  { value: 'gravel', label: 'Gravel', helper: 'Small pebble texture. Plants are excluded.' },
+  { value: 'rockMulch', label: 'Rock mulch', helper: 'Larger stone texture. Plants are excluded.' },
+  { value: 'barkMulch', label: 'Bark mulch', helper: 'Brown wood-chip texture. Plants are excluded.' },
+  { value: 'lawn', label: 'Lawn', helper: 'Green grass texture. Plants are excluded from auto-generation.' },
+  { value: 'firePit', label: 'Fire pit', helper: 'Dark stone and ember pattern. Plants are excluded.' },
+  { value: 'furniture', label: 'Chairs / furniture area', helper: 'Seating-area pattern. Plants are excluded.' },
+  { value: 'structure', label: 'Building / structure', helper: 'Solid structural footprint. Plants are excluded.' },
+  { value: 'exclusion', label: 'Plain no-plant area', helper: 'Generic hatched exclusion zone.' },
+];
+
+function getZoneSurface(zone: GardenZone): ZoneSurfaceType {
+  return zone.surfaceType || (zone.zoneType === 'exclusion' ? 'exclusion' : 'planting');
+}
+
+function getZoneSurfaceLabel(zone: GardenZone): string {
+  return ZONE_SURFACE_OPTIONS.find(option => option.value === getZoneSurface(zone))?.label || 'Planting bed';
+}
 
 const ZONE_PLANT_VARIETY_OPTIONS: { value: ZonePlantVariety; label: string; helper: string }[] = [
   { value: 'low', label: 'Low variety', helper: 'Smaller plant list, more repeating drifts, slightly fewer plants.' },
@@ -907,7 +930,7 @@ export function PlanDetails({
                     title="Select zone"
                   >
                     <div className="font-medium truncate text-slate-100">{zone.name}</div>
-                    <div className="text-[11px] text-slate-400">{zone.zoneType === 'exclusion' ? 'Plant exclusion' : 'Planting zone'}, {zone.points.length} points, {Math.round((zone.opacity ?? 0.28) * 100)}% fill</div>
+                    <div className="text-[11px] text-slate-400">{getZoneSurfaceLabel(zone)}, {zone.points.length} points, {Math.round((zone.opacity ?? 0.28) * 100)}% fill</div>
                     <div className="text-[11px] text-slate-400 truncate">{zone.zoneType === 'exclusion' ? 'Excluded from future auto-planting' : `${formatSunAmount(zone.sunExposure)} • ${formatPlantingTypeLabel(zone.plantingType)}`}</div>
                     {zone.zoneType !== 'exclusion' && (zone.plantingGroupId || zone.plantingGroupName) && (
                       <div className="text-[11px] text-slate-400 truncate">
@@ -1481,16 +1504,23 @@ export function PlanDetails({
               {zoneSettingsTab === 'site' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Zone type</label>
+                    <label className="text-xs text-slate-400 block mb-1">Area type</label>
                     <select
-                      value={editingZone.zoneType || 'planting'}
-                      onChange={(e) => onUpdateZone(editingZone.id, { zoneType: e.target.value as ZoneType })}
+                      value={getZoneSurface(editingZone)}
+                      onChange={(e) => {
+                        const surfaceType = e.target.value as ZoneSurfaceType;
+                        const zoneType: ZoneType = surfaceType === 'planting' ? 'planting' : 'exclusion';
+                        onUpdateZone(editingZone.id, { surfaceType, zoneType });
+                      }}
                       className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
                     >
-                      <option value="planting">Planting zone</option>
-                      <option value="exclusion">Plant exclusion zone</option>
+                      {ZONE_SURFACE_OPTIONS.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
                     </select>
-                    <p className="mt-1 text-xs text-slate-400">Use exclusion zones for chairs, paths, equipment, and no-plant pockets.</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {ZONE_SURFACE_OPTIONS.find(option => option.value === getZoneSurface(editingZone))?.helper}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
