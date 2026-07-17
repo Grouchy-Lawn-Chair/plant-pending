@@ -5,24 +5,20 @@ const cssFile = 'src/index.css';
 
 function read(path) {
   const raw = fs.readFileSync(path, 'utf8');
-  return { raw, newline: raw.includes('\r\n') ? '\r\n' : '\n', text: raw.replace(/\r\n/g, '\n') };
+  return { newline: raw.includes('\r\n') ? '\r\n' : '\n', text: raw.replace(/\r\n/g, '\n') };
 }
+
 function write(path, text, newline) {
   fs.writeFileSync(path, newline === '\r\n' ? text.replace(/\n/g, '\r\n') : text);
-}
-function replaceOnce(text, before, after, label) {
-  if (text.includes(after)) return text;
-  if (!text.includes(before)) throw new Error(`${label} anchor not found. No files written.`);
-  return text.replace(before, after);
 }
 
 const canvas = read(canvasFile);
 let canvasText = canvas.text;
 
-canvasText = replaceOnce(
-  canvasText,
-  '  const worldRef = useRef<HTMLDivElement>(null);',
-  `  const worldRef = useRef<HTMLDivElement>(null);
+if (!canvasText.includes('const pinchRef = useRef<')) {
+  const worldRefPattern = /(\s*const worldRef = useRef<HTMLDivElement>\(null\);)/;
+  if (!worldRefPattern.test(canvasText)) throw new Error('worldRef anchor not found. No files written.');
+  canvasText = canvasText.replace(worldRefPattern, `$1
   const pinchRef = useRef<{
     distance: number;
     zoom: number;
@@ -30,12 +26,13 @@ canvasText = replaceOnce(
     midpointY: number;
     scrollLeft: number;
     scrollTop: number;
-  } | null>(null);`,
-  'pinch ref',
-);
+  } | null>(null);`);
+}
 
-const pinchHandlers = `
-  const touchDistance = (touches: React.TouchList) => {
+if (!canvasText.includes('const handleViewportTouchStart')) {
+  const handlerAnchor = '  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {';
+  if (!canvasText.includes(handlerAnchor)) throw new Error('touch handler insertion point not found. No files written.');
+  const handlers = `  const touchDistance = (touches: React.TouchList) => {
     const first = touches[0];
     const second = touches[1];
     return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
@@ -68,10 +65,8 @@ const pinchHandlers = `
     const ratio = touchDistance(event.touches) / start.distance;
     const nextZoom = Math.max(0.25, Math.min(2.5, Number((start.zoom * ratio).toFixed(3))));
     const rect = viewport.getBoundingClientRect();
-    const localStartX = start.midpointX - rect.left + start.scrollLeft;
-    const localStartY = start.midpointY - rect.top + start.scrollTop;
-    const worldX = localStartX / start.zoom;
-    const worldY = localStartY / start.zoom;
+    const worldX = (start.midpointX - rect.left + start.scrollLeft) / start.zoom;
+    const worldY = (start.midpointY - rect.top + start.scrollTop) / start.zoom;
     onZoomChange(nextZoom);
     requestAnimationFrame(() => {
       viewport.scrollLeft = worldX * nextZoom - (midpoint.x - rect.left);
@@ -82,33 +77,34 @@ const pinchHandlers = `
   const handleViewportTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
     if (event.touches.length < 2) pinchRef.current = null;
   };
-`;
 
-if (!canvasText.includes('const handleViewportTouchStart')) {
-  const anchor = '  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {';
-  if (!canvasText.includes(anchor)) throw new Error('touch handler anchor not found. No files written.');
-  canvasText = canvasText.replace(anchor, `${pinchHandlers}\n${anchor}`);
+`;
+  canvasText = canvasText.replace(handlerAnchor, `${handlers}${handlerAnchor}`);
 }
 
 if (!canvasText.includes('canvas-control-bar')) {
-  const toolbarCandidates = [
-    '<div className="canvas-setup-toolbar flex items-center gap-2 px-3 py-2 border-b border-slate-800 bg-[#111827] text-slate-200 flex-wrap">',
-    '<div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800 bg-[#111827] text-slate-200 flex-wrap">',
-  ];
-  const toolbarAnchor = toolbarCandidates.find(candidate => canvasText.includes(candidate));
-  if (!toolbarAnchor) throw new Error('canvas toolbar class anchor not found. No files written.');
-  const toolbarReplacement = toolbarAnchor.replace('className="', 'className="canvas-control-bar ');
-  canvasText = canvasText.replace(toolbarAnchor, toolbarReplacement);
+  const toolbarPattern = /<div className="([^"]*border-b border-slate-800 bg-\[#111827\][^"]*)">/;
+  const match = canvasText.match(toolbarPattern);
+  if (!match) throw new Error('canvas toolbar could not be identified. No files written.');
+  canvasText = canvasText.replace(toolbarPattern, `<div className="canvas-control-bar $1">`);
 }
 
 if (!canvasText.includes('onTouchStart={handleViewportTouchStart}')) {
-  const viewportPattern = /(\s*onMouseLeave=\{stopViewportPan\}\n)(\s*)(className=\{`relative flex-1 bg\[#d9dde3\] overflow-auto p-6[^\n]*\}\`\})/;
+  const viewportPattern = /<div\s+ref=\{viewportRef\}[\s\S]*?>/;
   const viewportMatch = canvasText.match(viewportPattern);
-  if (!viewportMatch) throw new Error('viewport touch handler anchor not found. No files written.');
-  canvasText = canvasText.replace(
-    viewportPattern,
-    `$1$2onTouchStart={handleViewportTouchStart}\n$2onTouchMove={handleViewportTouchMove}\n$2onTouchEnd={handleViewportTouchEnd}\n$2onTouchCancel={handleViewportTouchEnd}\n$2$3\n$2style={{ touchAction: 'pan-x pan-y' }}`,
-  );
+  if (!viewportMatch) throw new Error('viewport container could not be identified. No files written.');
+  let openingTag = viewportMatch[0];
+  const touchProps = `
+        onTouchStart={handleViewportTouchStart}
+        onTouchMove={handleViewportTouchMove}
+        onTouchEnd={handleViewportTouchEnd}
+        onTouchCancel={handleViewportTouchEnd}`;
+  if (openingTag.includes('onMouseLeave={stopViewportPan}')) {
+    openingTag = openingTag.replace('onMouseLeave={stopViewportPan}', `onMouseLeave={stopViewportPan}${touchProps}`);
+  } else {
+    openingTag = openingTag.replace('ref={viewportRef}', `ref={viewportRef}${touchProps}`);
+  }
+  canvasText = canvasText.replace(viewportMatch[0], openingTag);
 }
 
 const css = read(cssFile);
@@ -180,14 +176,13 @@ ${marker}
     align-items: center;
     justify-content: center;
     color: #cbd5e1;
-    background: linear-gradient(90deg, #111827 65%, rgba(17,24,39,0));
+    background: #111827;
     pointer-events: none;
     font-size: 0.8rem;
     font-weight: 900;
   }
   .canvas-control-bar::before { content: '‹'; left: 0; margin-left: -1.8rem; }
-  .canvas-control-bar::after { content: '›'; right: 0; margin-right: -1.8rem; transform: scaleX(-1); }
-
+  .canvas-control-bar::after { content: '›'; right: 0; margin-right: -1.8rem; }
   [data-debug-map-canvas="true"] { touch-action: none; }
 }
 `;
@@ -195,5 +190,5 @@ ${marker}
 
 write(canvasFile, canvasText, canvas.newline);
 write(cssFile, cssText, css.newline);
-console.log('Restored the original mobile inspector rail, added swipe indicators to the canvas toolbar, and enabled two-finger pinch zoom.');
-console.log('No toolbar icons were replaced.');
+console.log('Restored the original mobile inspector rail, added swipe indicators, and enabled two-finger pinch zoom.');
+console.log('The installer now adapts to the canvas markup produced by earlier mobile scripts.');
