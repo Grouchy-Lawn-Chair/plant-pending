@@ -149,6 +149,15 @@ function polygonArea(points: Point[]): number {
   return Math.abs(area / 2);
 }
 
+function getContainingZoneId(x: number, y: number, zones: GardenZone[]): string {
+  const point = { x, y };
+  const containingZones = zones
+    .filter(zone => zone.zoneType !== 'exclusion' && zone.points.length >= 3 && pointInPolygon(point, zone.points))
+    .sort((a, b) => polygonArea(a.points) - polygonArea(b.points));
+
+  return containingZones[0]?.id || '';
+}
+
 function distanceToSegment(point: Point, a: Point, b: Point): number {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
@@ -1958,6 +1967,7 @@ function App() {
     const instanceId = generateId();
     const plant = plants.find(p => p.id === plantId);
     const plantCountBefore = placedPlants.filter(item => (item.itemType || 'plant') === 'plant').length;
+    const assignedZoneId = getContainingZoneId(x, y, zones);
     setPlacedPlants(prev => {
       const existingCount = prev.filter(p => (p.itemType || 'plant') === 'plant' && p.plantId === plantId).length;
       const newPlaced: PlacedPlant = {
@@ -1966,7 +1976,7 @@ function App() {
         plantId,
         x,
         y,
-        zone: '',
+        zone: assignedZoneId,
         notes: '',
         displayMode: plant ? globalDisplayMode : 'color',
         customColor: null,
@@ -1981,12 +1991,13 @@ function App() {
     } else {
       awardScore(`plant:${instanceId}`, 5, pickMessage(PLANT_MESSAGES, instanceId));
     }
-  }, [plants, placedPlants, getPlantPlacementRotation, addTestLog, awardScore]);
+  }, [plants, placedPlants, zones, getPlantPlacementRotation, addTestLog, awardScore]);
 
   const handleMovePlacedPlant = useCallback((instanceId: string, x: number, y: number) => {
     const before = placedPlants.find(item => item.instanceId === instanceId);
+    const assignedZoneId = getContainingZoneId(x, y, zones);
     setPlacedPlants(prev =>
-      prev.map(p => (p.instanceId === instanceId ? { ...p, x, y } : p))
+      prev.map(p => (p.instanceId === instanceId ? { ...p, x, y, zone: assignedZoneId } : p))
     );
 
     const previousMoveLog = moveLogThrottleRef.current[instanceId];
@@ -2009,7 +2020,7 @@ function App() {
         awardScore(`move:${instanceId}:${Math.floor(now / 30000)}`, 1, 'The plant has been relocated.');
       }
     }
-  }, [placedPlants, addTestLog, awardScore]);
+  }, [placedPlants, zones, addTestLog, awardScore]);
 
   const handleUpdatePlacedPlant = useCallback((instanceId: string, updates: Partial<PlacedPlant>) => {
     const before = placedPlants.find(item => item.instanceId === instanceId);
