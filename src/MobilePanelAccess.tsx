@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { SlidersHorizontal, X } from 'lucide-react';
 
 function isMobile() {
@@ -9,6 +10,10 @@ function inspector(): HTMLElement | null {
   return document.querySelector<HTMLElement>('.mobile-inspector-sheet');
 }
 
+function toolbar(): HTMLElement | null {
+  return document.querySelector<HTMLElement>('.mobile-tool-rail-inner');
+}
+
 function inspectorIsOpen(node: HTMLElement | null) {
   return Boolean(node && !node.classList.contains('w-12'));
 }
@@ -16,13 +21,17 @@ function inspectorIsOpen(node: HTMLElement | null) {
 export default function MobilePanelAccess() {
   const [mobile, setMobile] = useState(isMobile());
   const [open, setOpen] = useState(false);
+  const [toolbarNode, setToolbarNode] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 1023px)');
     const update = () => setMobile(media.matches);
     media.addEventListener('change', update);
 
-    const sync = () => setOpen(inspectorIsOpen(inspector()));
+    const sync = () => {
+      setOpen(inspectorIsOpen(inspector()));
+      setToolbarNode(toolbar());
+    };
     const observer = new MutationObserver(sync);
     observer.observe(document.getElementById('root') || document.body, {
       subtree: true,
@@ -38,7 +47,7 @@ export default function MobilePanelAccess() {
     };
   }, []);
 
-  if (!mobile) return null;
+  if (!mobile || !toolbarNode) return null;
 
   const toggle = () => {
     const node = inspector();
@@ -55,16 +64,17 @@ export default function MobilePanelAccess() {
     first?.click();
   };
 
-  return (
+  return createPortal(
     <button
       type="button"
       onClick={toggle}
-      className="mobile-settings-launcher"
+      className={`mobile-settings-launcher ${open ? 'is-open' : ''}`}
       aria-label={open ? 'Close settings panel' : 'Open settings panel'}
       title={open ? 'Close settings' : 'Open settings'}
     >
-      {open ? <X size={21} /> : <SlidersHorizontal size={21} />}
-      <span>{open ? 'Close' : 'Settings'}</span>
-    </button>
+      {open ? <X size={20} /> : <SlidersHorizontal size={20} />}
+      <span className="mobile-tool-label">{open ? 'Close' : 'Settings'}</span>
+    </button>,
+    toolbarNode,
   );
 }
