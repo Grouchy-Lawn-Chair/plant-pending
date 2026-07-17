@@ -4,6 +4,7 @@ const file = 'src/components/PlanDetails.tsx';
 let source = fs.readFileSync(file, 'utf8');
 const newline = source.includes('\r\n') ? '\r\n' : '\n';
 let text = source.replace(/\r\n/g, '\n');
+const originalText = text;
 
 function replaceOnce(before, after, label) {
   if (text.includes(after)) return;
@@ -11,9 +12,37 @@ function replaceOnce(before, after, label) {
   text = text.replace(before, after);
 }
 
+function replaceFirstAvailable(options, after, label) {
+  if (text.includes(after)) return;
+  const before = options.find(option => text.includes(option));
+  if (!before) throw new Error(`${label} anchor not found. No changes written.`);
+  text = text.replace(before, after);
+}
+
+// Normalize a few visible phrases first so this script works whether the earlier
+// terminology cleanup was fully or only partly applied locally.
+text = text
+  .split('Controls where plants are placed inside the zone.')
+  .join('Controls where plants are placed inside the area.')
+  .split('Zone settings')
+  .join('Area settings')
+  .split('Style & zone')
+  .join('Style & area')
+  .split('Zone name')
+  .join('Area name')
+  .split('Zone color')
+  .join('Area color')
+  .split('Zone transparency')
+  .join('Area transparency')
+  .split('Delete zone')
+  .join('Delete area');
+
 // Keep the existing three-tab behavior, but use the app's normal slate/blue palette.
-replaceOnce(
-  "{ id: 'site' as const, label: 'Site info' },\n                { id: 'generate' as const, label: 'Generate' },\n                { id: 'style' as const, label: 'Style & area' },",
+replaceFirstAvailable(
+  [
+    "{ id: 'site' as const, label: 'Site info' },\n                { id: 'generate' as const, label: 'Generate' },\n                { id: 'style' as const, label: 'Style & area' },",
+    "{ id: 'site' as const, label: 'Site' },\n                { id: 'generate' as const, label: 'Generate' },\n                { id: 'style' as const, label: 'Appearance' },",
+  ],
   "{ id: 'site' as const, label: 'Site' },\n                { id: 'generate' as const, label: 'Generate' },\n                { id: 'style' as const, label: 'Appearance' },",
   'area settings tab labels',
 );
@@ -265,8 +294,11 @@ replaceOnce(
   'appearance accordion close',
 );
 
-// Use the same blue primary and restrained destructive styling used elsewhere.
-text = text.split("className=\"flex-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500\"").join("className=\"flex-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500\"");
-
-fs.writeFileSync(file, newline === '\r\n' ? text.replace(/\n/g, '\r\n') : text);
+// Write only after every guarded replacement succeeds.
+if (text === originalText) {
+  console.log('Area Settings modal is already cleaned up.');
+  process.exit(0);
+}
+source = newline === '\r\n' ? text.replace(/\n/g, '\r\n') : text;
+fs.writeFileSync(file, source);
 console.log('Cleaned the Area Settings modal without changing its tabs, flyout behavior, settings, or defaults.');
