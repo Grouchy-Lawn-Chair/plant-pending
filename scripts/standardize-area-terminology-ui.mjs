@@ -15,7 +15,6 @@ const files = [
 ];
 
 const replacements = [
-  // Main toolbar and canvas language.
   ['Draw zone', 'Draw area'],
   ['Cancel zone', 'Cancel area'],
   ['Zones on', 'Areas on'],
@@ -24,8 +23,6 @@ const replacements = [
   ['Rocks and zones will stay.', 'Rocks and areas will stay.'],
   ['keeping rocks, zones, background, and scale', 'keeping rocks, areas, background, and scale'],
   ['Backspace removes the last zone point.', 'Backspace removes the last area point.'],
-
-  // Inspector, modal, buttons, labels, and empty states.
   ['ZONE SETTINGS', 'AREA SETTINGS'],
   ['Zone settings', 'Area settings'],
   ['zone settings', 'area settings'],
@@ -46,8 +43,6 @@ const replacements = [
   ['Selected zone', 'Selected area'],
   ['this zone', 'this area'],
   ['This zone', 'This area'],
-
-  // User-facing navigation labels.
   ["label: 'Zones'", "label: 'Areas'"],
   ['>Zones<', '>Areas<'],
   ['>Zone<', '>Area<'],
@@ -60,10 +55,9 @@ const replacements = [
   ['Group name', 'Plant set name'],
   ['Plant Legend', 'Plant List'],
   ['Test Log', 'Developer Tools'],
-  ['Canvas', 'Yard setup'],
+  ["{ id: 'canvas' as const, label: 'Canvas',", "{ id: 'canvas' as const, label: 'Yard setup',"],
+  ['<h3 className="text-sm font-medium text-slate-100">Canvas</h3>', '<h3 className="text-sm font-medium text-slate-100">Yard setup</h3>'],
   ['Plan display and drafting controls.', 'Background, scale, display, and drafting controls.'],
-
-  // Help, onboarding, print, and guidance.
   ['Zones, recipes, physics, spacing, saving, printing, and the controls that keep the shrubs employed.', 'Areas, recipes, spacing, saving, printing, and the controls that keep the shrubs employed.'],
   ['Draw planting zones', 'Draw planting areas'],
   ['Describe the zone', 'Describe the area'],
@@ -88,8 +82,6 @@ const replacements = [
   ['the zone ran out of valid non-overlapping space', 'the area ran out of valid non-overlapping space'],
   ['Hide zone shapes', 'Hide area shapes'],
   ['without deleting the zones', 'without deleting the areas'],
-
-  // Recipe and generation messages.
   ['selected planting zone', 'selected planting area'],
   ['The selected planting zone', 'The selected planting area'],
   ['No current zone', 'No current area'],
@@ -100,8 +92,6 @@ const replacements = [
   ['Replace existing plants in this zone', 'Replace existing plants in this area'],
   ['Generate zone', 'Generate area'],
   ['Generate this zone', 'Generate this area'],
-
-  // Default visible names for newly created user areas.
   ['`Zone ${zones.length + 1}`', '`Area ${zones.length + 1}`'],
   ["'Exclusion Zone'", "'No-plant Area'"],
 ];
