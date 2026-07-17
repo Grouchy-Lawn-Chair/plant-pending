@@ -225,6 +225,23 @@ function parseIntegerOrNull(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+
+function normalizePlantCategory(
+  category: string,
+  commonName: string,
+  botanicalName: string,
+  greenAcresProductName: string,
+  greenAcresBotanicalName: string,
+): string {
+  const identity = `${commonName} ${botanicalName} ${greenAcresProductName} ${greenAcresBotanicalName}`.toLowerCase();
+  const isRedTipPhotinia =
+    identity.includes('red tip photinia') ||
+    identity.includes('red-tip photinia') ||
+    (identity.includes('photinia') && identity.includes('fraseri'));
+
+  return isRedTipPhotinia ? 'Shrub' : category;
+}
+
 export async function loadPlantsFromCSV(onProgress?: (progress: number, stage: string) => void): Promise<{ plants: Plant[]; error: string | null }> {
   try {
     // Load the local Green Acres catalog first, then fall back to older CSVs.
@@ -352,7 +369,13 @@ export async function loadPlantsFromCSV(onProgress?: (progress: number, stage: s
       const researchRecord = researchByPlantId.get(parsedId);
       const plant: Plant = {
         id: parsedId,
-        category: getValue('Category'),
+        category: normalizePlantCategory(
+          getValue('Category'),
+          commonName,
+          botanicalName,
+          decodeHtmlEntities(getValue('Green_Acres_Product_Name')),
+          decodeHtmlEntities(getValue('Green_Acres_Botanical_Name')),
+        ),
         botanicalName,
         commonName,
         abbreviation: createAbbreviation(commonName, botanicalName),

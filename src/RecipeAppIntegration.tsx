@@ -212,7 +212,7 @@ function RecipePanel({ host }: { host: HTMLElement }) {
     const zoneName = modal?.querySelector('h3')?.textContent?.trim();
     const zones = (plan.zones || []) as GardenZone[];
     const zone = zones.find(item => item.name === zoneName);
-    if (!zone || zone.points.length < 3) { setMessage('The selected planting zone could not be found.'); recordRecipeDebug(host, 'recipe.generation.failed', { recipeId: selectedRecipe.id, zoneName, reason: 'zone-not-found-or-invalid' }); return; }
+    if (!zone || zone.points.length < 3) { setMessage('The selected planting area could not be found.'); recordRecipeDebug(host, 'recipe.generation.failed', { recipeId: selectedRecipe.id, zoneName, reason: 'zone-not-found-or-invalid' }); return; }
     if (!zone.edgeRoles?.front?.length || !zone.edgeRoles?.back?.length) { setMessage('Mark at least one front edge and one back edge first.'); recordRecipeDebug(host, 'recipe.generation.failed', { recipeId: selectedRecipe.id, zoneId: zone.id, reason: 'front-or-back-edge-missing', edgeRoles: zone.edgeRoles || { front: [], back: [] } }); return; }
 
     const runId = recipeRunId();
@@ -282,19 +282,19 @@ function RecipePanel({ host }: { host: HTMLElement }) {
   const originalIds = new Set(selectedRecipe.plants.map(item => item.plantId));
 
   return createPortal(
-    <section className="rounded-2xl border border-violet-500/50 bg-violet-950/25 p-3 text-slate-100">
-      <div className="text-[10px] font-extrabold uppercase tracking-[.17em] text-violet-300">Plant recipe engine</div>
-      <div className="mt-1 text-sm font-bold">Recipe controls</div>
+    <section className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-slate-100">
+      <div className="text-sm font-semibold text-slate-100">Advanced generation</div>
+      <div className="mt-1 text-xs font-normal text-slate-400">Control the plant mix, layers, spacing, grouping, and placement pattern.</div>
 
       <label className="mt-3 block text-xs">Recipe
         <select value={selectedId} onChange={event => setSelectedId(event.target.value)} className={input}>
           {recipeCatalog.map(recipe => <option key={recipe.id} value={recipe.id}>{recipe.name}</option>)}
         </select>
       </label>
-      <div className="mt-2 rounded-lg border border-violet-500/20 bg-slate-950/40 p-2 text-[11px] text-slate-300">{selectedRecipe.designIntent}</div>
+      <div className="mt-2 rounded-lg border border-slate-700 bg-slate-950/40 p-2 text-[11px] text-slate-300">{selectedRecipe.designIntent}</div>
 
-      <div className="relative mt-3 rounded-xl border border-emerald-500/30 bg-emerald-950/15 p-3">
-        <div className="text-xs font-bold text-emerald-200">Add any plant to this recipe</div>
+      <div className="relative mt-3 rounded-xl border border-slate-700 bg-slate-950 p-3">
+        <div className="text-xs font-bold text-slate-200">Add any plant to this recipe</div>
         <input value={plantSearch} onChange={event => setPlantSearch(event.target.value)} placeholder="Search the plant catalog…" className={input} />
         {catalogError && <div className="mt-1 text-[10px] text-rose-300">{catalogError}</div>}
         {plantSearch.trim().length >= 2 && (
@@ -302,7 +302,7 @@ function RecipePanel({ host }: { host: HTMLElement }) {
             {searchResults.length === 0 ? <div className="p-2 text-[11px] text-slate-400">No catalog plants found.</div> : searchResults.map(plant => (
               <button key={plant.id} type="button" onClick={() => addCatalogPlant(plant)} className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-[11px] hover:bg-slate-800">
                 <span><strong>{catalogPlantName(plant)}</strong>{plant.botanicalName ? <span className="ml-1 text-slate-400">{plant.botanicalName}</span> : null}</span>
-                <span className="shrink-0 rounded bg-emerald-700 px-2 py-1 font-bold">Add</span>
+                <span className="shrink-0 rounded bg-blue-600 px-2 py-1 font-bold">Add</span>
               </button>
             ))}
           </div>
@@ -319,7 +319,7 @@ function RecipePanel({ host }: { host: HTMLElement }) {
         <label className="text-xs">Target plant count
           <input type="number" min="1" placeholder="Automatic" value={controls.targetCount ?? ''} onChange={event => setControls(value => ({ ...value, targetCount: event.target.value === '' ? null : Math.max(1, Number(event.target.value) || 1) }))} className={input} />
         </label>
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-2 text-[11px] text-emerald-200">
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-2 text-[11px] text-slate-200">
           <strong>Plant overlap: 0%</strong><br />100% fullness means “fit as many as possible,” never stack plants.
         </div>
       </div>
@@ -381,13 +381,13 @@ function RecipePanel({ host }: { host: HTMLElement }) {
           <label className="text-[10px]">Attraction<input type="number" min="0.1" max="5" step="0.1" value={controls.attractionStrength} onChange={event => setControls(value => ({ ...value, attractionStrength: Number(event.target.value) || .1 }))} className={input} /></label>
           <label className="text-[10px]">Drop order<select value={controls.dropOrder} onChange={event => setControls(value => ({ ...value, dropOrder: event.target.value as RecipeDropOrder }))} className={input}><option value="random">Random</option><option value="grouped">Grouped</option></select></label>
           <label className="text-[10px]">Open-space fill<select value={controls.openSpaceFill} onChange={event => setControls(value => ({ ...value, openSpaceFill: event.target.value as OpenSpaceFill }))} className={input}><option value="off">Off</option><option value="light">Light</option><option value="medium">Medium</option><option value="strong">Strong</option></select></label>
-          <label className="col-span-2 flex items-center gap-2 text-xs"><input type="checkbox" checked={controls.replaceExisting} onChange={event => setControls(value => ({ ...value, replaceExisting: event.target.checked }))} />Replace existing plants in this zone</label>
+          <label className="col-span-2 flex items-center gap-2 text-xs"><input type="checkbox" checked={controls.replaceExisting} onChange={event => setControls(value => ({ ...value, replaceExisting: event.target.checked }))} />Replace existing plants in this area</label>
         </div>
       )}
 
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <button type="button" onClick={() => generate(false)} className="rounded-xl bg-violet-600 px-3 py-2.5 text-xs font-black hover:bg-violet-500">Generate</button>
-        <button type="button" onClick={() => generate(true)} className="rounded-xl border border-violet-400/50 bg-violet-950 px-3 py-2.5 text-xs font-black hover:bg-violet-900">New seed + generate</button>
+        <button type="button" onClick={() => generate(false)} className="rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-semibold hover:bg-blue-500">Generate</button>
+        <button type="button" onClick={() => generate(true)} className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-semibold hover:bg-slate-800">Generate another version</button>
       </div>
       {message && <div className="mt-2 rounded-lg border border-slate-700 bg-slate-950/60 p-2 text-[11px] text-slate-300">{message}</div>}
     </section>,
@@ -395,27 +395,87 @@ function RecipePanel({ host }: { host: HTMLElement }) {
   );
 }
 
+function QuickRecipeMixPanel({ host }: { host: HTMLElement }) {
+  const [selectedId, setSelectedId] = useState('');
+  const [message, setMessage] = useState('');
+  const selectedRecipe = recipeCatalog.find(recipe => recipe.id === selectedId);
+
+  const applyMix = () => {
+    if (!selectedRecipe) { setMessage('Choose a recipe first.'); return; }
+    const plan = readPlan();
+    if (!plan) { setMessage('No current plan was found.'); return; }
+    const modal = host.closest('div.fixed') || host.parentElement?.parentElement;
+    const zoneName = modal?.querySelector('h3')?.textContent?.trim();
+    const zones = (plan.zones || []) as GardenZone[];
+    const zone = zones.find(item => item.name === zoneName);
+    if (!zone) { setMessage('The current area could not be found.'); return; }
+
+    const groupId = `quick-recipe-${zone.id}`;
+    const group: PlantingGroup = {
+      id: groupId,
+      name: `Recipe mix · ${selectedRecipe.name}`,
+      notes: `Plant mix only. Basic generation ignores advanced placement rules. ${selectedRecipe.designIntent || ''}`.trim(),
+      plantIds: [...new Set(selectedRecipe.plants.map(item => item.plantId))],
+    };
+    const plantingGroups = [...((plan.plantingGroups || []) as PlantingGroup[]).filter(item => item.id !== groupId), group];
+    const nextZones = zones.map(item => item.id === zone.id ? {
+      ...item,
+      plantingGroupId: groupId,
+      plantingGroupName: group.name,
+      plantingRecipeId: selectedRecipe.id,
+      plantingRecipeName: selectedRecipe.name,
+    } : item);
+    const nextPlan = {
+      ...plan,
+      id: plan.id || 'current-plan',
+      name: plan.name || 'My Garden Plan',
+      createdAt: plan.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      placedPlants: (plan.placedPlants || []) as PlacedPlant[],
+      zones: nextZones,
+      plantingGroups,
+      notes: plan.notes || '',
+    } as GardenPlan;
+
+    if (!applyPlan(host, nextPlan)) { setMessage('The running app could not accept the recipe mix.'); return; }
+    setMessage(`Using ${selectedRecipe.name} as the plant mix. Basic generation will arrange these plants with its normal rules.`);
+  };
+
+  return createPortal(
+    <section className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-slate-100">
+      <div className="text-sm font-semibold">Recipe plant mix</div>
+      <p className="mt-1 text-xs leading-5 text-slate-400">Use a recipe's plant mix with the simpler generator.</p>
+      <label className="mt-3 block text-xs font-medium text-slate-300">Recipe
+        <select value={selectedId} onChange={event => setSelectedId(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">
+          <option value="">Choose a recipe</option>
+          {recipeCatalog.map(recipe => <option key={recipe.id} value={recipe.id}>{recipe.name}</option>)}
+        </select>
+      </label>
+      {selectedRecipe && <p className="mt-2 text-xs leading-5 text-slate-400">{selectedRecipe.designIntent}</p>}
+      <button type="button" onClick={applyMix} disabled={!selectedRecipe} className="mt-3 w-full rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">Use this plant mix</button>
+      {message && <div className="mt-2 rounded-lg border border-slate-700 bg-slate-950 p-2 text-xs text-slate-300">{message}</div>}
+    </section>,
+    host,
+  );
+}
+
 export default function RecipeAppIntegration() {
-  const [host, setHost] = useState<HTMLElement | null>(null);
+  const [recipeHost, setRecipeHost] = useState<HTMLElement | null>(null);
+  const [quickHost, setQuickHost] = useState<HTMLElement | null>(null);
   useEffect(() => {
     let frame = 0;
     const find = () => {
-      const label = [...document.querySelectorAll('label')].find(item => item.textContent?.trim() === 'Planting type');
-      const card = label?.closest('div.rounded-2xl');
-      const parent = card?.parentElement;
-      if (!card || !parent) { setHost(null); return; }
-      let recipeHost = parent.querySelector<HTMLElement>('[data-recipe-react-host]');
-      if (!recipeHost) {
-        recipeHost = document.createElement('div');
-        recipeHost.dataset.recipeReactHost = 'true';
-        parent.insertBefore(recipeHost, card);
-      }
-      setHost(recipeHost);
+      setRecipeHost(document.querySelector<HTMLElement>('[data-recipe-layout-host]'));
+      setQuickHost(document.querySelector<HTMLElement>('[data-quick-recipe-mix-host]'));
     };
     const observer = new MutationObserver(() => { cancelAnimationFrame(frame); frame = requestAnimationFrame(find); });
     observer.observe(document.body, { childList: true, subtree: true });
     find();
     return () => { observer.disconnect(); cancelAnimationFrame(frame); };
   }, []);
-  return <><App />{host && <RecipePanel host={host} />}</>;
+  return <>
+    <App />
+    {quickHost && <QuickRecipeMixPanel host={quickHost} />}
+    {recipeHost && <RecipePanel host={recipeHost} />}
+  </>;
 }

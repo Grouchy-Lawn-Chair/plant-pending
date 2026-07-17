@@ -928,15 +928,15 @@ export function GardenCanvas({
             }}
             className={`px-3 py-1.5 text-sm rounded border ${isDrawingZone ? 'bg-purple-600 text-white border-purple-500' : 'bg-slate-900 text-slate-200 border-slate-700 hover:bg-slate-800'}`}
           >
-            {isDrawingZone ? 'Cancel zone' : 'Draw zone'}
+            {isDrawingZone ? 'Cancel area' : 'Draw area'}
           </button>
           <button
             type="button"
             onClick={() => onZoneShapesVisibleChange(!zoneShapesVisible)}
             className={`px-2 py-1.5 text-xs rounded border ${zoneShapesVisible ? 'bg-slate-900 text-slate-200 border-slate-700' : 'bg-slate-800 text-slate-500 border-slate-700'}`}
-            title="Show or hide zone shapes"
+            title="Show or hide area shapes"
           >
-            Zones {zoneShapesVisible ? 'on' : 'off'}
+            Areas {zoneShapesVisible ? 'on' : 'off'}
           </button>
         </div>
 
@@ -951,13 +951,13 @@ export function GardenCanvas({
           type="button"
           onClick={() => {
             const plantCount = placedPlants.filter(item => (item.itemType || 'plant') === 'plant').length;
-            if (plantCount > 0 && confirm(`Clear ${plantCount} plants from the plan? Rocks and zones will stay.`)) {
+            if (plantCount > 0 && confirm(`Clear ${plantCount} plants from the plan? Rocks and areas will stay.`)) {
               onClearPlacedPlants();
             }
           }}
           disabled={placedPlants.filter(item => (item.itemType || 'plant') === 'plant').length === 0}
           className="px-3 py-1.5 text-sm bg-red-500/15 text-red-200 rounded hover:bg-red-500/25 disabled:opacity-50 border border-red-500/30"
-          title="Remove all plants, keeping rocks, zones, background, and scale"
+          title="Remove all plants, keeping rocks, areas, background, and scale"
         >
           Clear plants
         </button>

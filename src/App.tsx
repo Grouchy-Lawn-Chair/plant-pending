@@ -1189,10 +1189,12 @@ function App() {
   const [greenAcresFilterIndex, setGreenAcresFilterIndex] = useState<GreenAcresFilterIndex | null>(null);
   const [leftPanelMode, setLeftPanelMode] = useState<'library' | 'filters' | 'closed'>('library');
   const [rightInspectorSection, setRightInspectorSection] = useState<'item' | 'canvas' | 'zones' | 'groups' | 'legend' | 'debug' | null>('zones');
+
   const categories = useMemo(() => getCategories(plants), [plants]);
   // Selection state
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
+
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
   const copiedPlacedPlantsRef = useRef<PlacedPlant[]>([]);
   const pasteGenerationRef = useRef(0);
@@ -1428,7 +1430,7 @@ function App() {
         context.stroke();
       }
 
-      // Draw zones first.
+      // Draw areas first.
       snapshotZones
         .filter(zone => zone.visible !== false && zone.zoneType !== 'exclusion')
         .forEach(zone => {
@@ -2069,7 +2071,7 @@ function App() {
     const color = palette[zones.length % palette.length];
     const newZone: GardenZone = {
       id: generateId(),
-      name: `Zone ${zones.length + 1}`,
+      name: `Area ${zones.length + 1}`,
       color,
       opacity: 0.10,
       visible: true,
@@ -2296,7 +2298,7 @@ function App() {
     const zone = zones.find(item => item.id === zoneId);
     if (!zone || zone.zoneType === 'exclusion' || zone.points.length < 3) {
       addTestLog('generator.failed', { zoneId, reason: 'invalid_zone' });
-      alert('Select a planting zone with at least 3 points first.');
+      alert('Select a planting area with at least 3 points first.');
       return;
     }
 
@@ -2309,7 +2311,7 @@ function App() {
 
     if (availablePlants.length === 0) {
       addTestLog('generator.failed', { zoneId: zone.id, zoneName: zone.name, reason: 'no_available_plants', hasGroup: !!group });
-      alert('No plants were available for this zone. Assign a planting group or loosen the zone filters.');
+      alert('No plants were available for this area. Assign a plant set or loosen the zone filters.');
       return;
     }
 
@@ -2351,7 +2353,7 @@ function App() {
     const generatorPalette = groupPlants.length > 0 ? availablePlants : buildGeneratorPalette(availablePlants, zone, layoutMode, random);
     const chooseGeneratorPlant = (items: Plant[] = generatorPalette) => weightedSeededChoice(items, random, plant => computeGeneratorScore(plant, zone));
 
-    // Default behavior: regenerate this zone from scratch. This avoids old generated plants blocking new layouts.
+    // Default behavior: regenerate this area from scratch. This avoids old generated plants blocking new layouts.
     const retainedPlantPoints = placedPlants
       .filter(item => (item.itemType || 'plant') === 'plant' && item.zone !== zone.id)
       .map(item => ({ x: item.x, y: item.y, plantId: item.plantId }));
@@ -3820,7 +3822,7 @@ function App() {
             <div className="mt-5 space-y-4 text-sm leading-6 text-slate-300">
               <p className="text-lg font-semibold text-white">Probably needs a shrub.</p>
               <p>Plant Pending is a serious landscape planning tool with the emotional stability of a rock and the quiet suspicion that your yard is about to become a hedge.</p>
-              <p>Use it to draw planting zones, place plants, compare mature sizes, move the same shrub around until it has seen the whole yard, and pretend the nursery total is still theoretical.</p>
+              <p>Use it to draw planting areas, place plants, compare mature sizes, move the same shrub around until it has seen the whole yard, and pretend the nursery total is still theoretical.</p>
               <p>It respects rocks. It distrusts the word <span className="italic">dwarf</span>. It knows every tiny plant is secretly applying for a much larger position.</p>
               <div className="rounded-2xl border border-emerald-900/60 bg-emerald-950/30 p-4 text-emerald-100">
                 The app remains helpful first, funny second, and mildly concerned about future pruning.

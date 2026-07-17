@@ -43,7 +43,7 @@ const ZONE_PLANTING_TYPE_OPTIONS: { value: ZonePlantingType; label: string; help
 
 
 const ZONE_SURFACE_OPTIONS: { value: ZoneSurfaceType; label: string; helper: string }[] = [
-  { value: 'planting', label: 'Planting bed', helper: 'Normal planting zone with generation and site controls.' },
+  { value: 'planting', label: 'Planting bed', helper: 'Normal planting area with generation and site controls.' },
   { value: 'pool', label: 'Pool / water feature', helper: 'Blue water fill with ripple lines. Plants are excluded.' },
   { value: 'concrete', label: 'Concrete', helper: 'Light gray speckled hardscape. Plants are excluded.' },
   { value: 'pavers', label: 'Pavers', helper: 'Repeating block pattern. Plants are excluded.' },
@@ -228,7 +228,7 @@ export function PlanDetails({
   const [saveName, setSaveName] = useState(currentPlanName);
   const [fullSizeImage, setFullSizeImage] = useState<{ url: string; title: string; subtitle?: string } | null>(null);
   const [editingZoneId, setEditingZoneId] = useState<string | null>(null);
-  const [zoneSettingsTab, setZoneSettingsTab] = useState<'site' | 'generate' | 'style'>('site');
+  const [zoneSettingsTab, setZoneSettingsTab] = useState<'site' | 'quick' | 'recipe' | 'style'>('site');
   const [zoneModalPosition, setZoneModalPosition] = useState({ x: 360, y: 90 });
   const [newGroupName, setNewGroupName] = useState('');
   const [selectedPlantingGroupId, setSelectedPlantingGroupId] = useState<string | null>(null);
@@ -397,11 +397,11 @@ export function PlanDetails({
       <div className="absolute inset-y-0 right-0 z-20 flex w-12 flex-col items-center gap-2 border-l border-slate-800 bg-slate-950 px-1.5 py-3">
         {[
           { id: 'item' as const, label: selectedPlaced ? 'Selection' : 'Selection (nothing selected)', icon: '◆' },
-          { id: 'canvas' as const, label: 'Canvas', iconSrc: `${import.meta.env.BASE_URL}ui-icons/noun-canvas-8382519.svg` },
-          { id: 'zones' as const, label: 'Zones', iconSrc: `${import.meta.env.BASE_URL}ui-icons/noun-screenshot-4899159.svg` },
-          { id: 'groups' as const, label: 'Groups', icon: '☷' },
-          { id: 'legend' as const, label: 'Legend', icon: '#' },
-          { id: 'debug' as const, label: 'Debug', icon: '⌁' },
+          { id: 'canvas' as const, label: 'Yard setup', iconSrc: `${import.meta.env.BASE_URL}ui-icons/noun-canvas-8382519.svg` },
+          { id: 'zones' as const, label: 'Areas', iconSrc: `${import.meta.env.BASE_URL}ui-icons/noun-screenshot-4899159.svg` },
+          { id: 'groups' as const, label: 'Plant sets', icon: '☷' },
+          { id: 'legend' as const, label: 'Plant list', icon: '#' },
+          { id: 'debug' as const, label: 'Developer tools', icon: '⌁' },
         ].map(section => (
           <button
             key={section.id}
@@ -434,7 +434,7 @@ export function PlanDetails({
               {selectedInstanceIds.length} items selected{selectedPlantCount !== selectedInstanceIds.length ? `, ${selectedPlantCount} plants` : ''}. Drag any selected item to move the group, or press Delete to remove it.
             </p>
             <div className="mb-3 rounded-xl border border-slate-700 bg-slate-950 p-2">
-              <label className="text-xs text-slate-400 block mb-1">Assign selected to zone</label>
+              <label className="text-xs text-slate-400 block mb-1">Assign selected to area</label>
               <select
                 value=""
                 onChange={(e) => {
@@ -443,12 +443,12 @@ export function PlanDetails({
                 }}
                 className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-slate-100"
               >
-                <option value="">No zone assigned</option>
+                <option value="">No area assigned</option>
                 {zones.filter(zone => zone.zoneType !== 'exclusion').map(zone => (
                   <option key={zone.id} value={zone.id}>{zone.name}</option>
                 ))}
               </select>
-              <p className="mt-1 text-[11px] text-slate-500">Applies to all selected plants/rocks. Exclusion zones are intentionally not listed.</p>
+              <p className="mt-1 text-[11px] text-slate-500">Applies to all selected plants/rocks. No-plant areas are intentionally not listed.</p>
             </div>
 
             <button
@@ -533,13 +533,13 @@ export function PlanDetails({
                     </div>
 
                     <div>
-                      <label className="text-xs text-slate-400 block mb-1">Zone</label>
+                      <label className="text-xs text-slate-400 block mb-1">Area</label>
                       <select
                         value={selectedPlaced.zone || ''}
                         onChange={(e) => onUpdatePlacedPlant(selectedPlaced.instanceId, { zone: e.target.value })}
                         className="w-full px-2 py-1 text-sm border border-slate-700 bg-slate-950 text-slate-100 rounded"
                       >
-                        <option value="">No zone assigned</option>
+                        <option value="">No area assigned</option>
                         {zones.map(zone => (
                           <option key={zone.id} value={zone.id}>{zone.name}</option>
                         ))}
@@ -744,13 +744,13 @@ export function PlanDetails({
 
                   {/* Zone selector */}
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Zone</label>
+                    <label className="text-xs text-slate-400 block mb-1">Area</label>
                     <select
                       value={selectedPlaced.zone || ''}
                       onChange={(e) => onUpdatePlacedPlant(selectedPlaced.instanceId, { zone: e.target.value })}
                       className="w-full px-2 py-1 text-sm border border-slate-700 bg-slate-950 text-slate-100 rounded"
                     >
-                      <option value="">No zone assigned</option>
+                      <option value="">No area assigned</option>
                       {zones.map(zone => (
                         <option key={zone.id} value={zone.id}>{zone.name}</option>
                       ))}
@@ -792,8 +792,8 @@ export function PlanDetails({
 
         <div className="hidden">
           {[
-            { id: 'zones' as const, label: 'Zones' },
-            { id: 'groups' as const, label: 'Groups' },
+            { id: 'zones' as const, label: 'Areas' },
+            { id: 'groups' as const, label: 'Plant sets' },
             { id: 'debug' as const, label: 'Debug' },
           ].map(section => (
             <button
@@ -807,11 +807,11 @@ export function PlanDetails({
           ))}
         </div>
 
-        {/* Canvas controls */}
+        {/* Yard setup controls */}
         <div hidden={inspectorSection !== 'canvas'} className="p-3 border-b border-slate-800 bg-slate-950 text-slate-100 space-y-4">
           <div>
-            <h3 className="text-sm font-medium text-slate-100">Canvas</h3>
-            <p className="text-xs text-slate-400">Plan display and drafting controls.</p>
+            <h3 className="text-sm font-medium text-slate-100">Yard setup</h3>
+            <p className="text-xs text-slate-400">Background, scale, display, and drafting controls.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -884,7 +884,7 @@ export function PlanDetails({
           </div>
 
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-3 text-xs text-slate-400">
-            Canvas size: {canvasWorldSize.width} × {canvasWorldSize.height}px
+            Yard setup size: {canvasWorldSize.width} × {canvasWorldSize.height}px
           </div>
         </div>
 
@@ -892,20 +892,20 @@ export function PlanDetails({
         <div hidden={inspectorSection !== 'zones'} className="p-3 border-b border-slate-800 bg-slate-950 text-slate-100">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div>
-              <h3 className="text-sm font-medium text-slate-100">Zones</h3>
-              <p className="text-xs text-slate-400">Draw zones from the canvas toolbar, then manage them here.</p>
+              <h3 className="text-sm font-medium text-slate-100">Areas</h3>
+              <p className="text-xs text-slate-400">Draw planting beds, surfaces, and no-plant areas, then manage them here.</p>
             </div>
             <button
               type="button"
               onClick={() => onZoneShapesVisibleChange(!zoneShapesVisible)}
               className={`px-2 py-1 text-xs rounded border ${zoneShapesVisible ? 'bg-green-500/15 text-green-200 border-green-500/30' : 'bg-slate-900 text-slate-400 border-slate-700'}`}
-              title="Toggle all zone shapes on the plan"
+              title="Show or hide all area shapes on the plan"
             >
               {zoneShapesVisible ? 'Shown' : 'Hidden'}
             </button>
           </div>
           {zones.length === 0 ? (
-            <p className="text-sm text-slate-400">No zones yet. Use Draw zone on the canvas.</p>
+            <p className="text-sm text-slate-400">No areas yet. Use Draw area on the canvas.</p>
           ) : (
             <div className="space-y-2">
               {zones.map(zone => (
@@ -918,7 +918,7 @@ export function PlanDetails({
                     onClick={() => onUpdateZone(zone.id, { visible: zone.visible === false })}
                     className="w-5 h-5 rounded border flex-shrink-0"
                     style={{ backgroundColor: zone.visible === false ? '#f3f4f6' : zone.color }}
-                    title={zone.visible === false ? 'Show this zone' : 'Hide this zone'}
+                    title={zone.visible === false ? 'Show this area' : 'Hide this area'}
                   />
                   <button
                     type="button"
@@ -927,7 +927,7 @@ export function PlanDetails({
                       onSelectZone(zone.id);
                     }}
                     className="flex-1 min-w-0 text-left"
-                    title="Select zone"
+                    title="Select area"
                   >
                     <div className="font-medium truncate text-slate-100">{zone.name}</div>
                     <div className="text-[11px] text-slate-400">{getZoneSurfaceLabel(zone)}, {zone.points.length} points, {Math.round((zone.opacity ?? 0.28) * 100)}% fill</div>
@@ -942,7 +942,7 @@ export function PlanDetails({
                     type="button"
                     onClick={() => onDuplicateZone(zone.id)}
                     className="px-2 py-1 text-xs rounded border border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700"
-                    title="Duplicate zone"
+                    title="Duplicate area"
                   >
                     Copy
                   </button>
@@ -953,7 +953,7 @@ export function PlanDetails({
                       setEditingZoneId(zone.id);
                     }}
                     className="px-2 py-1 text-xs rounded border border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700"
-                    title="Zone settings"
+                    title="Area settings"
                   >
                     Settings
                   </button>
@@ -967,8 +967,8 @@ export function PlanDetails({
         <div hidden={inspectorSection !== 'groups'} className="p-3 border-b border-slate-800 bg-slate-950 text-slate-100">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div>
-              <h3 className="text-sm font-medium text-slate-100">Planting Groups</h3>
-              <p className="text-xs text-slate-400">Reusable plant lists for zones and future auto-planting.</p>
+              <h3 className="text-sm font-medium text-slate-100">Plant Sets</h3>
+              <p className="text-xs text-slate-400">Reusable plant lists for planting areas and layout generation.</p>
             </div>
           </div>
 
@@ -978,7 +978,7 @@ export function PlanDetails({
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               className="flex-1 px-2 py-1 text-sm border border-slate-700 bg-slate-950 text-slate-100 rounded"
-              placeholder="New group name"
+              placeholder="New plant set name"
             />
             <button
               type="button"
@@ -1011,7 +1011,7 @@ export function PlanDetails({
               {selectedPlantingGroup && (
                 <div className="border border-slate-800 rounded p-2 bg-slate-900 space-y-2">
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Group name</label>
+                    <label className="text-xs text-slate-400 block mb-1">Plant set name</label>
                     <input
                       type="text"
                       value={selectedPlantingGroup.name}
@@ -1085,7 +1085,7 @@ export function PlanDetails({
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm(`Delete planting group "${selectedPlantingGroup.name}"?`)) {
+                      if (confirm(`Delete plant set "${selectedPlantingGroup.name}"?`)) {
                         onDeletePlantingGroup(selectedPlantingGroup.id);
                         setSelectedPlantingGroupId(null);
                       }
@@ -1103,7 +1103,7 @@ export function PlanDetails({
         {/* Plant legend summary */}
         <div hidden={inspectorSection !== 'legend'} className="p-3 border-b border-slate-800 bg-slate-950 text-slate-100">
           <h3 className="text-sm font-medium text-slate-100 mb-1">
-            Plant Legend
+            Plant List
           </h3>
           <p className="text-xs text-slate-400 mb-2">Numbers match the symbols on the plan. {placedPlants.length} total plants placed.</p>
           {plantCounts.length === 0 ? (
@@ -1136,7 +1136,7 @@ export function PlanDetails({
         <div hidden={inspectorSection !== 'debug'} className="p-3 border-b border-slate-800 bg-slate-950 text-slate-100">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div>
-              <h3 className="text-sm font-medium text-slate-100">Test Log</h3>
+              <h3 className="text-sm font-medium text-slate-100">Developer Tools</h3>
               <p className="text-xs text-slate-400">Runs from app load. Generator captures fast debug map snapshots.</p>
             </div>
             <span className="text-xs text-slate-400">{testLog.length} entries, {debugSnapshots.length} snaps</span>
@@ -1235,7 +1235,7 @@ export function PlanDetails({
           type="button"
           onClick={() => {
             const plantCount = placedPlants.filter(item => (item.itemType || 'plant') === 'plant').length;
-            if (plantCount > 0 && confirm(`Clear ${plantCount} plants from the plan? Rocks and zones will stay.`)) {
+            if (plantCount > 0 && confirm(`Clear ${plantCount} plants from the plan? Rocks and areas will stay.`)) {
               onClearPlacedPlants();
             }
           }}
@@ -1306,7 +1306,7 @@ export function PlanDetails({
       </div>
 
 
-      {/* Zone Settings Modal */}
+      {/* Area Settings Modal */}
       {editingZone && (
         <div
           className="fixed inset-0 bg-black/45 z-50"
@@ -1323,24 +1323,25 @@ export function PlanDetails({
           >
             <div className="flex cursor-move select-none items-start justify-between gap-3 border-b border-slate-800 bg-slate-900 px-4 py-3" onPointerDown={startZoneModalDrag}>
               <div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Zone settings</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Area settings</div>
                 <h3 className="mt-1 text-base font-semibold text-white">{editingZone.name}</h3>
                 <p className="text-xs text-slate-400">Generation first, site conditions second, appearance last.</p>
               </div>
               <button type="button" onClick={() => setEditingZoneId(null)} className="rounded-lg px-2 py-1 text-xl leading-none text-slate-400 hover:bg-slate-800 hover:text-white">×</button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 border-b border-slate-800 bg-slate-950 px-4 py-3">
+            <div className="grid grid-cols-4 gap-2 border-b border-slate-800 bg-slate-950 px-4 py-3">
               {[
-                { id: 'site' as const, label: 'Site info' },
-                { id: 'generate' as const, label: 'Generate' },
-                { id: 'style' as const, label: 'Style & zone' },
+                { id: 'site' as const, label: 'Site' },
+                { id: 'quick' as const, label: 'Basic generation' },
+                { id: 'recipe' as const, label: 'Advanced generation' },
+                { id: 'style' as const, label: 'Appearance' },
               ].map(tab => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setZoneSettingsTab(tab.id)}
-                  className={`rounded-xl border px-3 py-2 text-xs font-semibold ${zoneSettingsTab === tab.id ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                  className={`rounded-xl border px-3 py-2 text-xs font-semibold ${zoneSettingsTab === tab.id ? 'border-blue-500 bg-blue-500/15 text-blue-100' : 'border-slate-700 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                 >
                   {tab.label}
                 </button>
@@ -1348,26 +1349,27 @@ export function PlanDetails({
             </div>
 
             <div className="max-h-[calc(82vh-132px)] overflow-y-auto p-4">
-              {zoneSettingsTab === 'generate' && editingZone.zoneType !== 'exclusion' && (
+              {zoneSettingsTab === 'quick' && editingZone.zoneType !== 'exclusion' && (
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-emerald-900/70 bg-emerald-950/40 p-3">
-                    <label className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200">Planting type</label>
+                  <div data-quick-recipe-mix-host />
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                    <label className="text-sm font-semibold text-slate-100">Planting style</label>
                     <select
                       value={editingZone.plantingType || 'mixedBorder'}
                       onChange={(e) => onUpdateZone(editingZone.id, { plantingType: e.target.value as ZonePlantingType })}
-                      className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                      className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white"
                     >
                       {ZONE_PLANTING_TYPE_OPTIONS.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
-                    <p className="mt-2 text-xs text-emerald-100/80">
+                    <p className="mt-2 text-xs leading-5 text-slate-400">
                       {ZONE_PLANTING_TYPE_OPTIONS.find(option => option.value === (editingZone.plantingType || 'mixedBorder'))?.helper}
                     </p>
                   </div>
 
                   <div>
-                    <label title="Optional saved plant list. Leave blank to let the generator choose from the full catalog." className="text-xs text-slate-400 block mb-1">Assigned planting group</label>
+                    <label title="Optional saved plant list. Leave blank to let the generator choose from the full catalog." className="text-xs font-medium text-slate-300 block mb-1.5">Assigned plant set</label>
                     <select
                       value={editingZone.plantingGroupId || ''}
                       onChange={(e) => {
@@ -1377,7 +1379,7 @@ export function PlanDetails({
                           plantingGroupName: group?.name || '',
                         });
                       }}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white"
                     >
                       <option value="">Auto-pick from catalog</option>
                       {plantingGroups.map(group => (
@@ -1386,47 +1388,52 @@ export function PlanDetails({
                     </select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label title="Controls where plants are placed inside the zone." className="text-xs text-slate-400 block mb-1">Layout mode</label>
-                      <select
-                        value={editingZone.layoutMode || 'fill'}
-                        onChange={(e) => onUpdateZone(editingZone.id, { layoutMode: e.target.value as ZoneLayoutMode })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
-                      >
-                        {ZONE_LAYOUT_OPTIONS.map(option => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400 block mb-1">Planting seed</label>
-                      <input
-                        type="number"
-                        value={editingZone.plantingSeed ?? 12345}
-                        onChange={(e) => onUpdateZone(editingZone.id, { plantingSeed: parseInt(e.target.value || '0', 10) })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
-                      />
-                    </div>
+                  <div>
+                    <label title="Controls where plants are placed inside the area." className="text-xs font-medium text-slate-300 block mb-1.5">Layout mode</label>
+                    <select
+                      value={editingZone.layoutMode || 'fill'}
+                      onChange={(e) => onUpdateZone(editingZone.id, { layoutMode: e.target.value as ZoneLayoutMode })}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white"
+                    >
+                      {ZONE_LAYOUT_OPTIONS.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
                   </div>
 
-                  <label className="flex items-start gap-3 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200">
-                    <input
-                      type="checkbox"
-                      checked={editingZone.plantingType === 'rockGarden' || editingZone.includeRocks === true}
-                      disabled={editingZone.plantingType === 'rockGarden'}
-                      onChange={(e) => onUpdateZone(editingZone.id, { includeRocks: e.target.checked })}
-                      className="mt-1"
-                    />
-                    <span>
-                      <span className="block font-medium text-white">Include rocks in generated mix</span>
-                      <span className="block text-xs text-slate-400">Adds a few tasteful boulders before plants. Rock gardens always include rocks.</span>
-                    </span>
-                  </label>
+                  <details className="rounded-lg border border-slate-800 bg-slate-900/50">
+                    <summary className="cursor-pointer select-none px-3 py-2 text-sm font-semibold text-slate-100 hover:text-white">More options</summary>
+                    <div className="space-y-3 border-t border-slate-800 p-3">
+                      <div>
+                        <label className="text-xs font-medium text-slate-300 block mb-1.5">Layout seed</label>
+                        <input
+                          type="number"
+                          value={editingZone.plantingSeed ?? 12345}
+                          onChange={(e) => onUpdateZone(editingZone.id, { plantingSeed: parseInt(e.target.value || '0', 10) })}
+                          className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white"
+                        />
+                        <p className="mt-1 text-[11px] leading-4 text-slate-500">Change this only when you want a different version of the same layout.</p>
+                      </div>
 
-                  <div className="rounded-2xl border border-sky-900/70 bg-sky-950/30 p-3 space-y-3">
+                      <label className="flex items-start gap-3 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={editingZone.plantingType === 'rockGarden' || editingZone.includeRocks === true}
+                          disabled={editingZone.plantingType === 'rockGarden'}
+                          onChange={(e) => onUpdateZone(editingZone.id, { includeRocks: e.target.checked })}
+                          className="mt-1"
+                        />
+                        <span>
+                          <span className="block font-medium text-white">Include rocks</span>
+                          <span className="block text-xs leading-5 text-slate-400">Rock gardens always include them.</span>
+                        </span>
+                      </label>
+                    </div>
+                  </details>
+
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 space-y-3">
                     <div>
-                      <div className="flex items-center justify-between text-xs font-semibold text-sky-100">
+                      <div className="flex items-center justify-between text-sm font-semibold text-slate-100">
                         <span title="Less plants to more plants. This controls how full the zone appears.">Fullness</span>
                         <span>{editingZone.density ?? 50}%</span>
                       </div>
@@ -1440,11 +1447,11 @@ export function PlanDetails({
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-sky-100 font-medium block mb-1">Plant variety</label>
+                      <label className="text-xs font-medium text-slate-300 block mb-1.5">Plant variety</label>
                       <select
                         value={editingZone.plantVariety || 'medium'}
                         onChange={(e) => onUpdateZone(editingZone.id, { plantVariety: e.target.value as ZonePlantVariety })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white"
                       >
                         {ZONE_PLANT_VARIETY_OPTIONS.map(option => (
                           <option key={option.value} value={option.value}>{option.label}</option>
@@ -1460,16 +1467,18 @@ export function PlanDetails({
                   <button
                     type="button"
                     onClick={() => onGenerateZoneLayout(editingZone.id)}
-                    className="w-full rounded-2xl bg-blue-600 px-3 py-3 text-sm font-semibold text-white hover:bg-blue-500"
+                    className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
                   >
-                    Generate planting layout
+                    Generate plants
                   </button>
                   {!editingZone.plantingGroupId && (
-                    <div className="text-xs text-blue-300">No group assigned, generator will auto-pick from the catalog using the zone settings.</div>
+                    <div className="text-xs leading-5 text-slate-400">No plant set selected. The generator will choose from the catalog using these area settings.</div>
                   )}
 
-<div>
-                    <div title="Optional edge guidance. Front edges get lower plants; back edges get taller structure." className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Front / back edges</div>
+<details className="rounded-lg border border-slate-800 bg-slate-900/50">
+                    <summary className="cursor-pointer select-none px-3 py-2 text-sm font-semibold text-slate-100 hover:text-white">Front and back edges</summary>
+                    <div className="border-t border-slate-800 p-3">
+                      <p className="mb-2 text-[11px] leading-4 text-slate-500">Optional. Mark edges only when plant height should follow a direction.</p>
                     <div className="space-y-1.5">
                       {editingZone.points.map((point, edgeIndex) => {
                         const nextPoint = editingZone.points[(edgeIndex + 1) % editingZone.points.length];
@@ -1480,7 +1489,7 @@ export function PlanDetails({
                             <select
                               value={role}
                               onChange={(e) => onUpdateZone(editingZone.id, updateEdgeRole(editingZone, edgeIndex, e.target.value as 'front' | 'back' | ''))}
-                              className="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-white"
+                              className="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white"
                             >
                               <option value="">Unmarked</option>
                               <option value="front">Front</option>
@@ -1490,12 +1499,13 @@ export function PlanDetails({
                         );
                       })}
                     </div>
-                  </div>
+                    </div>
+                  </details>
 
                 </div>
               )}
 
-              {zoneSettingsTab === 'generate' && editingZone.zoneType === 'exclusion' && (
+              {zoneSettingsTab === 'quick' && editingZone.zoneType === 'exclusion' && (
                 <div className="rounded-2xl border border-red-900/70 bg-red-950/30 p-4 text-sm text-red-100">
                   This is an exclusion zone, so generation controls are hidden. Switch the zone type in Site info to generate plants here.
                 </div>
@@ -1565,23 +1575,35 @@ export function PlanDetails({
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Sun notes</label>
-                    <input
-                      type="text"
-                      value={editingZone.sunNotes || ''}
-                      onChange={(e) => onUpdateZone(editingZone.id, { sunNotes: e.target.value })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500"
-                      placeholder="Example: fence shade after 2 pm, neighbor tree in winter"
-                    />
-                  </div>
+                  <details className="rounded-xl border border-slate-800 bg-slate-900/60">
+                    <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white">Site notes</summary>
+                    <div className="border-t border-slate-800 p-3">
+                      <input
+                        type="text"
+                        value={editingZone.sunNotes || ''}
+                        onChange={(e) => onUpdateZone(editingZone.id, { sunNotes: e.target.value })}
+                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-500"
+                        placeholder="Example: fence shade after 2 pm, neighbor tree in winter"
+                      />
+                    </div>
+                  </details>
+                </div>
+              )}
+
+              {zoneSettingsTab === 'recipe' && editingZone.zoneType !== 'exclusion' && (
+                <div data-recipe-layout-host className="space-y-4" />
+              )}
+
+              {zoneSettingsTab === 'recipe' && editingZone.zoneType === 'exclusion' && (
+                <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm text-slate-300">
+                  Advanced generation is available only for planting areas. Change the area type in Site first.
                 </div>
               )}
 
               {zoneSettingsTab === 'style' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Zone name</label>
+                    <label className="text-xs text-slate-400 block mb-1">Area name</label>
                     <input
                       type="text"
                       value={editingZone.name}
@@ -1590,53 +1612,59 @@ export function PlanDetails({
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-slate-400 block mb-1">Zone color</label>
-                      <input
-                        type="color"
-                        value={editingZone.color}
-                        onChange={(e) => onUpdateZone(editingZone.id, { color: e.target.value })}
-                        className="h-10 w-full cursor-pointer rounded-xl border border-slate-700 bg-slate-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400 block mb-1">Visible on plan</label>
-                      <button
-                        type="button"
-                        onClick={() => onUpdateZone(editingZone.id, { visible: editingZone.visible === false })}
-                        className={`h-10 w-full rounded-xl border text-sm ${editingZone.visible === false ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-emerald-500/50 bg-emerald-500/15 text-emerald-100'}`}
-                      >
-                        {editingZone.visible === false ? 'Hidden' : 'Shown'}
-                      </button>
-                    </div>
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Visible on plan</label>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateZone(editingZone.id, { visible: editingZone.visible === false })}
+                      className={`h-10 w-full rounded-xl border text-sm ${editingZone.visible === false ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-blue-500/50 bg-blue-500/15 text-blue-100'}`}
+                    >
+                      {editingZone.visible === false ? 'Hidden' : 'Shown'}
+                    </button>
                   </div>
 
-                  <div>
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <label>Zone transparency</label>
-                      <span>{Math.round((editingZone.opacity ?? 0.28) * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="5"
-                      max="80"
-                      value={(editingZone.opacity ?? 0.28) * 100}
-                      onChange={(e) => onUpdateZone(editingZone.id, { opacity: parseInt(e.target.value, 10) / 100 })}
-                      className="mt-2 w-full"
-                    />
-                  </div>
+                  <details className="rounded-xl border border-slate-800 bg-slate-900/60">
+                    <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white">
+                      Color, transparency, and notes
+                    </summary>
+                    <div className="space-y-4 border-t border-slate-800 p-3">
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1">Area color</label>
+                        <input
+                          type="color"
+                          value={editingZone.color}
+                          onChange={(e) => onUpdateZone(editingZone.id, { color: e.target.value })}
+                          className="h-10 w-full cursor-pointer rounded-xl border border-slate-700 bg-slate-950"
+                        />
+                      </div>
 
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Notes</label>
-                    <textarea
-                      value={editingZone.notes || ''}
-                      onChange={(e) => onUpdateZone(editingZone.id, { notes: e.target.value })}
-                      rows={3}
-                      className="w-full resize-none rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500"
-                      placeholder="Example: tall hedge along back edge, rocks in corners, avoid bees near seating..."
-                    />
-                  </div>
+                      <div>
+                        <div className="flex items-center justify-between text-xs text-slate-400">
+                          <label>Area transparency</label>
+                          <span>{Math.round((editingZone.opacity ?? 0.28) * 100)}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="5"
+                          max="80"
+                          value={(editingZone.opacity ?? 0.28) * 100}
+                          onChange={(e) => onUpdateZone(editingZone.id, { opacity: parseInt(e.target.value, 10) / 100 })}
+                          className="mt-2 w-full"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1">Notes</label>
+                        <textarea
+                          value={editingZone.notes || ''}
+                          onChange={(e) => onUpdateZone(editingZone.id, { notes: e.target.value })}
+                          rows={3}
+                          className="w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-500"
+                          placeholder="Example: tall hedge along back edge, rocks in corners, avoid bees near seating..."
+                        />
+                      </div>
+                    </div>
+                  </details>
 
                   <div className="flex gap-2 pt-2">
                     <button
@@ -1649,9 +1677,13 @@ export function PlanDetails({
                       }}
                       className="rounded-xl border border-red-800 bg-red-950/40 px-4 py-2 text-sm text-red-200 hover:bg-red-900/50"
                     >
-                      Delete zone
+                      Delete area
                     </button>
-                    <button type="button" onClick={() => setEditingZoneId(null)} className="flex-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500">
+                    <button
+                      type="button"
+                      onClick={() => setEditingZoneId(null)}
+                      className="flex-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+                    >
                       Done
                     </button>
                   </div>

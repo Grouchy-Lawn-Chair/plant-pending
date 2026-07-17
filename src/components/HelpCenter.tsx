@@ -23,7 +23,7 @@ export function HelpCenter({ open, search, onSearchChange, onClose }: HelpCenter
           <div>
             <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300">Version 2.0 help center</div>
             <h2 className="mt-1 text-xl font-black">How to make the yard less suspicious</h2>
-            <p className="mt-1 text-xs text-slate-400">Zones, recipes, physics, spacing, saving, printing, and the controls that keep the shrubs employed.</p>
+            <p className="mt-1 text-xs text-slate-400">Areas, recipes, spacing, saving, printing, and the controls that keep the shrubs employed.</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">
             Close

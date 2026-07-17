@@ -655,7 +655,7 @@ export function PrintView({
       <div className="print-hidden flex items-center justify-between border-b border-slate-800 bg-slate-950 px-4 py-3 text-slate-100">
         <div>
           <h2 className="text-base font-semibold">Print Plan Builder</h2>
-          <p className="text-xs text-slate-400">Page-aware plan set: master plan, legend, zone sheets, photo sheets, schedule, and notes.</p>
+          <p className="text-xs text-slate-400">Page-aware plan set: master plan, legend, area sheets, photo sheets, schedule, and notes.</p>
         </div>
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200">
@@ -683,7 +683,7 @@ export function PrintView({
                 <div>
                   <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Plant Pending master plan</div>
                   <h1 className="mt-1 text-xl font-black">{planName || 'Untitled Planting Plan'}</h1>
-                  <p className="mt-1 text-[10pt] text-slate-600">Generated {dated} · {placedPlants.length} placed items · {zoneSummaries.length} planting zones</p>
+                  <p className="mt-1 text-[10pt] text-slate-600">Generated {dated} · {placedPlants.length} placed items · {zoneSummaries.length} planting areas</p>
                 </div>
               </div>
               <div className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-right">
@@ -714,7 +714,7 @@ export function PrintView({
               </div>
 
               <div className="min-w-0">
-                <h2 className="mb-2 text-[14pt] font-bold">Zones</h2>
+                <h2 className="mb-2 text-[14pt] font-bold">Areas</h2>
                 <div className="space-y-1.5">
                   {zoneSummaries.length === 0 && <p className="text-[10pt] text-slate-500">No zones drawn yet.</p>}
                   {zoneSummaries.map(({ zone, zonePlants, zoneRocks, cost }) => (
@@ -813,7 +813,7 @@ export function PrintView({
                     <div className="min-w-0">
                       <h2 className="mb-2 text-[13pt] font-bold">Zone plant list</h2>
                       {firstRows.length === 0 ? (
-                        <p className="text-[10pt] text-slate-500">No plants in this zone.</p>
+                        <p className="text-[10pt] text-slate-500">No plants in this area.</p>
                       ) : renderZonePlantTable(firstRows)}
                       {continuationPages.length > 0 && <p className="mt-2 text-[10pt] text-slate-500">Plant list continues on the next page.</p>}
                     </div>
