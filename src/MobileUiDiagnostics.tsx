@@ -2,6 +2,40 @@ import { useEffect } from 'react';
 import type { TestSnapshot } from './types/plant';
 import { recordRecipeDebug } from './utils/recipeGenerationDebug';
 
+type UiDebugStore = {
+  interactions: Array<Record<string, unknown>>;
+  snapshots: TestSnapshot[];
+};
+
+function uiDebugStore(): UiDebugStore {
+  const debugWindow = window as typeof window & { __plantPendingUiDebug?: UiDebugStore };
+  if (!debugWindow.__plantPendingUiDebug) {
+    debugWindow.__plantPendingUiDebug = { interactions: [], snapshots: [] };
+  }
+  return debugWindow.__plantPendingUiDebug;
+}
+
+function recordUiInteraction(type: string, target: EventTarget | null) {
+  const element = target instanceof Element ? target : null;
+  const control = element?.closest('button,a,input,select,textarea,[role="button"],[role="dialog"],details,summary') || element;
+  const rect = control instanceof HTMLElement ? control.getBoundingClientRect() : null;
+  const entry = {
+    timestamp: new Date().toISOString(),
+    type,
+    tag: control?.tagName?.toLowerCase() || null,
+    text: (control?.textContent || '').trim().replace(/s+/g, ' ').slice(0, 160),
+    ariaLabel: control?.getAttribute?.('aria-label') || null,
+    title: control?.getAttribute?.('title') || null,
+    value: control instanceof HTMLInputElement || control instanceof HTMLSelectElement || control instanceof HTMLTextAreaElement ? control.value : null,
+    checked: control instanceof HTMLInputElement && (control.type === 'checkbox' || control.type === 'radio') ? control.checked : null,
+    rect: rect ? { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) } : null,
+  };
+  const store = uiDebugStore();
+  store.interactions.push(entry);
+  if (store.interactions.length > 500) store.interactions.splice(0, store.interactions.length - 500);
+}
+
+
 type RectRecord = {
   selector: string;
   visible: boolean;
@@ -284,6 +318,9 @@ export default function MobileUiDiagnostics() {
         details,
       };
       recordRecipeDebug(host, 'ui.layout.snapshot', { reason, snapshotNumber: snapshotCount, ...details }, snapshot);
+      const store = uiDebugStore();
+      store.snapshots.push(snapshot);
+      if (store.snapshots.length > 40) store.snapshots.splice(0, store.snapshots.length - 40);
     };
 
     const schedule = (reason: string, delay = 420) => {
@@ -292,14 +329,20 @@ export default function MobileUiDiagnostics() {
     };
 
     const onClick = (event: MouseEvent) => {
+      recordUiInteraction('click', event.target);
       const target = event.target instanceof Element ? event.target : null;
       const button = target?.closest('button,[role="button"]');
       const text = button?.textContent?.trim().replace(/\s+/g, ' ').slice(0, 100) || 'unknown-control';
       const exportRequested = /export.*debug|debug.*package/i.test(text);
       schedule(exportRequested ? 'export-requested' : `after-click:${text}`, exportRequested ? 40 : 500);
     };
+    const onInput = (event: Event) => {
+      recordUiInteraction(event.type, event.target);
+      schedule(`after-${event.type}`, 500);
+    };
     const onResize = () => schedule('viewport-changed', 550);
     const onOrientation = () => schedule('orientation-changed', 700);
+    const onExportRequested = () => schedule('export-requested', 20);
 
     const observer = new MutationObserver(() => schedule('layout-changed', 500));
     observer.observe(document.getElementById('root') || document.body, {
@@ -310,9 +353,12 @@ export default function MobileUiDiagnostics() {
     });
 
     document.addEventListener('click', onClick, true);
+    document.addEventListener('input', onInput, true);
+    document.addEventListener('change', onInput, true);
     window.addEventListener('resize', onResize);
     window.addEventListener('orientationchange', onOrientation);
     window.visualViewport?.addEventListener('resize', onResize);
+    window.addEventListener('plant-pending-debug-export', onExportRequested);
     schedule('initial', 900);
 
     return () => {
@@ -320,9 +366,12 @@ export default function MobileUiDiagnostics() {
       observer.disconnect();
       window.clearTimeout(timer);
       document.removeEventListener('click', onClick, true);
+      document.removeEventListener('input', onInput, true);
+      document.removeEventListener('change', onInput, true);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('orientationchange', onOrientation);
       window.visualViewport?.removeEventListener('resize', onResize);
+      window.removeEventListener('plant-pending-debug-export', onExportRequested);
     };
   }, []);
 
