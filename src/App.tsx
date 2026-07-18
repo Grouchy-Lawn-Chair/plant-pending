@@ -1187,8 +1187,8 @@ function App() {
   const [visiblePlantLimit, setVisiblePlantLimit] = useState(120);
   const [sortBy, setSortBy] = useState<SortOption>('commonName');
   const [greenAcresFilterIndex, setGreenAcresFilterIndex] = useState<GreenAcresFilterIndex | null>(null);
-  const [leftPanelMode, setLeftPanelMode] = useState<'library' | 'filters' | 'closed'>('library');
-  const [rightInspectorSection, setRightInspectorSection] = useState<'item' | 'canvas' | 'zones' | 'groups' | 'legend' | 'debug' | null>('zones');
+  const [leftPanelMode, setLeftPanelMode] = useState<'library' | 'filters' | 'closed'>('closed');
+  const [rightInspectorSection, setRightInspectorSection] = useState<'item' | 'canvas' | 'zones' | 'groups' | 'legend' | 'debug' | null>(null);
 
   const categories = useMemo(() => getCategories(plants), [plants]);
   // Selection state
@@ -1739,13 +1739,18 @@ function App() {
       selected: !!nextPlant,
       state: getDebugStateSummary(),
     });
+    if (nextPlant && window.matchMedia('(max-width: 1023px)').matches) {
+      setLeftPanelMode('closed');
+    }
   }, [selectedPlant, addTestLog, getDebugStateSummary]);
 
   const handleSelectPlacedPlant = useCallback((instanceId: string | null) => {
     if (selectedInstanceId === instanceId && selectedInstanceIds.length <= 1) return;
     setSelectedInstanceId(instanceId);
     setSelectedInstanceIds(instanceId ? [instanceId] : []);
-    if (instanceId) setRightInspectorSection('item');
+    if (instanceId && !window.matchMedia('(max-width: 1023px)').matches) {
+      setRightInspectorSection('item');
+    }
     const placed = placedPlants.find(item => item.instanceId === instanceId);
     addTestLog('selection.placedPlant', {
       instanceId,
@@ -3290,9 +3295,9 @@ function App() {
   const scoreTitle = getScoreTitle(shrubScore);
 
   return (
-    <div className="h-screen flex flex-col bg-[#0f141b] text-slate-100">
-      <header className="border-b border-slate-800 bg-[#161c24] px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
+    <div className="app-shell h-screen flex flex-col bg-[#0f141b] text-slate-100">
+      <header className="app-header border-b border-slate-800 bg-[#161c24] px-4 py-3">
+        <div className="app-header-row flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex h-[65px] w-[65px] items-center justify-center overflow-hidden rounded-2xl ring-1 ring-emerald-500/20">
               <img src={`${import.meta.env.BASE_URL}brand/app-icon.svg`} alt="Plant Pending app icon" className="h-full w-full object-contain" />
@@ -3303,7 +3308,7 @@ function App() {
             </div>
           </div>
 
-          <div ref={fileMenuRef} className="relative mr-auto">
+          <div ref={fileMenuRef} className="app-file-menu relative mr-auto">
             <button
               type="button"
               onClick={() => setShowFileMenu(value => !value)}
@@ -3312,7 +3317,7 @@ function App() {
               File ▾
             </button>
             {showFileMenu && (
-              <div className="absolute left-0 top-11 z-[70] w-64 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 py-2 text-sm shadow-2xl">
+              <div className="app-file-dropdown absolute left-0 top-11 z-[70] w-64 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 py-2 text-sm shadow-2xl">
                 <button
                   type="button"
                   onClick={() => {
@@ -3401,7 +3406,7 @@ function App() {
                   <button
                     type="button"
                     onClick={() => setShowOpenPlanModal(false)}
-                    className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+                    className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 welcome-close-button"
                   >
                     Close
                   </button>
@@ -3529,13 +3534,16 @@ function App() {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        <aside className="w-16 shrink-0 border-r border-slate-800 bg-[#11161d] px-2 py-3">
-          <div className="flex h-full flex-col items-center gap-2">
+      <div className="app-workspace flex-1 flex overflow-hidden">
+        <aside className="mobile-tool-rail w-16 shrink-0 border-r border-slate-800 bg-[#11161d] px-2 py-3">
+          <div className="mobile-tool-rail-inner flex h-full flex-col items-center gap-2">
             <button
               type="button"
               title="Plant library"
-              onClick={() => setLeftPanelMode(mode => mode === 'library' ? 'closed' : 'library')}
+              onClick={() => {
+                setLeftPanelMode(mode => mode === 'library' ? 'closed' : 'library');
+                setRightInspectorSection(null);
+              }}
               className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg ${leftPanelMode === 'library' ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -3548,7 +3556,10 @@ function App() {
             <button
               type="button"
               title="Filters"
-              onClick={() => setLeftPanelMode(mode => mode === 'filters' ? 'closed' : 'filters')}
+              onClick={() => {
+                setLeftPanelMode(mode => mode === 'filters' ? 'closed' : 'filters');
+                setRightInspectorSection(null);
+              }}
               className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg ${leftPanelMode === 'filters' ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -3557,6 +3568,62 @@ function App() {
                 <path d="M10 18h4" />
               </svg>
             </button>
+            <button
+              type="button"
+              title="Yard setup"
+              onClick={() => {
+                setRightInspectorSection(section => section === 'canvas' ? null : 'canvas');
+                setLeftPanelMode('closed');
+              }}
+              className={`mobile-primary-yard flex h-11 w-11 items-center justify-center rounded-xl border text-lg ${rightInspectorSection === 'canvas' ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19V8l8-4 8 4v11" />
+                <path d="M8 19v-6h8v6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              title="Areas"
+              onClick={() => {
+                setRightInspectorSection(section => section === 'zones' ? null : 'zones');
+                setLeftPanelMode('closed');
+              }}
+              className={`mobile-primary-areas flex h-11 w-11 items-center justify-center rounded-xl border text-lg ${rightInspectorSection === 'zones' ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m4 7 5-3 5 3 6-3v13l-6 3-5-3-5 3V7Z" />
+                <path d="M9 4v13M14 7v13" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              title="Debug"
+              onClick={() => {
+                setRightInspectorSection(section => section === 'debug' ? null : 'debug');
+                setLeftPanelMode('closed');
+              }}
+              className={`mobile-primary-debug flex h-11 w-11 items-center justify-center rounded-xl border text-lg ${rightInspectorSection === 'debug' ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 9h6v6H9z" />
+                <path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" />
+              </svg>
+            </button>
+            {selectedInstanceId && (
+              <button
+                type="button"
+                title="Edit selection"
+                aria-label="Edit selection"
+                onClick={() => {
+                  setRightInspectorSection(section => section === 'item' ? null : 'item');
+                  setLeftPanelMode('closed');
+                }}
+                className={`mobile-edit-selection flex h-11 w-11 items-center justify-center rounded-xl border text-lg ${rightInspectorSection === 'item' ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
+              >
+                <span aria-hidden="true">◆</span>
+              </button>
+            )}
             <button
               type="button"
               title="Rock tool"
@@ -3574,28 +3641,11 @@ function App() {
                 <path d="M7 18 4 13l3-5 6-2 5 3 2 5-3 4H7Z" />
               </svg>
             </button>
-            <button
-              type="button"
-              title="Clear selection"
-              onClick={() => {
-                setSelectedPlant(null);
-                setSelectedInstanceId(null);
-                setSelectedInstanceIds([]);
-                setSelectedZoneId(null);
-                setPlacingRock(false);
-              }}
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800"
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m6 6 12 12" />
-                <path d="M18 6 6 18" />
-              </svg>
-            </button>
           </div>
         </aside>
 
         {leftPanelMode !== 'closed' && (
-          <aside className={`shrink-0 border-r border-slate-800 bg-[#171d25] ${leftPanelMode === 'filters' ? 'w-[22rem]' : 'w-[25rem]'} flex flex-col`}>
+          <aside className={`mobile-left-sheet shrink-0 border-r border-slate-800 bg-[#171d25] ${leftPanelMode === 'filters' ? 'w-[22rem]' : 'w-[25rem]'} flex flex-col`}>
             <div className="border-b border-slate-800 px-4 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -3674,7 +3724,7 @@ function App() {
           </aside>
         )}
 
-        <main className="flex-1 min-w-0 bg-[#10161d]">
+        <main className="app-canvas flex-1 min-w-0 bg-[#10161d]">
           <div className="flex h-full flex-col">
             <div className="flex-1 min-h-0">
               <GardenCanvas
@@ -3728,7 +3778,7 @@ function App() {
           </div>
         </main>
 
-        <aside className={`${rightInspectorSection ? 'w-[23rem]' : 'w-12'} shrink-0 border-l border-slate-800 bg-[#0f1720] transition-[width] duration-200`}>
+        <aside className={`mobile-inspector-sheet ${rightInspectorSection ? 'w-[23rem]' : 'w-12'} shrink-0 border-l border-slate-800 bg-[#0f1720] transition-[width] duration-200`}>
           <div className="h-full">
             <PlanDetails
             plants={plants}
@@ -3797,7 +3847,12 @@ function App() {
           setShowWelcomeOnStartup(checked);
           localStorage.setItem(WELCOME_SETTING_KEY, checked ? 'true' : 'false');
         }}
-        onClose={() => setShowWelcomeGuide(false)}
+        onClose={() => {
+          setShowWelcomeGuide(false);
+          setLeftPanelMode('closed');
+          setRightInspectorSection(null);
+          setShowFileMenu(false);
+        }}
         onOpenHelp={() => {
           setShowWelcomeGuide(false);
           setShowHelpCenter(true);
@@ -3813,7 +3868,7 @@ function App() {
 
       {/* About modal */}
       {showAbout && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-6" onClick={() => setShowAbout(false)}>
+        <div className="mobile-welcome-modal fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-6" onClick={() => setShowAbout(false)}>
           <div className="max-h-[88vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-slate-700 bg-slate-950 p-6 text-slate-100 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-4">
               <img src={`${import.meta.env.BASE_URL}brand/logo-DarkBG.svg`} alt="Plant Pending" className="h-20 max-w-[260px] object-contain" />

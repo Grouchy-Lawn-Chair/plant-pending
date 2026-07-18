@@ -82,7 +82,7 @@ interface PlantCircleProps {
   labelMode: PlantLabelMode;
   legendNumber: number;
   placementIndex: number;
-  onMouseDown: (e: React.MouseEvent) => void;
+  onPointerDown: (e: React.PointerEvent) => void;
   drifted?: boolean;
 }
 
@@ -177,18 +177,18 @@ interface RockIconProps {
   placed: PlacedPlant;
   sizePx: number;
   isSelected: boolean;
-  onMouseDown: (e: React.MouseEvent) => void;
+  onPointerDown: (e: React.PointerEvent) => void;
   drifted?: boolean;
 }
 
-function RockIcon({ placed, sizePx, isSelected, onMouseDown }: RockIconProps) {
+function RockIcon({ placed, sizePx, isSelected, onPointerDown }: RockIconProps) {
   const rockUrl = publicAssetUrl(placed.rockSvg || 'rocks-icons/rock1.svg');
   const rockColor = placed.rockColor || '#8f8f8f';
   const rotationDeg = placed.rotationDeg ?? fallbackRotation(placed.instanceId, placed.plantId);
 
   return (
     <div
-      onMouseDown={onMouseDown}
+      onPointerDown={onPointerDown}
       className={`absolute cursor-move select-none ${isSelected ? 'z-20' : 'z-10'}`}
       style={{
         left: placed.x,
@@ -196,6 +196,7 @@ function RockIcon({ placed, sizePx, isSelected, onMouseDown }: RockIconProps) {
         transform: 'translate(-50%, -50%)',
         width: sizePx,
         height: sizePx,
+        touchAction: 'none',
       }}
       title={`Rock ${placed.rockSizeFt || 2}'`}
     >
@@ -220,7 +221,7 @@ function RockIcon({ placed, sizePx, isSelected, onMouseDown }: RockIconProps) {
   );
 }
 
-function PlantCircle({ plant, placed, radius, isSelected, circleOpacity, labelMode, legendNumber, placementIndex, onMouseDown, drifted = false }: PlantCircleProps) {
+function PlantCircle({ plant, placed, radius, isSelected, circleOpacity, labelMode, legendNumber, placementIndex, onPointerDown, drifted = false }: PlantCircleProps) {
   const displayMode: DisplayMode = placed.displayMode || 'color';
   const imageUrl = getPlantImageUrl(plant);
   const categoryColor = getPlantCategoryColor(plant);
@@ -257,7 +258,7 @@ function PlantCircle({ plant, placed, radius, isSelected, circleOpacity, labelMo
 
   return (
     <div
-      onMouseDown={onMouseDown}
+      onPointerDown={onPointerDown}
       className={`absolute cursor-move select-none ${isSelected ? 'z-20' : 'z-10'}`}
       style={{
         left: placed.x,
@@ -265,6 +266,7 @@ function PlantCircle({ plant, placed, radius, isSelected, circleOpacity, labelMo
         transform: 'translate(-50%, -50%)',
         width: symbolSize,
         height: symbolSize,
+        touchAction: 'none',
       }}
     >
       {showSymbolMode && (
@@ -371,6 +373,14 @@ export function GardenCanvas({
 }: GardenCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
+  const pinchRef = useRef<{
+    distance: number;
+    zoom: number;
+    midpointX: number;
+    midpointY: number;
+    scrollLeft: number;
+    scrollTop: number;
+  } | null>(null);
   const [isSettingScale, setIsSettingScale] = useState(false);
   const [scalePoint1, setScalePoint1] = useState<{ x: number; y: number } | null>(null);
   const [scalePoint2, setScalePoint2] = useState<{ x: number; y: number } | null>(null);
@@ -595,10 +605,12 @@ export function GardenCanvas({
     onSelectZone(null);
   };
 
-  const handleMouseDown = (e: React.MouseEvent, instanceId: string) => {
+  const handlePlantPointerDown = (e: React.PointerEvent, instanceId: string) => {
     if (isSpacePanning) return;
     if (e.shiftKey) return;
+    if (e.pointerType === 'touch') e.preventDefault();
     e.stopPropagation();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     const point = getWorldPoint(e.clientX, e.clientY);
     if (!point) return;
     const placed = placedPlants.find(p => p.instanceId === instanceId);
@@ -694,7 +706,17 @@ export function GardenCanvas({
   }, [marqueeSelection, placedPlants, onSelectMultiplePlacedPlants]);
 
   useEffect(() => {
-    if (draggingPlant || draggingZonePoint || draggingZone || marqueeSelection) {
+    if (draggingPlant) {
+      window.addEventListener('pointermove', handleMouseMove);
+      window.addEventListener('pointerup', handleMouseUp);
+      window.addEventListener('pointercancel', handleMouseUp);
+      return () => {
+        window.removeEventListener('pointermove', handleMouseMove);
+        window.removeEventListener('pointerup', handleMouseUp);
+        window.removeEventListener('pointercancel', handleMouseUp);
+      };
+    }
+    if (draggingZonePoint || draggingZone || marqueeSelection) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -774,6 +796,52 @@ export function GardenCanvas({
       window.removeEventListener('blur', handleWindowBlur);
     };
   }, [selectedInstanceId, selectedInstanceIds, onDeletePlacedPlant, onCancelPlantPlacement, onSelectPlacedPlant, onSelectMultiplePlacedPlants, onSelectZone, isDrawingZone, cancelZoneDraft]);
+
+  const touchDistance = (touches: React.TouchList) => {
+    const first = touches[0];
+    const second = touches[1];
+    return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+  };
+
+  const touchMidpoint = (touches: React.TouchList) => ({
+    x: (touches[0].clientX + touches[1].clientX) / 2,
+    y: (touches[0].clientY + touches[1].clientY) / 2,
+  });
+
+  const handleViewportTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (event.touches.length !== 2 || !viewportRef.current) return;
+    const midpoint = touchMidpoint(event.touches);
+    pinchRef.current = {
+      distance: Math.max(1, touchDistance(event.touches)),
+      zoom,
+      midpointX: midpoint.x,
+      midpointY: midpoint.y,
+      scrollLeft: viewportRef.current.scrollLeft,
+      scrollTop: viewportRef.current.scrollTop,
+    };
+  };
+
+  const handleViewportTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = pinchRef.current;
+    const viewport = viewportRef.current;
+    if (!start || !viewport || event.touches.length !== 2) return;
+    event.preventDefault();
+    const midpoint = touchMidpoint(event.touches);
+    const ratio = touchDistance(event.touches) / start.distance;
+    const nextZoom = Math.max(0.25, Math.min(2.5, Number((start.zoom * ratio).toFixed(3))));
+    const rect = viewport.getBoundingClientRect();
+    const worldX = (start.midpointX - rect.left + start.scrollLeft) / start.zoom;
+    const worldY = (start.midpointY - rect.top + start.scrollTop) / start.zoom;
+    onZoomChange(nextZoom);
+    requestAnimationFrame(() => {
+      viewport.scrollLeft = worldX * nextZoom - (midpoint.x - rect.left);
+      viewport.scrollTop = worldY * nextZoom - (midpoint.y - rect.top);
+    });
+  };
+
+  const handleViewportTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (event.touches.length < 2) pinchRef.current = null;
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -856,8 +924,8 @@ export function GardenCanvas({
   const canFinishZone = isDrawingZone && zoneDraftPoints.length >= 3;
 
   return (
-    <div className="flex flex-col h-full bg-[#10161d]">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800 bg-[#111827] text-slate-200 flex-wrap">
+    <div className="flex flex-col h-full bg-[#10161d] mobile-garden-canvas-root">
+      <div className="canvas-control-bar canvas-setup-toolbar flex items-center gap-2 px-3 py-2 border-b border-slate-800 bg-[#111827] text-slate-200 flex-wrap mobile-canvas-toolbar">
         <label className="flex items-center gap-2 px-3 py-1.5 text-sm bg-slate-900 border border-slate-700 rounded cursor-pointer hover:bg-slate-800 text-slate-200">
           <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -975,7 +1043,11 @@ export function GardenCanvas({
         onMouseMove={handleViewportMouseMove}
         onMouseUp={stopViewportPan}
         onMouseLeave={stopViewportPan}
-        className={`relative flex-1 bg-[#d9dde3] overflow-auto p-6 ${panDrag ? 'cursor-grabbing' : isSpacePanning ? 'cursor-grab' : isDrawingZone || selectedPlant || placingRock ? 'cursor-crosshair' : 'cursor-default'}`}
+        onTouchStart={handleViewportTouchStart}
+        onTouchMove={handleViewportTouchMove}
+        onTouchEnd={handleViewportTouchEnd}
+        onTouchCancel={handleViewportTouchEnd}
+        className={`garden-canvas-viewport relative flex-1 bg-[#d9dde3] overflow-auto p-6 ${panDrag ? 'cursor-grabbing' : isSpacePanning ? 'cursor-grab' : isDrawingZone || selectedPlant || placingRock ? 'cursor-crosshair' : 'cursor-default'}`}
       >
         <div
           ref={worldRef}
@@ -1248,7 +1320,7 @@ export function GardenCanvas({
                   placed={placed}
                   sizePx={getRockSizePx(placed)}
                   isSelected={isSelected}
-                  onMouseDown={(e) => handleMouseDown(e, placed.instanceId)}
+                  onPointerDown={(e) => handlePlantPointerDown(e, placed.instanceId)}
                 />
               );
             }
@@ -1263,7 +1335,7 @@ export function GardenCanvas({
               return (
                 <div
                   key={placed.instanceId}
-                  onMouseDown={(e) => handleMouseDown(e, placed.instanceId)}
+                  onPointerDown={(e) => handlePlantPointerDown(e, placed.instanceId)}
                   className={`absolute cursor-move select-none ${isSelected ? 'z-20' : 'z-10'}`}
                   style={{
                     left: placed.x,
@@ -1272,6 +1344,7 @@ export function GardenCanvas({
                     width: symbolSize,
                     height: symbolSize,
                     background: 'transparent',
+                    touchAction: 'none',
                   }}
                   title={`${plant.commonName || plant.botanicalName}\n${placed.displayWidthFt || plant.matureWidthFt || '?'}' display width${placed.displayWidthFt ? ` (mature ${plant.matureWidthFt || '?'}')` : ''}\nZone: ${placed.zone || 'none'}`}
                 >
@@ -1296,7 +1369,7 @@ export function GardenCanvas({
                 labelMode={plantLabelMode}
                 legendNumber={legendNumbers.get(placed.plantId) || 0}
                 placementIndex={Math.max(0, (legendNumbers.get(placed.plantId) || 1) - 1)}
-                onMouseDown={(e) => handleMouseDown(e, placed.instanceId)}
+                onPointerDown={(e) => handlePlantPointerDown(e, placed.instanceId)}
                 drifted={false}
               />
             );
@@ -1342,7 +1415,7 @@ export function GardenCanvas({
           })()}
 
           {placedPlants.length === 0 && zones.length === 0 && !isSettingScale && !isDrawingZone && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none mobile-canvas-empty-overlay">
               <div className="pointer-events-auto flex max-w-lg flex-col items-center rounded-2xl border border-slate-300 bg-white/90 px-7 py-6 text-center shadow-sm backdrop-blur-sm">
                 {!backgroundImage && (
                   <img src={`${import.meta.env.BASE_URL}brand/logo-light.svg`} alt="Plant Pending" className="mb-4 h-20 w-auto" />

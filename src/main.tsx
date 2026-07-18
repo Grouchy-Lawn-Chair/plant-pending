@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import ColorDiagnostics from './ColorDiagnostics';
+import MobileUiDiagnostics from './MobileUiDiagnostics';
 import RecipeAppIntegration from './RecipeAppIntegration';
 import RecipeGenerationEnhancements from './RecipeGenerationEnhancements';
 import RecipeSelectionPersistence from './RecipeSelectionPersistence';
@@ -17,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
     <RecipeGenerationEnhancements />
     <RecipeUiCorrections />
     <ColorDiagnostics />
+    <MobileUiDiagnostics />
     <ZoneEdgeInteractionFix />
     <RecipeAppIntegration />
   </StrictMode>,

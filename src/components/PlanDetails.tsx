@@ -252,7 +252,9 @@ export function PlanDetails({
 
   useEffect(() => {
     if (!selectedInstanceId) return;
-    onInspectorSectionChange('item');
+    if (!window.matchMedia('(max-width: 1023px)').matches) {
+      onInspectorSectionChange('item');
+    }
   }, [selectedInstanceId]);
 
   // Group placed plants by plant ID for count list
@@ -309,7 +311,22 @@ export function PlanDetails({
     URL.revokeObjectURL(url);
   };
 
-  const downloadDebugPackage = () => {
+  const downloadDebugPackage = async () => {
+    window.dispatchEvent(new CustomEvent('plant-pending-debug-export'));
+    await new Promise(resolve => window.setTimeout(resolve, 900));
+
+    const debugWindow = window as typeof window & {
+      __plantPendingUiDebug?: {
+        interactions?: Array<Record<string, unknown>>;
+        snapshots?: TestSnapshot[];
+      };
+    };
+    const uiInteractions = debugWindow.__plantPendingUiDebug?.interactions || [];
+    const uiSnapshots = debugWindow.__plantPendingUiDebug?.snapshots || [];
+    const allSnapshots = [...debugSnapshots, ...uiSnapshots]
+      .filter((snapshot, index, items) => items.findIndex(item => item.id === snapshot.id) === index)
+      .slice(-40);
+
     const packageData = {
       createdAt: new Date().toISOString(),
       app: {
@@ -327,7 +344,8 @@ export function PlanDetails({
         selectedZoneId,
         selectedInstanceId,
         zoneShapesVisible,
-        debugSnapshots: debugSnapshots.length,
+        debugSnapshots: allSnapshots.length,
+        uiInteractions: uiInteractions.length,
       },
       zones,
       plantingGroups,
@@ -337,7 +355,8 @@ export function PlanDetails({
       })),
       warnings,
       testLog,
-      debugSnapshots,
+      uiInteractions,
+      debugSnapshots: allSnapshots,
     };
 
     const blob = new Blob([JSON.stringify(packageData, null, 2)], { type: 'application/json' });
@@ -388,13 +407,13 @@ export function PlanDetails({
   };
 
   return (
-    <div className="inspector-dark relative h-full flex flex-col bg-slate-950 text-slate-100 pr-12">
+    <div className="mobile-current-plan-strip inspector-dark relative h-full flex flex-col bg-slate-950 text-slate-100 pr-12 mobile-plan-details-root" data-mobile-open={Boolean(inspectorSection)}>
       <div className={`${inspectorSection ? '' : 'hidden'} border-b border-slate-800 bg-slate-900 px-3 py-2`}>
         <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Current plan</div>
         <p className="mt-1 truncate text-sm font-medium text-slate-100">{currentPlanName || 'Untitled Plan'}</p>
       </div>
 
-      <div className="absolute inset-y-0 right-0 z-20 flex w-12 flex-col items-center gap-2 border-l border-slate-800 bg-slate-950 px-1.5 py-3">
+      <div className="absolute inset-y-0 right-0 z-20 flex w-12 flex-col items-center gap-2 border-l border-slate-800 bg-slate-950 px-1.5 py-3 desktop-inspector-rail">
         {[
           { id: 'item' as const, label: selectedPlaced ? 'Selection' : 'Selection (nothing selected)', icon: '◆' },
           { id: 'canvas' as const, label: 'Yard setup', iconSrc: `${import.meta.env.BASE_URL}ui-icons/noun-canvas-8382519.svg` },
@@ -425,7 +444,7 @@ export function PlanDetails({
       </div>
 
       {/* Scrollable content */}
-      <div className={`${inspectorSection ? '' : 'hidden'} flex-1 overflow-y-auto`}>
+      <div className={`${inspectorSection ? '' : 'hidden'} flex-1 overflow-y-auto mobile-plan-details-content`}>
         {/* Multi-select details */}
         {selectedInstanceIds.length > 1 && (
           <div className="p-3 border-b border-slate-800 bg-slate-900">
@@ -468,7 +487,16 @@ export function PlanDetails({
         {/* Selected plant details */}
         {inspectorSection === 'item' && selectedPlaced && (
           <div className="p-3 border-b border-slate-800 bg-slate-950 text-slate-100">
-            <h3 className="text-sm font-medium text-slate-100 mb-2">Selection</h3>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <h3 className="text-sm font-medium text-slate-100">Selection</h3>
+              <button
+                type="button"
+                onClick={() => onInspectorSectionChange(null)}
+                className="mobile-selection-close rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-800"
+              >
+                Close
+              </button>
+            </div>
             {(() => {
               if (selectedPlaced.itemType === 'rock') {
                 return (
@@ -1309,7 +1337,7 @@ export function PlanDetails({
       {/* Area Settings Modal */}
       {editingZone && (
         <div
-          className="fixed inset-0 bg-black/45 z-50"
+          className="area-settings-backdrop fixed inset-0 bg-black/45 z-50"
           onPointerDown={(event) => {
             if (event.target === event.currentTarget) setEditingZoneId(null);
           }}
@@ -1318,7 +1346,7 @@ export function PlanDetails({
             ref={zoneModalRef}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
-            className="fixed max-h-[82vh] w-[520px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 text-slate-100 shadow-2xl"
+            className="area-settings-modal fixed max-h-[82vh] w-[520px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 text-slate-100 shadow-2xl"
             style={{ left: zoneModalPosition.x, top: zoneModalPosition.y }}
           >
             <div className="flex cursor-move select-none items-start justify-between gap-3 border-b border-slate-800 bg-slate-900 px-4 py-3" onPointerDown={startZoneModalDrag}>

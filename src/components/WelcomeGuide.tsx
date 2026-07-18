@@ -19,22 +19,21 @@ export function WelcomeGuide({
 
   return (
     <div
-      className="fixed inset-0 z-[92] flex items-center justify-center bg-black/60 p-6"
+      className="welcome-guide-backdrop fixed inset-0 z-[92] flex items-center justify-center bg-black/60 p-6"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-700 bg-slate-950 text-slate-100 shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-800 px-6 py-5">
-          <div className="flex items-center gap-4">
+      <div className="welcome-guide-dialog flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-700 bg-slate-950 text-slate-100 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="welcome-guide-title">
+        <div className="welcome-guide-header flex items-start justify-between gap-4 border-b border-slate-800 px-6 py-5">
+          <div className="welcome-guide-heading flex items-center gap-4">
             <img src={`${import.meta.env.BASE_URL}brand/logo-DarkBG.svg`} alt="Plant Pending" className="h-16 w-auto" />
             <div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300">Version 2.0 yard panic reducer</div>
-              <h2 className="mt-1 text-2xl font-black text-white">Welcome to Plant Pending</h2>
+              <h2 id="welcome-guide-title" className="mt-1 text-2xl font-black text-white">Welcome to Plant Pending</h2>
               <p className="mt-1 text-sm text-slate-400">Plan the dirt, test the shrubs, and let the Recipe Engine do some of the arguing.</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">
+          <button type="button" onClick={onClose} className="welcome-guide-close shrink-0 rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">
             Close
           </button>
         </div>
