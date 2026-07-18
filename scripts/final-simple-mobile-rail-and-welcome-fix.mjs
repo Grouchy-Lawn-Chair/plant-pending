@@ -12,24 +12,21 @@ function write(path, text) {
   fs.writeFileSync(path, text.replace(/\n/g, '\r\n'));
 }
 
-// 1. Remove the green welcome kicker directly from App.tsx.
+// Remove only the welcome kicker text. Do not touch the rest of the modal.
 let app = read(appPath);
-const beforeApp = app;
 app = app
-  .replace(/<([A-Za-z][\w.]*)\b[^>]*>[\s\S]{0,300}?VERSION\s*2\.0[\s\S]{0,300}?YARD\s*PANIC\s*REDUCER[\s\S]{0,100}?<\/\1>/gi, '')
-  .replace(/<([A-Za-z][\w.]*)\b[^>]*>[\s\S]{0,200}?YARD\s*PANIC\s*REDUCER[\s\S]{0,100}?<\/\1>/gi, '')
   .replace(/VERSION\s*2\.0/gi, '')
   .replace(/YARD\s*PANIC\s*REDUCER/gi, '');
-if (app !== beforeApp) write(appPath, app);
+write(appPath, app);
 
-// 2. Use the real desktop inspector SVGs for the matching mobile buttons.
-//    No replacement icon set. No extra launcher button.
+// Reuse the actual desktop inspector SVGs for the matching mobile buttons.
+// Never remove a mobile rail button just because its icon is temporarily missing.
 const polish = `import { useEffect } from 'react';
 
 const MATCHES = [
   { mobile: /yard setup/i, desktop: /yard setup|canvas setup/i },
   { mobile: /^areas$/i, desktop: /^areas$|zones/i },
-  { mobile: /plant list/i, desktop: /plant list|legend/i },
+  { mobile: /plant list/i, desktop: /plant list|legend|planting groups/i },
   { mobile: /developer tools|debug/i, desktop: /developer tools|debug/i },
 ];
 
@@ -50,19 +47,12 @@ function sync() {
     if (!target || !source) continue;
 
     const sourceSvg = source.querySelector('svg');
-    const targetSvg = target.querySelector('svg');
     if (!sourceSvg) continue;
 
+    const targetSvg = target.querySelector('svg');
     const clone = sourceSvg.cloneNode(true);
     if (targetSvg) targetSvg.replaceWith(clone);
     else target.prepend(clone);
-  }
-
-  // Remove only truly empty mobile rail buttons.
-  for (const button of mobileButtons) {
-    const hasIcon = Boolean(button.querySelector('svg, img'));
-    const hasName = Boolean(name(button));
-    if (!hasIcon && !hasName) button.remove();
   }
 }
 
@@ -87,12 +77,9 @@ export default function MobileUiPolish() {
 `;
 write(polishPath, polish);
 
-// 3. Mobile welcome layout and empty rail cleanup.
+// Remove the old rule that hid the Plant List button when its SVG had not loaded yet.
 let css = read(cssPath);
-const marker = '/* Simple final mobile welcome and rail cleanup */';
-if (!css.includes(marker)) {
-  css += `\n\n${marker}\n@media (max-width: 767px) {\n  .mobile-tool-rail button:empty {\n    display: none !important;\n  }\n\n  [role="dialog"] {\n    max-width: calc(100vw - 1rem) !important;\n  }\n\n  [role="dialog"] img {\n    display: block !important;\n    margin-left: auto !important;\n    margin-right: auto !important;\n  }\n}\n`;
-  write(cssPath, css);
-}
+css = css.replace(/\n?\s*\.mobile-tool-rail button:empty\s*\{[\s\S]*?\}\s*/g, '\n');
+write(cssPath, css);
 
-console.log('Applied simple mobile fix: removed welcome kicker, reused desktop rail icons, and removed empty mobile rail buttons.');
+console.log('Kept the Plant List button, restored its desktop icon mapping, and removed the empty-button hiding rule.');
