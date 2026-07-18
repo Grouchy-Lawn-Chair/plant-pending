@@ -137,9 +137,21 @@ if (!mainText.includes("./MobileViewportFixes")) {
   mainText = mainText.slice(0, at) + "\nimport MobileViewportFixes from './MobileViewportFixes';" + mainText.slice(at);
 }
 if (!mainText.includes('<MobileViewportFixes />')) {
-  const app = mainText.match(/<App\s*\/>/);
-  if (!app) throw new Error('Could not locate App mount in src/main.tsx. No files written.');
-  mainText = mainText.replace(app[0], '<MobileViewportFixes />\n    ' + app[0]);
+  const polish = mainText.match(/^(\s*)<MobileUiPolish\s*\/>\s*$/m);
+  if (polish) {
+    mainText = mainText.replace(polish[0], `${polish[0]}\n${polish[1]}<MobileViewportFixes />`);
+  } else if (mainText.includes('</React.StrictMode>')) {
+    mainText = mainText.replace('</React.StrictMode>', '    <MobileViewportFixes />\n  </React.StrictMode>');
+  } else if (mainText.includes('</StrictMode>')) {
+    mainText = mainText.replace('</StrictMode>', '    <MobileViewportFixes />\n  </StrictMode>');
+  } else {
+    const app = mainText.match(/<App(?:\s[^>]*)?\s*\/>/);
+    if (app) {
+      mainText = mainText.replace(app[0], `<MobileViewportFixes />\n    ${app[0]}`);
+    } else {
+      throw new Error('Could not locate a safe component mount point in src/main.tsx. No files written.');
+    }
+  }
 }
 write(mainFile, mainText, main.newline);
 
