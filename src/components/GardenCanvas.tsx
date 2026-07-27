@@ -9,6 +9,10 @@ import { buildGroupedCallouts } from '../utils/calloutUtils';
 import { buildPlantDriftClusters } from '../utils/driftUtils';
 import { PlantDriftOverlay } from './PlantDriftOverlay';
 
+const GRID_VISIBLE_KEY = 'plant-pending-grid-visible';
+const GRID_SNAP_KEY = 'plant-pending-grid-snap';
+const GRID_SIZE_FEET_KEY = 'plant-pending-grid-size-feet';
+
 const publicAssetUrl = (path: string) => {
   if (!path) return import.meta.env.BASE_URL;
   if (/^(https?:|data:|blob:)/.test(path)) return path;
@@ -274,7 +278,7 @@ function PlantCircle({ plant, placed, radius, isSelected, circleOpacity, labelMo
           className="absolute inset-0 pointer-events-none"
           title={`${plant.commonName || plant.botanicalName}
 ${plant.matureWidthFt || '?'}' wide
-Zone: ${placed.zone || 'none'}`}
+${placed.zone ? 'Area assigned' : 'No area assigned'}`}
         >
           <TopDownPlantSymbol
             plant={plant}
@@ -299,7 +303,7 @@ Zone: ${placed.zone || 'none'}`}
           }}
           title={`${plant.commonName || plant.botanicalName}
 ${plant.matureWidthFt || '?'}' wide
-Zone: ${placed.zone || 'none'}`}
+${placed.zone ? 'Area assigned' : 'No area assigned'}`}
         />
       )}
 
@@ -398,6 +402,27 @@ export function GardenCanvas({
   const [zonePreviewPoint, setZonePreviewPoint] = useState<{ x: number; y: number } | null>(null);
   const [draggingZonePoint, setDraggingZonePoint] = useState<{ zoneId: string; pointIndex: number } | null>(null);
   const [draggingZone, setDraggingZone] = useState<{ zoneId: string; startPoint: { x: number; y: number }; originalPoints: { x: number; y: number }[] } | null>(null);
+  const [gridVisible, setGridVisible] = useState(() => localStorage.getItem(GRID_VISIBLE_KEY) === 'true');
+  const [snapToGrid, setSnapToGrid] = useState(() => localStorage.getItem(GRID_SNAP_KEY) === 'true');
+  const [gridSizeFeet, setGridSizeFeet] = useState(() => {
+    const stored = Number(localStorage.getItem(GRID_SIZE_FEET_KEY));
+    return Number.isFinite(stored) && stored >= 0.25 ? stored : 1;
+  });
+
+  const gridStepPixels = Math.max(5, gridSizeFeet * (pixelsPerFoot || 20));
+  const snapPoint = useCallback((point: { x: number; y: number }) => {
+    if (!snapToGrid) return point;
+    return {
+      x: Math.round(point.x / gridStepPixels) * gridStepPixels,
+      y: Math.round(point.y / gridStepPixels) * gridStepPixels,
+    };
+  }, [gridStepPixels, snapToGrid]);
+
+  useEffect(() => {
+    localStorage.setItem(GRID_VISIBLE_KEY, String(gridVisible));
+    localStorage.setItem(GRID_SNAP_KEY, String(snapToGrid));
+    localStorage.setItem(GRID_SIZE_FEET_KEY, String(gridSizeFeet));
+  }, [gridSizeFeet, gridVisible, snapToGrid]);
 
   useEffect(() => {
     onCanvasSizeChange?.(canvasWorldSize);
@@ -528,9 +553,9 @@ export function GardenCanvas({
     const zone = zones.find(item => item.id === zoneId);
     if (!zone) return;
     const nextPoints = [...zone.points];
-    nextPoints.splice(afterIndex + 1, 0, point);
+    nextPoints.splice(afterIndex + 1, 0, snapPoint(point));
     onUpdateZone(zoneId, { points: nextPoints });
-  }, [zones, onUpdateZone]);
+  }, [zones, onUpdateZone, snapPoint]);
 
   const removeZonePoint = useCallback((zoneId: string, pointIndex: number) => {
     const zone = zones.find(item => item.id === zoneId);
@@ -546,8 +571,7 @@ export function GardenCanvas({
     if (isSpacePanning || panDrag) return;
     const point = getWorldPoint(e.clientX, e.clientY);
     if (!point) return;
-    const x = point.x;
-    const y = point.y;
+    const snappedPoint = snapPoint(point);
 
     if (isDrawingZone) {
       const firstPoint = zoneDraftPoints[0];
@@ -555,16 +579,16 @@ export function GardenCanvas({
         finishZoneDraft();
         return;
       }
-      setZoneDraftPoints(prev => [...prev, { x, y }]);
+      setZoneDraftPoints(prev => [...prev, snappedPoint]);
       return;
     }
 
     if (isSettingScale) {
       if (!scalePoint1) {
-        setScalePoint1({ x, y });
+        setScalePoint1(point);
       } else if (!scalePoint2) {
-        setScalePoint2({ x, y });
-        const dist = Math.sqrt(Math.pow(x - scalePoint1.x, 2) + Math.pow(y - scalePoint1.y, 2));
+        setScalePoint2(point);
+        const dist = Math.sqrt(Math.pow(point.x - scalePoint1.x, 2) + Math.pow(point.y - scalePoint1.y, 2));
         setScaleLinePixels(dist);
         setShowScaleModal(true);
       }
@@ -574,7 +598,7 @@ export function GardenCanvas({
     for (const placed of [...placedPlants].reverse()) {
       const radius = getPlacedItemRadius(placed);
       if (!radius) continue;
-      const dist = Math.sqrt(Math.pow(x - placed.x, 2) + Math.pow(y - placed.y, 2));
+      const dist = Math.sqrt(Math.pow(point.x - placed.x, 2) + Math.pow(point.y - placed.y, 2));
       if (dist <= radius) {
         onSelectPlacedPlant(placed.instanceId);
         onSelectZone(null);
@@ -583,12 +607,12 @@ export function GardenCanvas({
     }
 
     if (placingRock) {
-      onPlaceRock(x, y);
+      onPlaceRock(snappedPoint.x, snappedPoint.y);
       return;
     }
 
     if (selectedPlant) {
-      onPlacePlant(selectedPlant.id, x, y);
+      onPlacePlant(selectedPlant.id, snappedPoint.x, snappedPoint.y);
       return;
     }
 
@@ -634,8 +658,9 @@ export function GardenCanvas({
     if (!point) return;
 
     if (draggingZonePoint) {
-      const x = Math.max(0, Math.min(point.x, canvasWorldSize.width));
-      const y = Math.max(0, Math.min(point.y, canvasWorldSize.height));
+      const snapped = snapPoint(point);
+      const x = Math.max(0, Math.min(snapped.x, canvasWorldSize.width));
+      const y = Math.max(0, Math.min(snapped.y, canvasWorldSize.height));
       const zone = zones.find(item => item.id === draggingZonePoint.zoneId);
       if (!zone) return;
       const nextPoints = zone.points.map((zonePoint, index) => index === draggingZonePoint.pointIndex ? { x, y } : zonePoint);
@@ -644,8 +669,13 @@ export function GardenCanvas({
     }
 
     if (draggingZone) {
-      const dx = point.x - draggingZone.startPoint.x;
-      const dy = point.y - draggingZone.startPoint.y;
+      const anchor = draggingZone.originalPoints[0];
+      const snappedAnchor = snapPoint({
+        x: anchor.x + point.x - draggingZone.startPoint.x,
+        y: anchor.y + point.y - draggingZone.startPoint.y,
+      });
+      const dx = snappedAnchor.x - anchor.x;
+      const dy = snappedAnchor.y - anchor.y;
       const movedPoints = draggingZone.originalPoints.map(zonePoint => ({
         x: zonePoint.x + dx,
         y: zonePoint.y + dy,
@@ -668,8 +698,13 @@ export function GardenCanvas({
     if (!draggingPlant) return;
 
     if (groupDragStart && selectedInstanceIds.includes(draggingPlant)) {
-      const dx = point.x - groupDragStart.startPoint.x;
-      const dy = point.y - groupDragStart.startPoint.y;
+      const anchor = groupDragStart.original.find(item => item.instanceId === groupDragStart.instanceId) || groupDragStart.original[0];
+      const snappedAnchor = snapPoint({
+        x: anchor.x + point.x - groupDragStart.startPoint.x,
+        y: anchor.y + point.y - groupDragStart.startPoint.y,
+      });
+      const dx = snappedAnchor.x - anchor.x;
+      const dy = snappedAnchor.y - anchor.y;
       for (const item of groupDragStart.original) {
         onMovePlacedPlant(
           item.instanceId,
@@ -680,12 +715,13 @@ export function GardenCanvas({
       return;
     }
 
-    const x = point.x - dragOffset.x;
-    const y = point.y - dragOffset.y;
+    const snapped = snapPoint({ x: point.x - dragOffset.x, y: point.y - dragOffset.y });
+    const x = snapped.x;
+    const y = snapped.y;
     const clampedX = Math.max(0, Math.min(x, canvasWorldSize.width));
     const clampedY = Math.max(0, Math.min(y, canvasWorldSize.height));
     onMovePlacedPlant(draggingPlant, clampedX, clampedY);
-  }, [draggingPlant, draggingZonePoint, draggingZone, dragOffset, groupDragStart, selectedInstanceIds, canvasWorldSize, onMovePlacedPlant, onUpdateZone, zones, zoom]);
+  }, [draggingPlant, draggingZonePoint, draggingZone, dragOffset, groupDragStart, selectedInstanceIds, canvasWorldSize, onMovePlacedPlant, onUpdateZone, zones, zoom, snapPoint]);
 
   const handleMouseUp = useCallback(() => {
     if (marqueeSelection) {
@@ -916,7 +952,7 @@ export function GardenCanvas({
       setMarqueeSelection(prev => prev ? { ...prev, current: point } : prev);
       return;
     }
-    if (isDrawingZone) setZonePreviewPoint(point);
+    if (isDrawingZone) setZonePreviewPoint(snapPoint(point));
   };
 
   const visibleZones = zones.filter(zone => zone.visible !== false);
@@ -978,6 +1014,40 @@ export function GardenCanvas({
             {pixelsPerFoot.toFixed(1)} px/ft
           </div>
         )}
+
+        <div className="flex items-center gap-2 border-l border-slate-700 pl-3">
+          <button
+            type="button"
+            onClick={() => setGridVisible(value => !value)}
+            className={`px-2 py-1.5 text-xs rounded border ${gridVisible ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-slate-900 text-slate-200 border-slate-700 hover:bg-slate-800'}`}
+            aria-pressed={gridVisible}
+          >
+            Grid {gridVisible ? 'on' : 'off'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSnapToGrid(value => !value)}
+            className={`px-2 py-1.5 text-xs rounded border ${snapToGrid ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-slate-900 text-slate-200 border-slate-700 hover:bg-slate-800'}`}
+            aria-pressed={snapToGrid}
+            title="Snap manually placed or moved items and Area points"
+          >
+            Snap {snapToGrid ? 'on' : 'off'}
+          </button>
+          <label className="flex items-center gap-1.5 text-xs text-slate-300">
+            <span>Grid</span>
+            <input
+              type="number"
+              min="0.25"
+              max="50"
+              step="0.25"
+              value={gridSizeFeet}
+              onChange={(event) => setGridSizeFeet(Math.max(0.25, Math.min(50, Number(event.target.value) || 1)))}
+              className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-white"
+              aria-label="Grid size in feet"
+            />
+            <span>ft</span>
+          </label>
+        </div>
 
         <div className="flex items-center gap-2 border-l border-slate-700 pl-3">
           <button
@@ -1071,6 +1141,17 @@ export function GardenCanvas({
         >
           {backgroundImage && backgroundOpacity < 1 && (
             <div className="absolute inset-0 bg-gray-100 pointer-events-none" style={{ opacity: 1 - backgroundOpacity }} />
+          )}
+
+          {gridVisible && (
+            <div
+              className="absolute inset-0 z-[1] pointer-events-none"
+              aria-hidden="true"
+              style={{
+                backgroundImage: 'linear-gradient(to right, rgba(15, 23, 42, 0.24) 1px, transparent 1px), linear-gradient(to bottom, rgba(15, 23, 42, 0.24) 1px, transparent 1px)',
+                backgroundSize: `${gridStepPixels}px ${gridStepPixels}px`,
+              }}
+            />
           )}
 
           {isSettingScale && scalePoint1 && (
@@ -1234,7 +1315,7 @@ export function GardenCanvas({
                     type="button"
                     className="absolute w-3 h-3 rounded-full bg-green-500 border-2 border-white shadow pointer-events-auto cursor-copy -translate-x-1/2 -translate-y-1/2"
                     style={{ left: midPoint.x, top: midPoint.y }}
-                    title="Click to add a zone point here"
+                    title="Click to add an area point here"
                     onClick={(event) => {
                       event.stopPropagation();
                       insertZonePoint(selectedZone.id, index, midPoint);
@@ -1346,7 +1427,7 @@ export function GardenCanvas({
                     background: 'transparent',
                     touchAction: 'none',
                   }}
-                  title={`${plant.commonName || plant.botanicalName}\n${placed.displayWidthFt || plant.matureWidthFt || '?'}' display width${placed.displayWidthFt ? ` (mature ${plant.matureWidthFt || '?'}')` : ''}\nZone: ${placed.zone || 'none'}`}
+                  title={`${plant.commonName || plant.botanicalName}\n${placed.displayWidthFt || plant.matureWidthFt || '?'}' display width${placed.displayWidthFt ? ` (mature ${plant.matureWidthFt || '?'}')` : ''}\n${placed.zone ? 'Area assigned' : 'No area assigned'}`}
                 >
                   {isSelected && (
                     <div
@@ -1414,34 +1495,35 @@ export function GardenCanvas({
             );
           })()}
 
-          {placedPlants.length === 0 && zones.length === 0 && !isSettingScale && !isDrawingZone && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none mobile-canvas-empty-overlay">
-              <div className="pointer-events-auto flex max-w-lg flex-col items-center rounded-2xl border border-slate-300 bg-white/90 px-7 py-6 text-center shadow-sm backdrop-blur-sm">
-                {!backgroundImage && (
-                  <img src={`${import.meta.env.BASE_URL}brand/logo-light.svg`} alt="Plant Pending" className="mb-4 h-20 w-auto" />
-                )}
-                {backgroundImage ? (
-                  <p className="text-sm text-slate-600">Select a plant or the Rock Tool from the left panel and click to place it</p>
-                ) : (
-                  <>
-                    <p className="mb-1 text-base font-semibold text-slate-800">
-                      <label className="cursor-pointer text-emerald-700 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-800">
-                        Upload a top-down image of your yard
-                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                      </label>
-                      <span>, </span>
-                      <button type="button" onClick={onLoadExamplePlan} className="text-emerald-700 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-800">
-                        load an example plan
-                      </button>
-                      <span>, or start drawing zones.</span>
-                    </p>
-                    <p className="text-sm text-slate-600">Plant Pending is standing by with strong opinions and probably a shrub.</p>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
         </div>
+
+        {placedPlants.length === 0 && zones.length === 0 && !isSettingScale && !isDrawingZone && (
+          <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none mobile-canvas-empty-overlay">
+            <div className="pointer-events-auto flex w-full max-w-lg flex-col items-center rounded-2xl border border-slate-300 bg-white/90 px-7 py-6 text-center shadow-sm backdrop-blur-sm">
+              {!backgroundImage && (
+                <img src={`${import.meta.env.BASE_URL}brand/logo-light.svg`} alt="Plant Pending" className="mb-4 h-20 w-auto max-w-full" />
+              )}
+              {backgroundImage ? (
+                <p className="text-sm text-slate-600">Select a plant or the Rock Tool from the left panel and click to place it</p>
+              ) : (
+                <>
+                  <p className="mb-1 text-base font-semibold text-slate-800">
+                    <label className="cursor-pointer text-emerald-700 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-800">
+                      Upload a top-down image of your yard
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                    </label>
+                    <span>, </span>
+                    <button type="button" onClick={onLoadExamplePlan} className="text-emerald-700 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-800">
+                      load an example plan
+                    </button>
+                    <span>, or start drawing areas.</span>
+                  </p>
+                  <p className="text-sm text-slate-600">Plant Pending is standing by with strong opinions and probably a shrub.</p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {isSettingScale && !scalePoint1 && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-30 pointer-events-none">

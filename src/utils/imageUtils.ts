@@ -309,6 +309,7 @@ export function getPlantSymbolUrl(plant: Plant): string | null {
 }
 
 export function getPlacedPlantSymbolUrl(plant: Plant, _placed: Pick<PlacedPlant, 'instanceId' | 'plantId'>): string {
+  void _placed;
   const family = getPlantIconFamily(plant);
   const files = ICON_FAMILY_FILES[family];
   const index = getStableIconIndex(plant, family, files.length);
@@ -381,6 +382,7 @@ export function getPlantCategoryColor(plant: Plant): string {
 
 // Check if a plant has a plan-view symbol available
 export function hasPlantSymbol(_plant: Plant): boolean {
+  void _plant;
   return true;
 }
 

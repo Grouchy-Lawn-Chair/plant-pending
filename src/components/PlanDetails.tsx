@@ -5,6 +5,7 @@ import { Plant, PlacedPlant, Warning, GardenPlan, GardenZone, ZoneSunExposure, Z
 import { importPlanFromJSON } from '../utils/storage';
 import { hasPlantImage, getPlantImageUrl, getPlantCategoryColor, getPlantSymbolColor } from '../utils/imageUtils';
 import { PlanIconSvg } from './PlanIconSvg';
+import { readDurableRecipeDebug } from '../utils/recipeGenerationDebug';
 
 const publicAssetUrl = (path: string) => {
   if (!path) return import.meta.env.BASE_URL;
@@ -355,6 +356,7 @@ export function PlanDetails({
       })),
       warnings,
       testLog,
+      durableRecipeEvents: readDurableRecipeDebug(),
       uiInteractions,
       debugSnapshots: allSnapshots,
     };
@@ -1344,6 +1346,9 @@ export function PlanDetails({
         >
           <div
             ref={zoneModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="area-settings-title"
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
             className="area-settings-modal fixed max-h-[82vh] w-[520px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 text-slate-100 shadow-2xl"
@@ -1352,10 +1357,10 @@ export function PlanDetails({
             <div className="flex cursor-move select-none items-start justify-between gap-3 border-b border-slate-800 bg-slate-900 px-4 py-3" onPointerDown={startZoneModalDrag}>
               <div>
                 <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Area settings</div>
-                <h3 className="mt-1 text-base font-semibold text-white">{editingZone.name}</h3>
+                <h3 id="area-settings-title" className="mt-1 text-base font-semibold text-white">{editingZone.name}</h3>
                 <p className="text-xs text-slate-400">Generation first, site conditions second, appearance last.</p>
               </div>
-              <button type="button" onClick={() => setEditingZoneId(null)} className="rounded-lg px-2 py-1 text-xl leading-none text-slate-400 hover:bg-slate-800 hover:text-white">×</button>
+              <button type="button" aria-label="Close area settings" onClick={() => setEditingZoneId(null)} className="area-settings-close rounded-lg px-2 py-1 text-xl leading-none text-slate-400 hover:bg-slate-800 hover:text-white">×</button>
             </div>
 
             <div className="grid grid-cols-4 gap-2 border-b border-slate-800 bg-slate-950 px-4 py-3">

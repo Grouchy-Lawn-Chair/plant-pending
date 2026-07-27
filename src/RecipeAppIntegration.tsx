@@ -54,6 +54,7 @@ type ControlState = {
   openSpaceFill: OpenSpaceFill;
   plants: PlantControl[];
 };
+type RecipeGardenZone = GardenZone & { plantingRecipeId?: string; plantingRecipeName?: string };
 
 function findFiber(element: Element | null): FiberNode | null {
   let current = element;
@@ -83,6 +84,7 @@ function findCallback(start: FiberNode | null, name: string): ((plan: GardenPlan
 }
 function applyPlan(host: HTMLElement, plan: GardenPlan) { const callback = findCallback(findFiber(host), 'onImportPlan') || findCallback(findFiber(host), 'onLoadPlan'); if (!callback) return false; callback(plan); return true; }
 function readPlan(): Partial<GardenPlan> | null { try { const raw = localStorage.getItem(CURRENT_PLAN_KEY); return raw ? JSON.parse(raw) as Partial<GardenPlan> : null; } catch { return null; } }
+function zoneForHost(host: HTMLElement): RecipeGardenZone | undefined { const plan = readPlan(); const modal = host.closest('div.fixed') || host.parentElement?.parentElement; const name = modal?.querySelector('h3')?.textContent?.trim(); return ((plan?.zones || []) as RecipeGardenZone[]).find(zone => zone.name === name); }
 function defaultMode(layer: RecipePhysicsLayer): RecipePlacementMode { return layer === 'front' ? 'front-fill' : layer === 'back' ? 'back-attract' : layer === 'middle' ? 'stack' : 'scatter'; }
 function groupingFor(clump: number): PlantGrouping { return clump >= .82 ? 'large-drift' : clump >= .65 ? 'medium-drift' : clump >= .45 ? 'small-drift' : 'individual'; }
 function controlsFor(recipe: AppRecipe, zone?: GardenZone): ControlState {
@@ -125,20 +127,17 @@ const input = 'mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2 
 const button = 'rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-bold hover:bg-slate-800';
 
 function RecipePanel({ host }: { host: HTMLElement }) {
-  const [selectedId, setSelectedId] = useState(recipeCatalog[0]?.id || '');
+  const initialZone = zoneForHost(host);
+  const [selectedId, setSelectedId] = useState(initialZone?.plantingRecipeId || recipeCatalog[0]?.id || '');
   const [message, setMessage] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [catalogPlants, setCatalogPlants] = useState<Plant[]>([]);
   const [catalogError, setCatalogError] = useState('');
   const [plantSearch, setPlantSearch] = useState('');
   const lastControls = useRef('');
   const selectedRecipe = useMemo(() => recipeCatalog.find(recipe => recipe.id === selectedId), [selectedId]);
-  const currentZone = useMemo(() => {
-    const plan = readPlan();
-    const modal = host.closest('div.fixed') || host.parentElement?.parentElement;
-    const name = modal?.querySelector('h3')?.textContent?.trim();
-    return ((plan?.zones || []) as GardenZone[]).find(zone => zone.name === name);
-  }, [host, selectedId]);
+  const currentZone = useMemo(() => zoneForHost(host), [host]);
   const [controls, setControls] = useState<ControlState>(() => selectedRecipe ? controlsFor(selectedRecipe, currentZone) : controlsFor(recipeCatalog[0]));
 
   useEffect(() => {
@@ -157,7 +156,7 @@ function RecipePanel({ host }: { host: HTMLElement }) {
       setPlantSearch('');
       setMessage('');
     }
-  }, [selectedRecipe, currentZone?.id]);
+  }, [selectedRecipe, currentZone]);
 
   useEffect(() => {
     if (!selectedRecipe) return;
@@ -204,7 +203,7 @@ function RecipePanel({ host }: { host: HTMLElement }) {
     }).slice(0, 12);
   }, [catalogPlants, plantSearch]);
 
-  const generate = (newSeed = false) => {
+  const generate = async (newSeed = false) => {
     if (!selectedRecipe) return;
     const plan = readPlan();
     if (!plan) { setMessage('No current plan was found.'); recordRecipeDebug(host, 'recipe.generation.failed', { recipeId: selectedRecipe.id, reason: 'current-plan-not-found' }); return; }
@@ -250,6 +249,8 @@ function RecipePanel({ host }: { host: HTMLElement }) {
     };
     recordRecipeDebug(host, 'recipe.generation.started', { runId, trigger: newSeed ? 'new-seed-and-generate' : 'generate', recipe: { id: selectedRecipe.id, name: selectedRecipe.name, sourcePdf: selectedRecipe.sourcePdf || null, sourcePage: selectedRecipe.sourcePage || null, pattern: selectedRecipe.pattern, designIntent: selectedRecipe.designIntent }, zone: { id: zone.id, name: zone.name, polygon: zone.points, frontEdges: edgeDebug(zone, zone.edgeRoles.front), backEdges: edgeDebug(zone, zone.edgeRoles.back) }, scale: { pixelsPerFoot, source: usedFallbackScale ? 'fallback-20px-per-foot' : 'plan-scale' }, controls: runControls, activePlants: active, disabledPlants: runControls.plants.filter(item => !item.enabled), existingZonePlantCount: existingZonePlants.length, physicsInput });
 
+    setIsGenerating(true);
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     try {
       const physics = runRecipePhysics(physicsInput);
       const byId = new Map(active.map(item => [item.plantId, item]));
@@ -275,6 +276,8 @@ function RecipePanel({ host }: { host: HTMLElement }) {
       const failure = { runId, recipeId: selectedRecipe.id, recipeName: selectedRecipe.name, zoneId: zone.id, zoneName: zone.name, seed, durationMs: Math.round(performance.now() - startedAt), controls: runControls, physicsInput, reason: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack || null : null };
       recordRecipeDebug(host, 'recipe.generation.failed', failure);
       setMessage(`Recipe generation failed: ${failure.reason}`);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -345,7 +348,7 @@ function RecipePanel({ host }: { host: HTMLElement }) {
                 <input type="number" min="6" max="240" value={item.widthInches} onChange={event => updatePlant(item.plantId, { widthInches: Math.max(6, Number(event.target.value) || 6) })} className={input} />
               </label>
               <label className="text-[10px]">Layer
-                <select value={item.layer} onChange={event => updatePlant(item.plantId, { layer: event.target.value as RecipePhysicsLayer })} className={input}>
+                <select value={item.layer} onChange={event => { const layer = event.target.value as RecipePhysicsLayer; updatePlant(item.plantId, { layer, mode: defaultMode(layer) }); }} className={input}>
                   <option value="front">Front</option><option value="middle">Middle</option><option value="back">Back</option><option value="accent">Accent</option>
                 </select>
               </label>
@@ -386,8 +389,8 @@ function RecipePanel({ host }: { host: HTMLElement }) {
       )}
 
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <button type="button" onClick={() => generate(false)} className="rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-semibold hover:bg-blue-500">Generate</button>
-        <button type="button" onClick={() => generate(true)} className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-semibold hover:bg-slate-800">Generate another version</button>
+        <button type="button" disabled={isGenerating} onClick={() => void generate(false)} className="rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-semibold hover:bg-blue-500 disabled:cursor-wait disabled:opacity-60">{isGenerating ? 'Generating…' : 'Generate'}</button>
+        <button type="button" disabled={isGenerating} onClick={() => void generate(true)} className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-semibold hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60">Generate another version</button>
       </div>
       {message && <div className="mt-2 rounded-lg border border-slate-700 bg-slate-950/60 p-2 text-[11px] text-slate-300">{message}</div>}
     </section>,
@@ -396,7 +399,7 @@ function RecipePanel({ host }: { host: HTMLElement }) {
 }
 
 function QuickRecipeMixPanel({ host }: { host: HTMLElement }) {
-  const [selectedId, setSelectedId] = useState('');
+  const [selectedId, setSelectedId] = useState(() => zoneForHost(host)?.plantingRecipeId || '');
   const [message, setMessage] = useState('');
   const selectedRecipe = recipeCatalog.find(recipe => recipe.id === selectedId);
 

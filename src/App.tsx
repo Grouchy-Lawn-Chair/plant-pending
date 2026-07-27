@@ -1257,7 +1257,11 @@ function App() {
 
   // Warnings state - computed from placed plants
   const warnings = generateWarnings(placedPlants, plants, pixelsPerFoot);
-  const shrubScoreState: ShrubScoreState = { score: shrubScore, eventKeys: scoreEventKeys, milestones: scoreMilestones };
+  const shrubScoreState = useMemo<ShrubScoreState>(() => ({
+    score: shrubScore,
+    eventKeys: scoreEventKeys,
+    milestones: scoreMilestones,
+  }), [shrubScore, scoreEventKeys, scoreMilestones]);
   const sortedSavedPlans = useMemo(() => {
     return [...savedPlans].sort((a, b) => {
       const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
@@ -1720,7 +1724,7 @@ function App() {
       zoneShapesVisible,
       shrubScore: shrubScoreState,
     });
-  }, [placedPlants, backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, notes, planName, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, zones, plantingGroups, zoneShapesVisible, shrubScore, scoreEventKeys, scoreMilestones]);
+  }, [placedPlants, backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, notes, planName, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, zones, plantingGroups, zoneShapesVisible, shrubScoreState]);
 
   // Filtered and sorted plants for the library
   const filteredPlants = useMemo(() => sortPlants(filterPlants(plants, filters), sortBy), [plants, filters, sortBy]);
@@ -1745,7 +1749,10 @@ function App() {
   }, [selectedPlant, addTestLog, getDebugStateSummary]);
 
   const handleSelectPlacedPlant = useCallback((instanceId: string | null) => {
-    if (selectedInstanceId === instanceId && selectedInstanceIds.length <= 1) return;
+    if (selectedInstanceId === instanceId && selectedInstanceIds.length <= 1) {
+      if (instanceId) setRightInspectorSection('item');
+      return;
+    }
     setSelectedInstanceId(instanceId);
     setSelectedInstanceIds(instanceId ? [instanceId] : []);
     if (instanceId && !window.matchMedia('(max-width: 1023px)').matches) {

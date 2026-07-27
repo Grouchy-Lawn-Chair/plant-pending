@@ -494,7 +494,6 @@ export function PrintView({
   const schedulePages = chunkArray(plantCounts, paperSettings.scheduleRowsPerPage);
 
   const zonePageCounts = zoneSummaries.map(({ plantGroups }) => {
-    const remainingListRows = Math.max(0, plantGroups.length - paperSettings.zoneListRowsOnPlanPage);
     const continuationPages = chunkArray(plantGroups.slice(paperSettings.zoneListRowsOnPlanPage), paperSettings.zoneListRowsPerPage).length;
     const photoPages = chunkArray(plantGroups, paperSettings.photoCardsPerPage).length;
     return 1 + continuationPages + photoPages;

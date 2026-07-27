@@ -339,6 +339,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
 
 // Default display mode based on whether plant has a plan symbol or image
 export const getDefaultDisplayMode = (_plant: Plant): DisplayMode => {
+  void _plant;
   return 'symbol';
 };
 

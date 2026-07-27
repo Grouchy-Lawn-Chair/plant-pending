@@ -170,6 +170,14 @@ div[class~="fixed"][class~="inset-0"] div[class~="bg-white"] button[class*="bg-g
     -webkit-overflow-scrolling: touch;
   }
   .mobile-canvas-toolbar > * { flex: 0 0 auto !important; }
+  .mobile-canvas-toolbar button,
+  .mobile-canvas-toolbar > label { min-height: 44px; }
+  .mobile-canvas-toolbar button { min-width: 44px; }
+
+  .area-settings-modal button,
+  .area-settings-modal select,
+  .area-settings-modal input { min-height: 44px; }
+  .area-settings-close { min-width: 44px; }
 
   /* Preserve the approved bottom-rail icons. */
   .mobile-primary-yard > *,

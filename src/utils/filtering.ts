@@ -239,11 +239,12 @@ export function sortPlants(plants: Plant[], sortBy: SortOption): Plant[] {
         return mA - mB;
       });
 
-    case 'pollinatorHigh':
+    case 'pollinatorHigh': {
       const pollinatorOrder = { 'High': 3, 'Medium': 2, 'Low': 1, '': 0 };
       return sorted.sort((a, b) =>
         pollinatorOrder[b.pollinatorValue] - pollinatorOrder[a.pollinatorValue]
       );
+    }
 
     default:
       return sorted;

@@ -323,54 +323,17 @@ export default function MobileUiDiagnostics() {
       if (store.snapshots.length > 40) store.snapshots.splice(0, store.snapshots.length - 40);
     };
 
-    const schedule = (reason: string, delay = 420) => {
+    const onExportRequested = () => {
+      recordUiInteraction('debug-export', document.activeElement);
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => void capture(reason), delay);
+      timer = window.setTimeout(() => void capture('export-requested'), 20);
     };
 
-    const onClick = (event: MouseEvent) => {
-      recordUiInteraction('click', event.target);
-      const target = event.target instanceof Element ? event.target : null;
-      const button = target?.closest('button,[role="button"]');
-      const text = button?.textContent?.trim().replace(/\s+/g, ' ').slice(0, 100) || 'unknown-control';
-      const exportRequested = /export.*debug|debug.*package/i.test(text);
-      schedule(exportRequested ? 'export-requested' : `after-click:${text}`, exportRequested ? 40 : 500);
-    };
-    const onInput = (event: Event) => {
-      recordUiInteraction(event.type, event.target);
-      schedule(`after-${event.type}`, 500);
-    };
-    const onResize = () => schedule('viewport-changed', 550);
-    const onOrientation = () => schedule('orientation-changed', 700);
-    const onExportRequested = () => schedule('export-requested', 20);
-
-    const observer = new MutationObserver(() => schedule('layout-changed', 500));
-    observer.observe(document.getElementById('root') || document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'style', 'open', 'aria-expanded', 'aria-hidden'],
-    });
-
-    document.addEventListener('click', onClick, true);
-    document.addEventListener('input', onInput, true);
-    document.addEventListener('change', onInput, true);
-    window.addEventListener('resize', onResize);
-    window.addEventListener('orientationchange', onOrientation);
-    window.visualViewport?.addEventListener('resize', onResize);
     window.addEventListener('plant-pending-debug-export', onExportRequested);
-    schedule('initial', 900);
 
     return () => {
       disposed = true;
-      observer.disconnect();
       window.clearTimeout(timer);
-      document.removeEventListener('click', onClick, true);
-      document.removeEventListener('input', onInput, true);
-      document.removeEventListener('change', onInput, true);
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('orientationchange', onOrientation);
-      window.visualViewport?.removeEventListener('resize', onResize);
       window.removeEventListener('plant-pending-debug-export', onExportRequested);
     };
   }, []);
