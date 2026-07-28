@@ -3,6 +3,7 @@
 import { Fragment, useMemo, useRef, useState } from 'react';
 import { Plant, PlacedPlant, GardenZone, PlantLabelMode, PlantClumpStrength } from '../types/plant';
 import { getPlantImageUrl, getPlantCategoryColor, getPlacedPlantColor, getPlantSymbolColor, hasPlantImage, hasPlantSymbol } from '../utils/imageUtils';
+import { PlanIconSvg } from './PlanIconSvg';
 import { TopDownPlantSymbol } from './TopDownPlantSymbol';
 
 interface PrintViewProps {
@@ -125,6 +126,80 @@ function getBounds(points: Point[]): MapBounds {
     maxX: Math.max(...points.map(point => point.x)),
     maxY: Math.max(...points.map(point => point.y)),
   };
+}
+
+function isPointInPolygon(point: Point, polygon: Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const current = polygon[i];
+    const previous = polygon[j];
+    const intersects = current.y > point.y !== previous.y > point.y
+      && point.x < ((previous.x - current.x) * (point.y - current.y)) / ((previous.y - current.y) || 1) + current.x;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function isPrintableArea(zone: GardenZone): boolean {
+  return zone.zoneType !== 'exclusion' || (!!zone.surfaceType && zone.surfaceType !== 'exclusion');
+}
+
+function getPolygonArea(points: Point[]): number {
+  if (points.length < 3) return 0;
+  return Math.abs(points.reduce((area, point, index) => {
+    const next = points[(index + 1) % points.length];
+    return area + point.x * next.y - next.x * point.y;
+  }, 0) / 2);
+}
+
+function getRockAreaId(placed: PlacedPlant, zones: GardenZone[]): string {
+  if (placed.zone) return placed.zone;
+  return zones
+    .filter(zone => isPrintableArea(zone) && zone.points.length >= 3 && isPointInPolygon(placed, zone.points))
+    .sort((a, b) => getPolygonArea(a.points) - getPolygonArea(b.points))[0]?.id || '';
+}
+
+function isRockInArea(placed: PlacedPlant, zone: GardenZone, zones: GardenZone[]): boolean {
+  return (placed.itemType || 'plant') === 'rock' && getRockAreaId(placed, zones) === zone.id;
+}
+
+function formatAreaSun(value?: GardenZone['sunExposure']): string {
+  switch (value) {
+    case 'fullSun': return 'Full sun, 6+ hours';
+    case 'partSun': return 'Part sun, 4–6 hours';
+    case 'partialSun': return 'Part sun/shade, 3–6 hours';
+    case 'partShade': return 'Part shade, 2–4 hours';
+    case 'fullShade': return 'Full shade, under 2 hours';
+    default: return 'Unknown';
+  }
+}
+
+function formatAreaAfternoonSun(value?: GardenZone['afternoonSun']): string {
+  if (value === 'yes') return 'Yes, gets afternoon sun';
+  if (value === 'no') return 'No, shade later';
+  return 'Unknown';
+}
+
+function formatAreaWater(value?: GardenZone['waterNeed']): string {
+  switch (value) {
+    case 'noPreference': return 'No preference';
+    case 'high': return 'High, waterwise plants only';
+    case 'medium': return 'Medium, mostly waterwise';
+    case 'low': return 'Low, okay with thirstier plants';
+    default: return 'Unknown';
+  }
+}
+
+function formatRockCounts(rocks: PlacedPlant[]): string {
+  const counts = new Map<number, number>();
+  rocks.forEach(rock => {
+    const sizeFt = rock.rockSizeFt || 2;
+    counts.set(sizeFt, (counts.get(sizeFt) || 0) + 1);
+  });
+  return Array.from(counts)
+    .sort(([sizeA], [sizeB]) => sizeA - sizeB)
+    .map(([sizeFt, count]) => `${count} × ${sizeFt} ft`)
+    .join(', ');
 }
 
 function inflateBounds(bounds: MapBounds, padding: number, fallbackWidth: number, fallbackHeight: number): MapBounds {
@@ -260,8 +335,13 @@ function PlanMap({
   const frameWidth = boundsWidth * scale;
   const frameHeight = boundsHeight * scale;
 
-  const visiblePlants = showOnlyZoneId ? placedPlants.filter(placed => placed.zone === showOnlyZoneId) : placedPlants;
-  const visibleZones = showOnlyZoneId ? zones.filter(zone => zone.id === showOnlyZoneId && zone.zoneType !== 'exclusion') : zones.filter(zone => zone.zoneType !== 'exclusion');
+  const selectedArea = showOnlyZoneId ? zones.find(zone => zone.id === showOnlyZoneId) : undefined;
+  const visiblePlants = selectedArea
+    ? placedPlants.filter(placed => placed.zone === selectedArea.id || isRockInArea(placed, selectedArea, zones))
+    : placedPlants;
+  const visibleZones = showOnlyZoneId
+    ? zones.filter(zone => zone.id === showOnlyZoneId && isPrintableArea(zone))
+    : zones.filter(isPrintableArea);
 
   const toFrameX = (x: number) => (x - bounds.minX) * scale;
   const toFrameY = (y: number) => (y - bounds.minY) * scale;
@@ -304,29 +384,37 @@ function PlanMap({
       </svg>
 
       {visiblePlants.map((placed, index) => {
-        const plant = getPlantById(plants, placed.plantId);
-        if (!plant) return null;
         const left = toFrameX(placed.x);
         const top = toFrameY(placed.y);
 
         if ((placed.itemType || 'plant') === 'rock') {
           const rockSize = Math.max((pixelsPerFoot || 20) * (placed.rockSizeFt || 2) * scale, 14);
+          const rockPath = (placed.rockSvg || 'rocks-icons/rock1.svg').replace(/^\/+/, '');
           return (
             <div
               key={placed.instanceId}
-              className="absolute flex items-center justify-center rounded-full border border-slate-600 shadow-sm"
+              className="absolute flex items-center justify-center"
               style={{
                 left,
                 top,
                 width: rockSize,
                 height: rockSize,
                 transform: `translate(-50%, -50%) rotate(${placed.rotationDeg || 0}deg)`,
-                background: placed.rockColor || '#9ca3af',
               }}
-            />
+            >
+              <PlanIconSvg
+                src={`${import.meta.env.BASE_URL}${rockPath}`}
+                color={placed.rockColor || '#9ca3af'}
+                opacity={0.9}
+                className="rock-plan-icon h-full w-full"
+                title={`Rock ${placed.rockSizeFt || 2}'`}
+              />
+            </div>
           );
         }
 
+        const plant = getPlantById(plants, placed.plantId);
+        if (!plant) return null;
         const radius = Math.max(((pixelsPerFoot || 20) * (placed.displayWidthFt || plant.matureWidthFt || 3) * scale) / 2, 7);
         const baseColor = getPlacedPlantColor(plant, placed, index) || getPlantCategoryColor(plant);
         const imageUrl = getPlantImageUrl(plant);
@@ -467,11 +555,22 @@ export function PrintView({
     return map;
   }, [plantCounts]);
 
+  const rockCounts = useMemo(() => {
+    const groups = new Map<number, number>();
+    placedPlants.forEach(placed => {
+      if ((placed.itemType || 'plant') !== 'rock') return;
+      const sizeFt = placed.rockSizeFt || 2;
+      groups.set(sizeFt, (groups.get(sizeFt) || 0) + 1);
+    });
+    return Array.from(groups, ([sizeFt, count]) => ({ sizeFt, count }))
+      .sort((a, b) => a.sizeFt - b.sizeFt);
+  }, [placedPlants]);
+
   const totalCost = useMemo(() => plantCounts.reduce((total, group) => addPrice(total, getPlantUnitPrice(group.plant), group.count), { min: 0, max: 0, known: 0 }), [plantCounts]);
 
-  const zoneSummaries = useMemo(() => zones.filter(zone => zone.zoneType !== 'exclusion').map(zone => {
+  const zoneSummaries = useMemo(() => zones.filter(isPrintableArea).map(zone => {
     const zonePlants = placedPlants.filter(placed => placed.zone === zone.id && (placed.itemType || 'plant') !== 'rock');
-    const zoneRocks = placedPlants.filter(placed => placed.zone === zone.id && (placed.itemType || 'plant') === 'rock');
+    const zoneRocks = placedPlants.filter(placed => isRockInArea(placed, zone, zones));
     const plantGroups: PlantCountGroup[] = [];
     for (const placed of zonePlants) {
       const plant = getPlantById(plants, placed.plantId);
@@ -715,7 +814,7 @@ export function PrintView({
               <div className="min-w-0">
                 <h2 className="mb-2 text-[14pt] font-bold">Areas</h2>
                 <div className="space-y-1.5">
-                  {zoneSummaries.length === 0 && <p className="text-[10pt] text-slate-500">No zones drawn yet.</p>}
+                  {zoneSummaries.length === 0 && <p className="text-[10pt] text-slate-500">No Areas drawn yet.</p>}
                   {zoneSummaries.map(({ zone, zonePlants, zoneRocks, cost }) => (
                     <div key={zone.id} className="rounded-xl border border-slate-300 p-2 text-[10pt]">
                       <div className="flex items-center justify-between gap-2">
@@ -776,12 +875,12 @@ export function PrintView({
                 <section className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
                   <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
                     <div>
-                      <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Zone detail sheet</div>
+                      <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Area detail sheet</div>
                       <h1 className="mt-1 text-xl font-black">{zone.name}</h1>
                       <p className="mt-1 text-[10pt] text-slate-600">{zonePlants.length} plants · {zoneRocks.length} rocks · {getZoneArea(zone.points, pixelsPerFoot)}</p>
                     </div>
                     <div className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-right">
-                      <div className="text-[10pt] uppercase tracking-[0.18em] text-slate-500">Zone plant cost</div>
+                      <div className="text-[10pt] uppercase tracking-[0.18em] text-slate-500">Area plant cost</div>
                       <div className="mt-1 text-xl font-black text-emerald-700">{formatTotal(cost)}</div>
                     </div>
                   </div>
@@ -802,18 +901,24 @@ export function PrintView({
                         showOnlyZoneId={zone.id}
                         height={paperSettings.zoneMapHeight}
                       />
-                      <div className="mt-2 grid grid-cols-3 gap-2 text-[10pt]">
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="uppercase text-slate-500">Sun</div><div className="font-bold">{zone.sunExposure || 'Unknown'}</div></div>
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="uppercase text-slate-500">Water</div><div className="font-bold">{zone.waterNeed || 'No preference'}</div></div>
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-2"><div className="uppercase text-slate-500">Fullness</div><div className="font-bold">{zone.density ?? 50}%</div></div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-[9pt] leading-tight">
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2"><div className="text-[8pt] uppercase tracking-wide text-slate-500">Sun amount</div><div className="mt-0.5 font-bold">{formatAreaSun(zone.sunExposure)}</div></div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2"><div className="text-[8pt] uppercase tracking-wide text-slate-500">Afternoon sun</div><div className="mt-0.5 font-bold">{formatAreaAfternoonSun(zone.afternoonSun)}</div></div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2"><div className="text-[8pt] uppercase tracking-wide text-slate-500">Waterwise priority</div><div className="mt-0.5 font-bold">{formatAreaWater(zone.waterNeed)}</div></div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2"><div className="text-[8pt] uppercase tracking-wide text-slate-500">Planting fullness</div><div className="mt-0.5 font-bold">{zone.density ?? 50}%</div></div>
                       </div>
                       {zone.notes && <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-[10pt] text-slate-700">{zone.notes}</p>}
                     </div>
                     <div className="min-w-0">
-                      <h2 className="mb-2 text-[13pt] font-bold">Zone plant list</h2>
+                      <h2 className="mb-2 text-[13pt] font-bold">Area plant list</h2>
                       {firstRows.length === 0 ? (
                         <p className="text-[10pt] text-slate-500">No plants in this area.</p>
                       ) : renderZonePlantTable(firstRows)}
+                      {zoneRocks.length > 0 && (
+                        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-[10pt]">
+                          <span className="font-bold">Rocks:</span> {formatRockCounts(zoneRocks)}
+                        </div>
+                      )}
                       {continuationPages.length > 0 && <p className="mt-2 text-[10pt] text-slate-500">Plant list continues on the next page.</p>}
                     </div>
                   </div>
@@ -823,7 +928,7 @@ export function PrintView({
                 {continuationPages.map((pageRows, continuationIndex) => (
                   <section key={`${zone.id}-list-${continuationIndex}`} className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
                     <div className="mb-3 border-b border-slate-300 pb-3">
-                      <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Zone plant list continued</div>
+                      <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Area plant list continued</div>
                       <h1 className="mt-1 text-xl font-black">{zone.name}</h1>
                       <p className="mt-1 text-[10pt] text-slate-600">Rows {paperSettings.zoneListRowsOnPlanPage + continuationIndex * paperSettings.zoneListRowsPerPage + 1}–{paperSettings.zoneListRowsOnPlanPage + continuationIndex * paperSettings.zoneListRowsPerPage + pageRows.length}</p>
                     </div>
@@ -838,7 +943,7 @@ export function PrintView({
                   <section key={`${zone.id}-photos-${photoIndex}`} className="print-page mx-auto flex flex-col bg-white text-slate-950 shadow-2xl" style={pageStyle}>
                     <div className="mb-3 flex items-start justify-between border-b border-slate-300 pb-3">
                       <div>
-                        <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Zone plant photo sheet</div>
+                        <div className="text-[10pt] uppercase tracking-[0.22em] text-emerald-700">Area plant photo sheet</div>
                         <h1 className="mt-1 text-xl font-black">{zone.name}{photoPages.length > 1 ? ` · ${photoIndex + 1} of ${photoPages.length}` : ''}</h1>
                         <p className="mt-1 text-[10pt] text-slate-600">{plantGroups.length} unique plant types · {zonePlants.length} placed plants</p>
                       </div>
@@ -881,6 +986,31 @@ export function PrintView({
               <div className="rounded-xl border border-slate-300 bg-slate-50 p-4"><div className="text-[10pt] uppercase tracking-wide text-slate-500">Unique plants</div><div className="mt-1 text-xl font-black">{plantCounts.length}</div></div>
               <div className="rounded-xl border border-slate-300 bg-slate-50 p-4"><div className="text-[10pt] uppercase tracking-wide text-slate-500">Total plant count</div><div className="mt-1 text-xl font-black">{plantCounts.reduce((sum, group) => sum + group.count, 0)}</div></div>
             </div>
+            {rockCounts.length > 0 && (
+              <div className="mt-4">
+                <h2 className="mb-2 text-[13pt] font-bold">Rock shopping list</h2>
+                <table className="w-full border-collapse text-[10pt]">
+                  <thead>
+                    <tr className="bg-slate-100 text-left uppercase tracking-wide text-slate-600">
+                      <th className="border border-slate-300 p-2">Rock size</th>
+                      <th className="border border-slate-300 p-2">Quantity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rockCounts.map(group => (
+                      <tr key={group.sizeFt}>
+                        <td className="border border-slate-300 p-2 font-semibold">{group.sizeFt} ft</td>
+                        <td className="border border-slate-300 p-2">{group.count}</td>
+                      </tr>
+                    ))}
+                    <tr className="bg-slate-50 font-bold">
+                      <td className="border border-slate-300 p-2">Total rocks</td>
+                      <td className="border border-slate-300 p-2">{rockCounts.reduce((sum, group) => sum + group.count, 0)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
             <p className="mt-4 text-[10pt] text-slate-500">Prices are planning estimates from the catalog where available. Call the nursery to confirm current inventory, price, and container size.</p>
             <PrintFooter pageIndex={summaryPageIndex} />
           </section>
@@ -894,7 +1024,7 @@ export function PrintView({
                 </div>
                 <img src={`${import.meta.env.BASE_URL}brand/app-icon-mark.svg`} alt="Plant Pending" className="h-10 w-10" />
               </div>
-              {unassignedPlants.length > 0 && <div className="mb-5"><h2 className="mb-2 text-[13pt] font-bold">Unassigned plants</h2><p className="text-[10pt] text-slate-600">{unassignedPlants.length} placed plants are not assigned to a zone.</p></div>}
+              {unassignedPlants.length > 0 && <div className="mb-5"><h2 className="mb-2 text-[13pt] font-bold">Unassigned plants</h2><p className="text-[10pt] text-slate-600">{unassignedPlants.length} placed plants are not assigned to an Area.</p></div>}
               {notes && <div><h2 className="mb-2 text-[13pt] font-bold">General notes</h2><p className="whitespace-pre-wrap rounded-xl border border-slate-300 bg-slate-50 p-4 text-[10pt] text-slate-700">{notes}</p></div>}
               <PrintFooter pageIndex={notesPageIndex} />
             </section>
