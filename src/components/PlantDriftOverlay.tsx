@@ -9,6 +9,7 @@ interface PlantDriftOverlayProps {
   legendNumber: number;
   placementIndex: number;
   isSelected?: boolean;
+  zIndex?: number;
 }
 
 function labelFontSize(cluster: PlantDriftCluster): string {
@@ -58,6 +59,7 @@ export function PlantDriftOverlay({
   labelMode,
   legendNumber,
   isSelected = false,
+  zIndex = 10,
 }: PlantDriftOverlayProps) {
   const { bounds, members, color, key } = cluster;
   const clusterCenter = averagePoint(cluster);
@@ -73,8 +75,8 @@ export function PlantDriftOverlay({
 
   return (
     <div
-      className={`absolute z-10 pointer-events-none overflow-visible ${isSelected ? 'z-20' : ''}`}
-      style={{ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height }}
+      className="absolute pointer-events-none overflow-visible"
+      style={{ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height, zIndex: zIndex + (isSelected ? 2 : 0) }}
     >
       <svg width={bounds.width} height={bounds.height} className="absolute inset-0 overflow-visible">
         <defs>
@@ -137,6 +139,7 @@ export function PlantDriftOverlay({
             );
           })}
         </g>
+
       </svg>
 
       {isSelected && (

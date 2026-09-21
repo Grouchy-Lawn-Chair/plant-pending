@@ -1,13 +1,14 @@
 // GardenCanvas component - the main canvas for placing and dragging plants
 
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { Plant, PlacedPlant, DisplayMode, PlantLabelMode, PlantClumpStrength, GardenZone } from '../types/plant';
+import { Plant, PlacedPlant, DisplayMode, PlantLabelMode, PlantClumpStrength, GardenZone, LinearSiteFeature, LinearSiteFeatureKind, SiteLight, PlanLayer } from '../types/plant';
 import { getPlantImageUrl, getPlantCategoryColor, getPlacedPlantColor, isImageLoaded, isImageFailed, markImageLoaded, markImageFailed } from '../utils/imageUtils';
 import { PlanIconSvg } from './PlanIconSvg';
 import { TopDownPlantSymbol } from './TopDownPlantSymbol';
 import { buildGroupedCallouts } from '../utils/calloutUtils';
 import { buildPlantDriftClusters } from '../utils/driftUtils';
 import { PlantDriftOverlay } from './PlantDriftOverlay';
+import { SiteFeatureInspector } from './SiteFeatureInspector';
 
 const GRID_VISIBLE_KEY = 'plant-pending-grid-visible';
 const GRID_SNAP_KEY = 'plant-pending-grid-snap';
@@ -33,7 +34,13 @@ interface GardenCanvasProps {
   plants: Plant[];
   placedPlants: PlacedPlant[];
   zones: GardenZone[];
+  siteFeatures: LinearSiteFeature[];
+  siteLights: SiteLight[];
+  planLayers: PlanLayer[];
+  northRotationDeg: number;
   selectedZoneId: string | null;
+  selectedSiteFeatureId: string | null;
+  selectedSiteLightId: string | null;
   zoneShapesVisible: boolean;
   selectedPlant: Plant | null;
   placingRock: boolean;
@@ -61,6 +68,17 @@ interface GardenCanvasProps {
   onAddZone: (zone: Omit<GardenZone, 'id' | 'name' | 'color' | 'opacity' | 'visible'>) => void;
   onUpdateZone: (zoneId: string, updates: Partial<GardenZone>) => void;
   onSelectZone: (zoneId: string | null) => void;
+  onAddSiteFeature: (feature: Omit<LinearSiteFeature, 'id' | 'schemaVersion' | 'order'>) => void;
+  onUpdateSiteFeature: (featureId: string, updates: Partial<LinearSiteFeature>) => void;
+  onDeleteSiteFeature: (featureId: string) => void;
+  onSelectSiteFeature: (featureId: string | null) => void;
+  onAddSiteLight: (light: Omit<SiteLight, 'id' | 'schemaVersion' | 'order'>) => void;
+  onUpdateSiteLight: (lightId: string, updates: Partial<SiteLight>) => void;
+  onDeleteSiteLight: (lightId: string) => void;
+  onSelectSiteLight: (lightId: string | null) => void;
+  onUpdatePlanLayer: (layerId: string, updates: Partial<PlanLayer>) => void;
+  onReorderPlanLayer: (layerId: string, direction: -1 | 1) => void;
+  onNorthRotationChange: (degrees: number) => void;
   onZoneShapesVisibleChange: (visible: boolean) => void;
   onBackgroundImageChange: (image: string | null) => void;
   onBackgroundOpacityChange: (opacity: number) => void;
@@ -88,6 +106,7 @@ interface PlantCircleProps {
   placementIndex: number;
   onPointerDown: (e: React.PointerEvent) => void;
   drifted?: boolean;
+  zIndex: number;
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -183,9 +202,10 @@ interface RockIconProps {
   isSelected: boolean;
   onPointerDown: (e: React.PointerEvent) => void;
   drifted?: boolean;
+  zIndex: number;
 }
 
-function RockIcon({ placed, sizePx, isSelected, onPointerDown }: RockIconProps) {
+function RockIcon({ placed, sizePx, isSelected, onPointerDown, zIndex }: RockIconProps) {
   const rockUrl = publicAssetUrl(placed.rockSvg || 'rocks-icons/rock1.svg');
   const rockColor = placed.rockColor || '#8f8f8f';
   const rotationDeg = placed.rotationDeg ?? fallbackRotation(placed.instanceId, placed.plantId);
@@ -193,7 +213,7 @@ function RockIcon({ placed, sizePx, isSelected, onPointerDown }: RockIconProps) 
   return (
     <div
       onPointerDown={onPointerDown}
-      className={`absolute cursor-move select-none ${isSelected ? 'z-20' : 'z-10'}`}
+      className="absolute cursor-move select-none"
       style={{
         left: placed.x,
         top: placed.y,
@@ -201,6 +221,7 @@ function RockIcon({ placed, sizePx, isSelected, onPointerDown }: RockIconProps) 
         width: sizePx,
         height: sizePx,
         touchAction: 'none',
+        zIndex: zIndex + (isSelected ? 2 : 0),
       }}
       title={`Rock ${placed.rockSizeFt || 2}'`}
     >
@@ -225,7 +246,7 @@ function RockIcon({ placed, sizePx, isSelected, onPointerDown }: RockIconProps) 
   );
 }
 
-function PlantCircle({ plant, placed, radius, isSelected, circleOpacity, labelMode, legendNumber, placementIndex, onPointerDown, drifted = false }: PlantCircleProps) {
+function PlantCircle({ plant, placed, radius, isSelected, circleOpacity, labelMode, legendNumber, placementIndex, onPointerDown, drifted = false, zIndex }: PlantCircleProps) {
   const displayMode: DisplayMode = placed.displayMode || 'color';
   const imageUrl = getPlantImageUrl(plant);
   const categoryColor = getPlantCategoryColor(plant);
@@ -263,7 +284,7 @@ function PlantCircle({ plant, placed, radius, isSelected, circleOpacity, labelMo
   return (
     <div
       onPointerDown={onPointerDown}
-      className={`absolute cursor-move select-none ${isSelected ? 'z-20' : 'z-10'}`}
+      className="absolute cursor-move select-none"
       style={{
         left: placed.x,
         top: placed.y,
@@ -271,6 +292,7 @@ function PlantCircle({ plant, placed, radius, isSelected, circleOpacity, labelMo
         width: symbolSize,
         height: symbolSize,
         touchAction: 'none',
+        zIndex: zIndex + (isSelected ? 2 : 0),
       }}
     >
       {showSymbolMode && (
@@ -338,7 +360,13 @@ export function GardenCanvas({
   plants,
   placedPlants,
   zones,
+  siteFeatures,
+  siteLights,
+  planLayers,
+  northRotationDeg,
   selectedZoneId,
+  selectedSiteFeatureId,
+  selectedSiteLightId,
   zoneShapesVisible,
   selectedPlant,
   placingRock,
@@ -365,6 +393,17 @@ export function GardenCanvas({
   onAddZone,
   onUpdateZone,
   onSelectZone,
+  onAddSiteFeature,
+  onUpdateSiteFeature,
+  onDeleteSiteFeature,
+  onSelectSiteFeature,
+  onAddSiteLight,
+  onUpdateSiteLight,
+  onDeleteSiteLight,
+  onSelectSiteLight,
+  onUpdatePlanLayer,
+  onReorderPlanLayer,
+  onNorthRotationChange,
   onZoneShapesVisibleChange,
   onBackgroundImageChange,
   onBackgroundOpacityChange,
@@ -402,6 +441,12 @@ export function GardenCanvas({
   const [zonePreviewPoint, setZonePreviewPoint] = useState<{ x: number; y: number } | null>(null);
   const [draggingZonePoint, setDraggingZonePoint] = useState<{ zoneId: string; pointIndex: number } | null>(null);
   const [draggingZone, setDraggingZone] = useState<{ zoneId: string; startPoint: { x: number; y: number }; originalPoints: { x: number; y: number }[] } | null>(null);
+  const [siteFeatureTool, setSiteFeatureTool] = useState<LinearSiteFeatureKind | 'light' | null>(null);
+  const [siteFeatureDraftPoints, setSiteFeatureDraftPoints] = useState<{ x: number; y: number }[]>([]);
+  const [siteFeaturePreviewPoint, setSiteFeaturePreviewPoint] = useState<{ x: number; y: number } | null>(null);
+  const [showLayers, setShowLayers] = useState(false);
+  const [draggingSiteFeaturePoint, setDraggingSiteFeaturePoint] = useState<{ featureId: string; pointIndex: number } | null>(null);
+  const [draggingSiteLight, setDraggingSiteLight] = useState<string | null>(null);
   const [gridVisible, setGridVisible] = useState(() => localStorage.getItem(GRID_VISIBLE_KEY) === 'true');
   const [snapToGrid, setSnapToGrid] = useState(() => localStorage.getItem(GRID_SNAP_KEY) === 'true');
   const [gridSizeFeet, setGridSizeFeet] = useState(() => {
@@ -410,6 +455,10 @@ export function GardenCanvas({
   });
 
   const gridStepPixels = Math.max(5, gridSizeFeet * (pixelsPerFoot || 20));
+  const layersById = useMemo(() => new Map(planLayers.map(layer => [layer.id, layer])), [planLayers]);
+  const layerIsVisible = useCallback((layerId: string) => layersById.get(layerId)?.visible !== false, [layersById]);
+  const layerIsLocked = useCallback((layerId: string) => layersById.get(layerId)?.locked === true, [layersById]);
+  const layerOrder = useCallback((layerId: string) => layersById.get(layerId)?.order ?? 0, [layersById]);
   const snapPoint = useCallback((point: { x: number; y: number }) => {
     if (!snapToGrid) return point;
     return {
@@ -549,6 +598,41 @@ export function GardenCanvas({
     setIsDrawingZone(false);
   }, []);
 
+  const cancelSiteFeatureDraft = useCallback(() => {
+    setSiteFeatureDraftPoints([]);
+    setSiteFeaturePreviewPoint(null);
+    setSiteFeatureTool(null);
+  }, []);
+
+  const finishSiteFeatureDraft = useCallback(() => {
+    if (!siteFeatureTool || siteFeatureTool === 'light' || siteFeatureDraftPoints.length < 2) return;
+    const defaultHeight = siteFeatureTool === 'standardFence' ? 6 : siteFeatureTool === 'gardenFence' ? 4 : undefined;
+    const defaultThicknessFt = siteFeatureTool === 'standardFence' || siteFeatureTool === 'gardenFence' ? 0.5 / 12 : 1;
+    const defaultMaterial = siteFeatureTool === 'standardFence' ? 'Wood picket' : siteFeatureTool === 'gardenFence' ? 'Wire mesh' : 'Concrete';
+    const defaultLayer = siteFeatureTool === 'retainingWall' ? 'retaining-walls' : 'fences';
+    const label: Record<LinearSiteFeatureKind, string> = {
+      standardFence: 'Standard fence',
+      gardenFence: 'Garden fence',
+      retainingWall: 'Retaining wall',
+      edging: 'Edging',
+      boundary: 'Boundary',
+    };
+    onAddSiteFeature({
+      name: `${label[siteFeatureTool]} ${siteFeatures.filter(feature => feature.kind === siteFeatureTool).length + 1}`,
+      kind: siteFeatureTool,
+      points: siteFeatureDraftPoints,
+      segments: Array.from({ length: siteFeatureDraftPoints.length - 1 }, () => ({
+        heightFt: defaultHeight,
+        thicknessFt: defaultThicknessFt,
+        material: defaultMaterial,
+      })),
+      layerId: defaultLayer,
+      visible: true,
+      notes: '',
+    });
+    cancelSiteFeatureDraft();
+  }, [cancelSiteFeatureDraft, onAddSiteFeature, siteFeatureDraftPoints, siteFeatureTool, siteFeatures]);
+
   const insertZonePoint = useCallback((zoneId: string, afterIndex: number, point: { x: number; y: number }) => {
     const zone = zones.find(item => item.id === zoneId);
     if (!zone) return;
@@ -572,6 +656,30 @@ export function GardenCanvas({
     const point = getWorldPoint(e.clientX, e.clientY);
     if (!point) return;
     const snappedPoint = snapPoint(point);
+
+    if (siteFeatureTool === 'light') {
+      onAddSiteLight({
+        name: `Light ${siteLights.length + 1}`,
+        lightType: 'downlight',
+        position: snappedPoint,
+        azimuthDeg: 0,
+        tiltDeg: -45,
+        beamAngleDeg: 60,
+        mountingHeightFt: 0,
+        status: 'existing',
+        enabled: true,
+        layerId: 'lights',
+        visible: true,
+        notes: '',
+      });
+      setSiteFeatureTool(null);
+      return;
+    }
+
+    if (siteFeatureTool) {
+      setSiteFeatureDraftPoints(current => [...current, snappedPoint]);
+      return;
+    }
 
     if (isDrawingZone) {
       const firstPoint = zoneDraftPoints[0];
@@ -627,6 +735,8 @@ export function GardenCanvas({
 
     onSelectPlacedPlant(null);
     onSelectZone(null);
+    onSelectSiteFeature(null);
+    onSelectSiteLight(null);
   };
 
   const handlePlantPointerDown = (e: React.PointerEvent, instanceId: string) => {
@@ -639,6 +749,7 @@ export function GardenCanvas({
     if (!point) return;
     const placed = placedPlants.find(p => p.instanceId === instanceId);
     if (!placed) return;
+    if (layerIsLocked(placed.layerId || 'plants')) return;
 
     setDraggingPlant(instanceId);
     setDragOffset({ x: point.x - placed.x, y: point.y - placed.y });
@@ -653,9 +764,37 @@ export function GardenCanvas({
     }
   };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: { clientX: number; clientY: number }) => {
     const point = getWorldPoint(e.clientX, e.clientY);
     if (!point) return;
+
+    if (draggingSiteFeaturePoint) {
+      const feature = siteFeatures.find(item => item.id === draggingSiteFeaturePoint.featureId);
+      if (!feature) return;
+      const snapped = snapPoint(point);
+      onUpdateSiteFeature(feature.id, {
+        points: feature.points.map((featurePoint, index) => index === draggingSiteFeaturePoint.pointIndex ? {
+          ...featurePoint,
+          x: Math.max(0, Math.min(snapped.x, canvasWorldSize.width)),
+          y: Math.max(0, Math.min(snapped.y, canvasWorldSize.height)),
+        } : featurePoint),
+      });
+      return;
+    }
+
+    if (draggingSiteLight) {
+      const light = siteLights.find(item => item.id === draggingSiteLight);
+      if (!light) return;
+      const snapped = snapPoint(point);
+      onUpdateSiteLight(light.id, {
+        position: {
+          ...light.position,
+          x: Math.max(0, Math.min(snapped.x, canvasWorldSize.width)),
+          y: Math.max(0, Math.min(snapped.y, canvasWorldSize.height)),
+        },
+      });
+      return;
+    }
 
     if (draggingZonePoint) {
       const snapped = snapPoint(point);
@@ -721,7 +860,7 @@ export function GardenCanvas({
     const clampedX = Math.max(0, Math.min(x, canvasWorldSize.width));
     const clampedY = Math.max(0, Math.min(y, canvasWorldSize.height));
     onMovePlacedPlant(draggingPlant, clampedX, clampedY);
-  }, [draggingPlant, draggingZonePoint, draggingZone, dragOffset, groupDragStart, selectedInstanceIds, canvasWorldSize, onMovePlacedPlant, onUpdateZone, zones, zoom, snapPoint]);
+  }, [draggingPlant, draggingZonePoint, draggingZone, draggingSiteFeaturePoint, draggingSiteLight, dragOffset, groupDragStart, selectedInstanceIds, canvasWorldSize, onMovePlacedPlant, onUpdateZone, onUpdateSiteFeature, onUpdateSiteLight, zones, siteFeatures, siteLights, zoom, snapPoint]);
 
   const handleMouseUp = useCallback(() => {
     if (marqueeSelection) {
@@ -739,19 +878,11 @@ export function GardenCanvas({
     setGroupDragStart(null);
     setDraggingZonePoint(null);
     setDraggingZone(null);
+    setDraggingSiteFeaturePoint(null);
+    setDraggingSiteLight(null);
   }, [marqueeSelection, placedPlants, onSelectMultiplePlacedPlants]);
 
   useEffect(() => {
-    if (draggingPlant) {
-      window.addEventListener('pointermove', handleMouseMove);
-      window.addEventListener('pointerup', handleMouseUp);
-      window.addEventListener('pointercancel', handleMouseUp);
-      return () => {
-        window.removeEventListener('pointermove', handleMouseMove);
-        window.removeEventListener('pointerup', handleMouseUp);
-        window.removeEventListener('pointercancel', handleMouseUp);
-      };
-    }
     if (draggingZonePoint || draggingZone || marqueeSelection) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
@@ -760,7 +891,7 @@ export function GardenCanvas({
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [draggingPlant, draggingZonePoint, draggingZone, marqueeSelection, handleMouseMove, handleMouseUp]);
+  }, [draggingZonePoint, draggingZone, marqueeSelection, handleMouseMove, handleMouseUp]);
 
   useEffect(() => {
     const isTypingInForm = (target: EventTarget | null) => {
@@ -953,10 +1084,19 @@ export function GardenCanvas({
       return;
     }
     if (isDrawingZone) setZonePreviewPoint(snapPoint(point));
+    if (siteFeatureTool && siteFeatureTool !== 'light') setSiteFeaturePreviewPoint(snapPoint(point));
   };
 
-  const visibleZones = zones.filter(zone => zone.visible !== false);
+  const visibleZones = zones
+    .filter(zone => zone.visible !== false && layerIsVisible(zone.layerId || (zone.surfaceType === 'structure' ? 'structures' : 'areas')))
+    .sort((a, b) => {
+      const aLayer = a.layerId || (a.surfaceType === 'structure' ? 'structures' : 'areas');
+      const bLayer = b.layerId || (b.surfaceType === 'structure' ? 'structures' : 'areas');
+      return layerOrder(aLayer) - layerOrder(bLayer) || (a.order || 0) - (b.order || 0);
+    });
   const selectedZone = zones.find(zone => zone.id === selectedZoneId);
+  const selectedSiteFeature = siteFeatures.find(feature => feature.id === selectedSiteFeatureId) || null;
+  const selectedSiteLight = siteLights.find(light => light.id === selectedSiteLightId) || null;
   const canFinishZone = isDrawingZone && zoneDraftPoints.length >= 3;
 
   return (
@@ -1049,6 +1189,38 @@ export function GardenCanvas({
           </label>
         </div>
 
+        <div className="flex items-center gap-1.5 border-l border-slate-700 pl-3">
+          {([
+            ['standardFence', 'Fence'],
+            ['gardenFence', 'Garden fence'],
+            ['retainingWall', 'Wall'],
+            ['light', 'Light'],
+          ] as const).map(([tool, label]) => (
+            <button
+              key={tool}
+              type="button"
+              onClick={() => {
+                if (siteFeatureTool === tool) {
+                  cancelSiteFeatureDraft();
+                  return;
+                }
+                cancelZoneDraft();
+                onCancelPlantPlacement();
+                setSiteFeatureDraftPoints([]);
+                setSiteFeaturePreviewPoint(null);
+                setSiteFeatureTool(tool);
+              }}
+              className={`rounded border px-2 py-1.5 text-xs ${siteFeatureTool === tool ? 'border-cyan-400 bg-cyan-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800'}`}
+            >
+              {label}
+            </button>
+          ))}
+          {siteFeatureTool && siteFeatureTool !== 'light' && (
+            <button type="button" disabled={siteFeatureDraftPoints.length < 2} onClick={finishSiteFeatureDraft} className="rounded border border-emerald-500 bg-emerald-600 px-2 py-1.5 text-xs text-white disabled:opacity-40">Finish</button>
+          )}
+          <button type="button" onClick={() => { setShowLayers(value => !value); onSelectSiteFeature(null); onSelectSiteLight(null); }} className={`rounded border px-2 py-1.5 text-xs ${showLayers ? 'border-violet-400 bg-violet-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-200'}`}>Layers</button>
+        </div>
+
         <div className="flex items-center gap-2 border-l border-slate-700 pl-3">
           <button
             type="button"
@@ -1107,6 +1279,7 @@ export function GardenCanvas({
         )}
       </div>
 
+      <div className="relative min-h-0 flex-1">
       <div
         ref={viewportRef}
         onMouseDown={handleViewportMouseDown}
@@ -1117,7 +1290,10 @@ export function GardenCanvas({
         onTouchMove={handleViewportTouchMove}
         onTouchEnd={handleViewportTouchEnd}
         onTouchCancel={handleViewportTouchEnd}
-        className={`garden-canvas-viewport relative flex-1 bg-[#d9dde3] overflow-auto p-6 ${panDrag ? 'cursor-grabbing' : isSpacePanning ? 'cursor-grab' : isDrawingZone || selectedPlant || placingRock ? 'cursor-crosshair' : 'cursor-default'}`}
+        onPointerMove={handleMouseMove}
+        onPointerUp={handleMouseUp}
+        onPointerCancel={handleMouseUp}
+        className={`garden-canvas-viewport absolute inset-0 bg-[#d9dde3] overflow-auto p-6 ${panDrag ? 'cursor-grabbing' : isSpacePanning ? 'cursor-grab' : isDrawingZone || siteFeatureTool || selectedPlant || placingRock ? 'cursor-crosshair' : 'cursor-default'}`}
       >
         <div
           ref={worldRef}
@@ -1184,6 +1360,8 @@ export function GardenCanvas({
               {visibleZones.map(zone => {
                 const isSelectedZone = zone.id === selectedZoneId;
                 const surface = getZoneSurfaceAppearance(zone);
+                const zoneLayerId = zone.layerId || (zone.surfaceType === 'structure' ? 'structures' : 'areas');
+                const zoneLayerLocked = layerIsLocked(zoneLayerId);
                 return (
                   <g key={zone.id}>
                     <polygon
@@ -1195,7 +1373,8 @@ export function GardenCanvas({
                       strokeDasharray={isSelectedZone ? '0' : surface.dash}
                       className={isSelectedZone ? "cursor-move" : "cursor-pointer"}
                       onMouseDown={(event) => {
-                        if (isDrawingZone || event.button !== 0) return;
+                        if (isDrawingZone || zoneLayerLocked || event.button !== 0) return;
+                        if (zoneLayerLocked) return;
                         event.stopPropagation();
                         const point = getWorldPoint(event.clientX, event.clientY);
                         if (!point) return;
@@ -1304,7 +1483,7 @@ export function GardenCanvas({
             </svg>
           )}
 
-          {zoneShapesVisible && selectedZone && selectedZone.visible !== false && (
+          {zoneShapesVisible && selectedZone && selectedZone.visible !== false && !layerIsLocked(selectedZone.layerId || (selectedZone.surfaceType === 'structure' ? 'structures' : 'areas')) && (
             <div className="absolute inset-0 z-[26] pointer-events-none">
               {selectedZone.points.map((point, index) => {
                 const nextPoint = selectedZone.points[(index + 1) % selectedZone.points.length];
@@ -1372,6 +1551,72 @@ export function GardenCanvas({
             </svg>
           )}
 
+          {(siteFeatureTool && siteFeatureTool !== 'light' && siteFeatureDraftPoints.length > 0) && (
+            <svg className="absolute inset-0 h-full w-full pointer-events-none z-[29]">
+              <polyline
+                points={zonePointsToString(siteFeaturePreviewPoint ? [...siteFeatureDraftPoints, siteFeaturePreviewPoint] : siteFeatureDraftPoints)}
+                fill="none"
+                stroke="#06b6d4"
+                strokeWidth="4"
+                strokeDasharray="8 5"
+              />
+              {siteFeatureDraftPoints.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r="5" fill="#06b6d4" stroke="white" strokeWidth="2" />)}
+            </svg>
+          )}
+
+          {siteFeatures
+            .filter(feature => feature.visible !== false && layerIsVisible(feature.layerId))
+            .sort((a, b) => layerOrder(a.layerId) - layerOrder(b.layerId) || a.order - b.order)
+            .map(feature => {
+              const selected = feature.id === selectedSiteFeatureId;
+              const locked = layerIsLocked(feature.layerId);
+              const stroke = feature.kind === 'retainingWall' ? '#7c3aed' : feature.kind === 'gardenFence' ? '#0891b2' : feature.kind === 'standardFence' ? '#92400e' : '#475569';
+              return (
+                <svg key={feature.id} className="absolute inset-0 h-full w-full overflow-visible" style={{ zIndex: 6 + layerOrder(feature.layerId), pointerEvents: 'none' }}>
+                  {feature.segments.map((segment, index) => {
+                    const start = feature.points[index];
+                    const end = feature.points[index + 1];
+                    if (!start || !end) return null;
+                    return (
+                      <g key={index}>
+                        <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke="transparent" strokeWidth="24" style={{ pointerEvents: locked ? 'none' : 'stroke', cursor: 'pointer' }} onClick={event => { event.stopPropagation(); onSelectSiteFeature(feature.id); onSelectSiteLight(null); onSelectZone(null); onSelectPlacedPlant(null); setShowLayers(false); }} />
+                        <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke={stroke} strokeWidth={feature.kind === 'retainingWall' ? 8 : 5} strokeDasharray={feature.kind === 'gardenFence' ? '5 4' : undefined} strokeLinecap="round" opacity={selected ? 1 : 0.85} className="pointer-events-none" />
+                        {selected && <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke="#67e8f9" strokeWidth="2" strokeDasharray="3 3" className="pointer-events-none" />}
+                        {segment.heightFt !== undefined && (
+                          <text x={(start.x + end.x) / 2} y={(start.y + end.y) / 2 - 8} textAnchor="middle" className="pointer-events-none text-[9px] font-bold" fill={stroke} paintOrder="stroke" stroke="white" strokeWidth="3">{segment.heightFt}′</text>
+                        )}
+                      </g>
+                    );
+                  })}
+                  {selected && feature.points.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r="7" fill="white" stroke={stroke} strokeWidth="3" style={{ pointerEvents: locked ? 'none' : 'all', cursor: 'move', touchAction: 'none' }} onPointerDown={event => { event.preventDefault(); event.stopPropagation(); setDraggingSiteFeaturePoint({ featureId: feature.id, pointIndex: index }); }} />)}
+                </svg>
+              );
+            })}
+
+          {siteLights
+            .filter(light => light.visible !== false && layerIsVisible(light.layerId))
+            .sort((a, b) => layerOrder(a.layerId) - layerOrder(b.layerId) || a.order - b.order)
+            .map(light => {
+              const selected = light.id === selectedSiteLightId;
+              const locked = layerIsLocked(light.layerId);
+              const rangePx = light.rangeFt && pixelsPerFoot ? light.rangeFt * pixelsPerFoot : 55;
+              const directionRadians = light.azimuthDeg * Math.PI / 180;
+              const halfBeamRadians = light.beamAngleDeg * Math.PI / 360;
+              const leftPoint = { x: light.position.x + Math.cos(directionRadians - halfBeamRadians) * rangePx, y: light.position.y + Math.sin(directionRadians - halfBeamRadians) * rangePx };
+              const rightPoint = { x: light.position.x + Math.cos(directionRadians + halfBeamRadians) * rangePx, y: light.position.y + Math.sin(directionRadians + halfBeamRadians) * rangePx };
+              const arrowEnd = { x: light.position.x + Math.cos(directionRadians) * rangePx, y: light.position.y + Math.sin(directionRadians) * rangePx };
+              return (
+                <svg key={light.id} className="absolute inset-0 h-full w-full overflow-visible" style={{ zIndex: 6 + layerOrder(light.layerId), pointerEvents: 'none' }}>
+                  <defs><marker id={`site-light-arrow-${light.id}`} markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#eab308" /></marker></defs>
+                  <path d={`M ${light.position.x} ${light.position.y} L ${leftPoint.x} ${leftPoint.y} A ${rangePx} ${rangePx} 0 0 1 ${rightPoint.x} ${rightPoint.y} Z`} fill={light.status === 'existing' ? 'rgba(250,204,21,0.18)' : 'rgba(56,189,248,0.16)'} stroke={selected ? '#facc15' : 'rgba(234,179,8,0.65)'} strokeDasharray={light.rangeFt ? undefined : '5 4'} strokeWidth={selected ? 2 : 1} className="pointer-events-none" />
+                  <line x1={light.position.x} y1={light.position.y} x2={arrowEnd.x} y2={arrowEnd.y} stroke="#eab308" strokeWidth="2.5" markerEnd={`url(#site-light-arrow-${light.id})`} className="pointer-events-none" />
+                  <circle cx={light.position.x} cy={light.position.y} r={selected ? 11 : 9} fill={light.enabled ? '#facc15' : '#64748b'} stroke={selected ? '#0f172a' : 'white'} strokeWidth="3" style={{ pointerEvents: locked ? 'none' : 'all', cursor: 'move', touchAction: 'none' }} onPointerDown={event => { event.preventDefault(); event.stopPropagation(); onSelectSiteLight(light.id); onSelectSiteFeature(null); onSelectZone(null); onSelectPlacedPlant(null); setShowLayers(false); setDraggingSiteLight(light.id); }} />
+                  <text x={light.position.x} y={light.position.y + 3} textAnchor="middle" className="pointer-events-none text-[8px] font-black" fill="#111827">L</text>
+                  {selected && <text x={light.position.x} y={light.position.y - 17} textAnchor="middle" className="pointer-events-none text-[10px] font-bold" fill="#a16207" paintOrder="stroke" stroke="white" strokeWidth="3">{Math.round(light.azimuthDeg)}° · {light.beamAngleDeg}° beam</text>}
+                </svg>
+              );
+            })}
+
 
           {plantDriftClusters.map((cluster) => {
             const plant = getPlantById(cluster.plantId);
@@ -1387,11 +1632,15 @@ export function GardenCanvas({
                 legendNumber={legendNumbers.get(cluster.plantId) || 0}
                 placementIndex={Math.max(0, (legendNumbers.get(cluster.plantId) || 1) - 1)}
                 isSelected={clusterHasSelection}
+                zIndex={30 + layerOrder('plants')}
               />
             );
           })}
 
-          {placedPlants.map((placed) => {
+          {[...placedPlants]
+            .filter(placed => layerIsVisible(placed.layerId || 'plants'))
+            .sort((a, b) => layerOrder(a.layerId || 'plants') - layerOrder(b.layerId || 'plants') || (a.order ?? 0) - (b.order ?? 0))
+            .map((placed) => {
             const isSelected = selectedInstanceId === placed.instanceId || selectedInstanceIds.includes(placed.instanceId);
 
             if (placed.itemType === 'rock') {
@@ -1402,6 +1651,7 @@ export function GardenCanvas({
                   sizePx={getRockSizePx(placed)}
                   isSelected={isSelected}
                   onPointerDown={(e) => handlePlantPointerDown(e, placed.instanceId)}
+                  zIndex={30 + layerOrder(placed.layerId || 'plants')}
                 />
               );
             }
@@ -1417,7 +1667,7 @@ export function GardenCanvas({
                 <div
                   key={placed.instanceId}
                   onPointerDown={(e) => handlePlantPointerDown(e, placed.instanceId)}
-                  className={`absolute cursor-move select-none ${isSelected ? 'z-20' : 'z-10'}`}
+                  className="absolute cursor-move select-none"
                   style={{
                     left: placed.x,
                     top: placed.y,
@@ -1426,6 +1676,7 @@ export function GardenCanvas({
                     height: symbolSize,
                     background: 'transparent',
                     touchAction: 'none',
+                    zIndex: 30 + layerOrder(placed.layerId || 'plants') + (isSelected ? 2 : 0),
                   }}
                   title={`${plant.commonName || plant.botanicalName}\n${placed.displayWidthFt || plant.matureWidthFt || '?'}' display width${placed.displayWidthFt ? ` (mature ${plant.matureWidthFt || '?'}')` : ''}\n${placed.zone ? 'Area assigned' : 'No area assigned'}`}
                 >
@@ -1452,6 +1703,7 @@ export function GardenCanvas({
                 placementIndex={Math.max(0, (legendNumbers.get(placed.plantId) || 1) - 1)}
                 onPointerDown={(e) => handlePlantPointerDown(e, placed.instanceId)}
                 drifted={false}
+                zIndex={30 + layerOrder(placed.layerId || 'plants')}
               />
             );
           })}
@@ -1538,6 +1790,31 @@ export function GardenCanvas({
             <p className="text-sm">Click the second point</p>
           </div>
         )}
+      </div>
+
+      <SiteFeatureInspector
+        selectedFeature={selectedSiteFeature}
+        selectedLight={selectedSiteLight}
+        zones={zones}
+        siteFeatures={siteFeatures}
+        siteLights={siteLights}
+        layers={planLayers}
+        pixelsPerFoot={pixelsPerFoot}
+        northRotationDeg={northRotationDeg}
+        showLayers={showLayers}
+        onClose={() => { setShowLayers(false); onSelectSiteFeature(null); onSelectSiteLight(null); }}
+        onUpdateFeature={onUpdateSiteFeature}
+        onUpdateZone={onUpdateZone}
+        onSelectZone={onSelectZone}
+        onSelectFeature={onSelectSiteFeature}
+        onSelectLight={onSelectSiteLight}
+        onDeleteFeature={onDeleteSiteFeature}
+        onUpdateLight={onUpdateSiteLight}
+        onDeleteLight={onDeleteSiteLight}
+        onUpdateLayer={onUpdatePlanLayer}
+        onReorderLayer={onReorderPlanLayer}
+        onNorthRotationChange={onNorthRotationChange}
+      />
       </div>
 
       {showScaleModal && (

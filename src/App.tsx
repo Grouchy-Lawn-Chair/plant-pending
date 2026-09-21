@@ -2,7 +2,7 @@
 // This is the entry point for the entire app
 
 import { useState, useEffect, useCallback, useRef, useMemo, type ChangeEvent } from 'react';
-import { Plant, PlacedPlant, FilterState, SortOption, GardenPlan, PlantLabelMode, PlantClumpStrength, DisplayMode, GardenZone, PlantingGroup, ZoneLayoutMode, ZonePlantVariety, TestLogEntry, TestSnapshot, ShrubScoreState, GreenAcresFilterIndex } from './types/plant';
+import { Plant, PlacedPlant, FilterState, SortOption, GardenPlan, PlantLabelMode, PlantClumpStrength, DisplayMode, GardenZone, PlantingGroup, ZoneLayoutMode, ZonePlantVariety, TestLogEntry, TestSnapshot, ShrubScoreState, GreenAcresFilterIndex, LinearSiteFeature, SiteLight, PlanLayer, CURRENT_PLAN_SCHEMA_VERSION, ScanAlignment } from './types/plant';
 import { loadPlantsFromCSV } from './utils/csvParser';
 import { generateWarnings } from './utils/warnings';
 import { filterPlants, sortPlants, getCategories } from './utils/filtering';
@@ -25,6 +25,10 @@ import { PrintView } from './components/PrintView';
 import { WelcomeGuide } from './components/WelcomeGuide';
 import { HelpCenter } from './components/HelpCenter';
 import { DEFAULT_FILTERS } from './types/plant';
+import { DEFAULT_PLAN_LAYERS, DEFAULT_SCAN_ALIGNMENT, normalizeGardenPlan } from './utils/planSchema';
+import { downloadNormalizedScene } from './utils/sceneExport';
+import { deleteScanBlob, loadScanBlob, saveScanBlob } from './utils/scanStorage';
+import { ScanAlignmentWorkspace } from './components/ScanAlignmentWorkspace';
 
 
 
@@ -1228,6 +1232,19 @@ function App() {
   const [plantingGroups, setPlantingGroups] = useState<PlantingGroup[]>([]);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [zoneShapesVisible, setZoneShapesVisible] = useState(true);
+  const [siteFeatures, setSiteFeatures] = useState<LinearSiteFeature[]>([]);
+  const [siteLights, setSiteLights] = useState<SiteLight[]>([]);
+  const [planLayers, setPlanLayers] = useState<PlanLayer[]>(() => DEFAULT_PLAN_LAYERS.map(layer => ({ ...layer })));
+  const [northRotationDeg, setNorthRotationDeg] = useState(0);
+  const [scanAlignment, setScanAlignment] = useState<ScanAlignment>(() => ({
+    ...DEFAULT_SCAN_ALIGNMENT,
+    transform: { ...DEFAULT_SCAN_ALIGNMENT.transform, translationFt: { ...DEFAULT_SCAN_ALIGNMENT.transform.translationFt }, rotationDeg: { ...DEFAULT_SCAN_ALIGNMENT.transform.rotationDeg } },
+    controlPoints: [],
+  }));
+  const [scanObjectUrl, setScanObjectUrl] = useState<string | null>(null);
+  const [showScanAlignment, setShowScanAlignment] = useState(false);
+  const [selectedSiteFeatureId, setSelectedSiteFeatureId] = useState<string | null>(null);
+  const [selectedSiteLightId, setSelectedSiteLightId] = useState<string | null>(null);
 
   // Plan state
   const [planName, setPlanName] = useState('My Garden Plan');
@@ -1672,6 +1689,11 @@ function App() {
       if (saved.placedPlants) setPlacedPlants(saved.placedPlants);
       if (saved.zones) setZones(saved.zones);
       if (saved.plantingGroups) setPlantingGroups(saved.plantingGroups);
+      setSiteFeatures(saved.siteFeatures || []);
+      setSiteLights(saved.siteLights || []);
+      setPlanLayers(saved.layers || DEFAULT_PLAN_LAYERS.map(layer => ({ ...layer })));
+      setNorthRotationDeg(saved.northRotationDeg || 0);
+      if (saved.scanAlignment) setScanAlignment(saved.scanAlignment);
       if (saved.zoneShapesVisible !== undefined) setZoneShapesVisible(saved.zoneShapesVisible);
       const shouldRestoreBackground = saved.restoreBackgroundOnLaunch === true
         || (saved.name === 'Example Plan' && typeof saved.backgroundImage === 'string' && saved.backgroundImage.startsWith('data:image/'));
@@ -1723,8 +1745,37 @@ function App() {
       plantingGroups,
       zoneShapesVisible,
       shrubScore: shrubScoreState,
+      schemaVersion: CURRENT_PLAN_SCHEMA_VERSION,
+      siteFeatures,
+      siteLights,
+      layers: planLayers,
+      northRotationDeg,
+      scanAlignment,
     });
-  }, [placedPlants, backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, notes, planName, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, zones, plantingGroups, zoneShapesVisible, shrubScoreState]);
+  }, [placedPlants, backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, notes, planName, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, zones, plantingGroups, zoneShapesVisible, shrubScoreState, siteFeatures, siteLights, planLayers, northRotationDeg, scanAlignment]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let nextUrl: string | null = null;
+    const loadStoredScan = async () => {
+      if (!scanAlignment.asset?.id) {
+        setScanObjectUrl(current => {
+          if (current) URL.revokeObjectURL(current);
+          return null;
+        });
+        return;
+      }
+      const blob = await loadScanBlob(scanAlignment.asset.id);
+      if (cancelled || !blob) return;
+      nextUrl = URL.createObjectURL(blob);
+      setScanObjectUrl(current => {
+        if (current) URL.revokeObjectURL(current);
+        return nextUrl;
+      });
+    };
+    loadStoredScan().catch(error => addTestLog('scan.loadFailed', { message: error instanceof Error ? error.message : String(error) }));
+    return () => { cancelled = true; };
+  }, [addTestLog, scanAlignment.asset?.id]);
 
   // Filtered and sorted plants for the library
   const filteredPlants = useMemo(() => sortPlants(filterPlants(plants, filters), sortBy), [plants, filters, sortBy]);
@@ -1755,6 +1806,10 @@ function App() {
     }
     setSelectedInstanceId(instanceId);
     setSelectedInstanceIds(instanceId ? [instanceId] : []);
+    if (instanceId) {
+      setSelectedSiteFeatureId(null);
+      setSelectedSiteLightId(null);
+    }
     if (instanceId && !window.matchMedia('(max-width: 1023px)').matches) {
       setRightInspectorSection('item');
     }
@@ -1786,6 +1841,10 @@ function App() {
 
   const handleSelectZone = useCallback((zoneId: string | null) => {
     if (zoneId) setSelectedInstanceIds([]);
+    if (zoneId) {
+      setSelectedSiteFeatureId(null);
+      setSelectedSiteLightId(null);
+    }
     if (selectedZoneId === zoneId) return;
     setSelectedZoneId(zoneId);
     if (zoneId) setRightInspectorSection('zones');
@@ -2087,6 +2146,8 @@ function App() {
       color,
       opacity: 0.10,
       visible: true,
+      layerId: 'areas',
+      order: zones.length,
       zoneType: 'planting',
       surfaceType: 'planting',
       sunExposure: 'unknown',
@@ -2126,6 +2187,76 @@ function App() {
     }
     addTestLog('zone.updated', { zoneId, updates });
   }, [addTestLog, awardScore, zones]);
+
+  const handleAddSiteFeature = useCallback((feature: Omit<LinearSiteFeature, 'id' | 'schemaVersion' | 'order'>) => {
+    const next: LinearSiteFeature = {
+      ...feature,
+      id: generateId(),
+      schemaVersion: 1,
+      order: siteFeatures.length,
+    };
+    setSiteFeatures(current => [...current, next]);
+    setSelectedSiteFeatureId(next.id);
+    setSelectedSiteLightId(null);
+    setSelectedZoneId(null);
+    setSelectedInstanceId(null);
+    addTestLog('siteFeature.added', { id: next.id, kind: next.kind, points: next.points.length });
+  }, [addTestLog, siteFeatures.length]);
+
+  const handleUpdateSiteFeature = useCallback((featureId: string, updates: Partial<LinearSiteFeature>) => {
+    setSiteFeatures(current => current.map(feature => feature.id === featureId ? { ...feature, ...updates } : feature));
+    addTestLog('siteFeature.updated', { featureId, updates });
+  }, [addTestLog]);
+
+  const handleDeleteSiteFeature = useCallback((featureId: string) => {
+    setSiteFeatures(current => current.filter(feature => feature.id !== featureId));
+    setSiteLights(current => current.map(light => light.attachedFeatureId === featureId
+      ? { ...light, attachedFeatureId: undefined, attachedSegmentIndex: undefined }
+      : light));
+    setSelectedSiteFeatureId(current => current === featureId ? null : current);
+    addTestLog('siteFeature.deleted', { featureId });
+  }, [addTestLog]);
+
+  const handleAddSiteLight = useCallback((light: Omit<SiteLight, 'id' | 'schemaVersion' | 'order'>) => {
+    const next: SiteLight = {
+      ...light,
+      id: generateId(),
+      schemaVersion: 1,
+      order: siteLights.length,
+    };
+    setSiteLights(current => [...current, next]);
+    setSelectedSiteLightId(next.id);
+    setSelectedSiteFeatureId(null);
+    setSelectedZoneId(null);
+    setSelectedInstanceId(null);
+    addTestLog('siteLight.added', { id: next.id, type: next.lightType, position: next.position });
+  }, [addTestLog, siteLights.length]);
+
+  const handleUpdateSiteLight = useCallback((lightId: string, updates: Partial<SiteLight>) => {
+    setSiteLights(current => current.map(light => light.id === lightId ? { ...light, ...updates } : light));
+    addTestLog('siteLight.updated', { lightId, updates });
+  }, [addTestLog]);
+
+  const handleDeleteSiteLight = useCallback((lightId: string) => {
+    setSiteLights(current => current.filter(light => light.id !== lightId));
+    setSelectedSiteLightId(current => current === lightId ? null : current);
+    addTestLog('siteLight.deleted', { lightId });
+  }, [addTestLog]);
+
+  const handleUpdatePlanLayer = useCallback((layerId: string, updates: Partial<PlanLayer>) => {
+    setPlanLayers(current => current.map(layer => layer.id === layerId ? { ...layer, ...updates } : layer));
+  }, []);
+
+  const handleReorderPlanLayer = useCallback((layerId: string, direction: -1 | 1) => {
+    setPlanLayers(current => {
+      const sorted = [...current].sort((a, b) => a.order - b.order);
+      const index = sorted.findIndex(layer => layer.id === layerId);
+      const swapIndex = index + direction;
+      if (index < 0 || swapIndex < 0 || swapIndex >= sorted.length) return current;
+      [sorted[index], sorted[swapIndex]] = [sorted[swapIndex], sorted[index]];
+      return sorted.map((layer, order) => ({ ...layer, order }));
+    });
+  }, []);
 
   const handleDeleteZone = useCallback((zoneId: string) => {
     setZones(prev => prev.filter(zone => zone.id !== zoneId));
@@ -3052,6 +3183,7 @@ function App() {
     const existingPlan = loadSavedPlans().find(plan => plan.name.toLowerCase() === trimmedName.toLowerCase());
     const now = new Date().toISOString();
     const plan: GardenPlan = {
+      schemaVersion: CURRENT_PLAN_SCHEMA_VERSION,
       id: existingPlan?.id || generateId(),
       name: trimmedName,
       createdAt: existingPlan?.createdAt || now,
@@ -3073,15 +3205,21 @@ function App() {
       plantClumpStrength,
       zoom,
       shrubScore: shrubScoreState,
+      northRotationDeg,
+      layers: planLayers,
+      siteFeatures,
+      siteLights,
+      scanAlignment,
     };
     savePlan(plan);
     setSavedPlans(loadSavedPlans());
     setPlanName(trimmedName);
     awardScore(`save:${placedPlants.length}:${zones.length}:${trimmedName}`, 10, pickMessage(SAVE_MESSAGES, trimmedName));
     addTestLog('plan.saved', { name: trimmedName, updatedExisting: !!existingPlan, placedPlants: placedPlants.length, zones: zones.length, plantingGroups: plantingGroups.length });
-  }, [backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, placedPlants, zones, plantingGroups, zoneShapesVisible, notes, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, shrubScoreState, addTestLog, awardScore]);
+  }, [backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, placedPlants, zones, plantingGroups, zoneShapesVisible, notes, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, shrubScoreState, northRotationDeg, planLayers, siteFeatures, siteLights, scanAlignment, addTestLog, awardScore]);
 
   const handleLoadPlan = useCallback((plan: GardenPlan) => {
+    plan = normalizeGardenPlan(plan);
     setPlanName(plan.name);
     setBackgroundImage(plan.backgroundImage);
     setRestoreBackgroundOnLaunch(plan.restoreBackgroundOnLaunch ?? false);
@@ -3091,6 +3229,11 @@ function App() {
     setPlacedPlants(plan.placedPlants);
     setZones(plan.zones || []);
     setPlantingGroups(plan.plantingGroups || []);
+    setSiteFeatures(plan.siteFeatures || []);
+    setSiteLights(plan.siteLights || []);
+    setPlanLayers(plan.layers || DEFAULT_PLAN_LAYERS.map(layer => ({ ...layer })));
+    setNorthRotationDeg(plan.northRotationDeg || 0);
+    setScanAlignment(plan.scanAlignment || normalizeGardenPlan({ placedPlants: [] }).scanAlignment!);
     setZoneShapesVisible(plan.zoneShapesVisible ?? true);
     setNotes(plan.notes);
     if (plan.canvasWorldSize) {
@@ -3115,6 +3258,8 @@ function App() {
     setSelectedInstanceIds([]);
     setSelectedPlant(null);
     setSelectedZoneId(null);
+    setSelectedSiteFeatureId(null);
+    setSelectedSiteLightId(null);
     addTestLog('plan.loaded', { name: plan.name, placedPlants: plan.placedPlants?.length || 0, zones: plan.zones?.length || 0, plantingGroups: plan.plantingGroups?.length || 0 });
   }, [addTestLog]);
 
@@ -3146,12 +3291,17 @@ function App() {
   }, []);
 
   const handleNewPlan = useCallback(() => {
-    if (placedPlants.length > 0 && !confirm('Clear the current plan and start fresh?')) {
+    if ((placedPlants.length > 0 || zones.length > 0 || siteFeatures.length > 0 || siteLights.length > 0) && !confirm('Clear the current plan and start fresh?')) {
       return;
     }
     setPlacedPlants([]);
     setZones([]);
     setPlantingGroups([]);
+    setSiteFeatures([]);
+    setSiteLights([]);
+    setPlanLayers(DEFAULT_PLAN_LAYERS.map(layer => ({ ...layer })));
+    setNorthRotationDeg(0);
+    setScanAlignment(normalizeGardenPlan({ placedPlants: [] }).scanAlignment!);
     setSelectedZoneId(null);
     setZoneShapesVisible(true);
     setBackgroundImage(null);
@@ -3174,12 +3324,15 @@ function App() {
     setSelectedInstanceId(null);
     setSelectedInstanceIds([]);
     setSelectedPlant(null);
+    setSelectedSiteFeatureId(null);
+    setSelectedSiteLightId(null);
     clearCurrentPlan();
     addTestLog('plan.new', {});
-  }, [placedPlants.length, addTestLog]);
+  }, [placedPlants.length, zones.length, siteFeatures.length, siteLights.length, addTestLog]);
 
   const handleExportPlan = useCallback(() => {
     const plan: GardenPlan = {
+      schemaVersion: CURRENT_PLAN_SCHEMA_VERSION,
       id: generateId(),
       name: planName,
       createdAt: new Date().toISOString(),
@@ -3201,11 +3354,82 @@ function App() {
       plantClumpStrength,
       zoom,
       shrubScore: shrubScoreState,
+      northRotationDeg,
+      layers: planLayers,
+      siteFeatures,
+      siteLights,
+      scanAlignment,
     };
     exportPlanAsJSON(plan);
     awardScore(`export:${planName}:${placedPlants.length}:${zones.length}`, 50, 'The nursery has been warned.');
     addTestLog('plan.exported', { name: planName, placedPlants: placedPlants.length, zones: zones.length, plantingGroups: plantingGroups.length });
-  }, [planName, backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, placedPlants, zones, plantingGroups, zoneShapesVisible, notes, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, shrubScoreState, addTestLog, awardScore]);
+  }, [planName, backgroundImage, backgroundOpacity, backgroundLocked, restoreBackgroundOnLaunch, pixelsPerFoot, placedPlants, zones, plantingGroups, zoneShapesVisible, notes, canvasWorldSize, plantCircleOpacity, plantLabelMode, plantClumpingEnabled, plantClumpStrength, zoom, shrubScoreState, northRotationDeg, planLayers, siteFeatures, siteLights, scanAlignment, addTestLog, awardScore]);
+
+  const handleExportSceneDebug = useCallback(() => {
+    const plan = normalizeGardenPlan({
+      id: 'current-plan',
+      name: planName,
+      backgroundImage,
+      backgroundOpacity,
+      backgroundLocked,
+      restoreBackgroundOnLaunch,
+      scalePixelsPerFoot: pixelsPerFoot,
+      placedPlants,
+      zones,
+      plantingGroups,
+      zoneShapesVisible,
+      notes,
+      canvasWorldSize,
+      plantCircleOpacity,
+      plantLabelMode,
+      plantClumpingEnabled,
+      plantClumpStrength,
+      zoom,
+      shrubScore: shrubScoreState,
+      northRotationDeg,
+      layers: planLayers,
+      siteFeatures,
+      siteLights,
+      scanAlignment,
+    });
+    downloadNormalizedScene(plan, plants);
+    addTestLog('scene3d.debugExported', {
+      siteFeatures: siteFeatures.length,
+      siteLights: siteLights.length,
+      calibratedScale: pixelsPerFoot !== null,
+    });
+  }, [addTestLog, backgroundImage, backgroundLocked, backgroundOpacity, canvasWorldSize, northRotationDeg, notes, pixelsPerFoot, placedPlants, planLayers, planName, plantCircleOpacity, plantClumpStrength, plantClumpingEnabled, plantLabelMode, plantingGroups, plants, restoreBackgroundOnLaunch, scanAlignment, shrubScoreState, siteFeatures, siteLights, zoneShapesVisible, zones, zoom]);
+
+  const handleImportScan = useCallback(async (file: File) => {
+    if (!file.name.toLowerCase().endsWith('.glb')) {
+      alert('Please choose a binary glTF (.glb) scan.');
+      return;
+    }
+    const assetId = generateId();
+    await saveScanBlob(assetId, file);
+    if (scanAlignment.asset?.id) await deleteScanBlob(scanAlignment.asset.id).catch(() => undefined);
+    setScanAlignment({
+      ...normalizeGardenPlan({ placedPlants: [] }).scanAlignment!,
+      asset: {
+        id: assetId,
+        fileName: file.name,
+        mimeType: file.type || 'model/gltf-binary',
+        sizeBytes: file.size,
+        importedAt: new Date().toISOString(),
+      },
+    });
+    addTestLog('scan.imported', { assetId, fileName: file.name, sizeBytes: file.size });
+  }, [addTestLog, scanAlignment.asset?.id]);
+
+  const handleRemoveScan = useCallback(async () => {
+    if (scanAlignment.asset?.id) await deleteScanBlob(scanAlignment.asset.id);
+    setScanAlignment(normalizeGardenPlan({ placedPlants: [] }).scanAlignment!);
+    setScanObjectUrl(current => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
+    addTestLog('scan.removed', {});
+  }, [addTestLog, scanAlignment.asset?.id]);
 
   const handleImportPlan = useCallback((plan: GardenPlan) => {
     handleLoadPlan(plan);
@@ -3371,6 +3595,20 @@ function App() {
                     className="block w-full px-4 py-2 text-left text-slate-100 hover:bg-slate-800"
                   >
                     Export JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { handleExportSceneDebug(); setShowFileMenu(false); }}
+                    className="block w-full px-4 py-2 text-left text-cyan-200 hover:bg-slate-800"
+                  >
+                    Export 3D scene debug JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowScanAlignment(true); setShowFileMenu(false); }}
+                    className="block w-full px-4 py-2 text-left text-cyan-200 hover:bg-slate-800"
+                  >
+                    Scan Alignment...
                   </button>
                   <button
                     type="button"
@@ -3738,7 +3976,13 @@ function App() {
             plants={plants}
             placedPlants={placedPlants}
             zones={zones}
+            siteFeatures={siteFeatures}
+            siteLights={siteLights}
+            planLayers={planLayers}
+            northRotationDeg={northRotationDeg}
             selectedZoneId={selectedZoneId}
+            selectedSiteFeatureId={selectedSiteFeatureId}
+            selectedSiteLightId={selectedSiteLightId}
             zoneShapesVisible={zoneShapesVisible}
             selectedPlant={selectedPlant}
             placingRock={placingRock}
@@ -3766,6 +4010,23 @@ function App() {
             onAddZone={handleAddZone}
             onUpdateZone={handleUpdateZone}
             onSelectZone={handleSelectZone}
+            onAddSiteFeature={handleAddSiteFeature}
+            onUpdateSiteFeature={handleUpdateSiteFeature}
+            onDeleteSiteFeature={handleDeleteSiteFeature}
+            onSelectSiteFeature={(featureId) => {
+              setSelectedSiteFeatureId(featureId);
+              if (featureId) setSelectedSiteLightId(null);
+            }}
+            onAddSiteLight={handleAddSiteLight}
+            onUpdateSiteLight={handleUpdateSiteLight}
+            onDeleteSiteLight={handleDeleteSiteLight}
+            onSelectSiteLight={(lightId) => {
+              setSelectedSiteLightId(lightId);
+              if (lightId) setSelectedSiteFeatureId(null);
+            }}
+            onUpdatePlanLayer={handleUpdatePlanLayer}
+            onReorderPlanLayer={handleReorderPlanLayer}
+            onNorthRotationChange={setNorthRotationDeg}
             onZoneShapesVisibleChange={handleZoneShapesVisibleChange}
             onBackgroundImageChange={handleBackgroundImageChange}
             onBackgroundOpacityChange={handleBackgroundOpacityChange}
@@ -3965,6 +4226,19 @@ function App() {
           onClose={() => setShowPrintView(false)}
         />
       )}
+      <ScanAlignmentWorkspace
+        open={showScanAlignment}
+        scanUrl={scanObjectUrl}
+        alignment={scanAlignment}
+        zones={zones}
+        siteFeatures={siteFeatures}
+        placedPlants={placedPlants}
+        pixelsPerFoot={pixelsPerFoot}
+        onClose={() => setShowScanAlignment(false)}
+        onImportScan={file => { handleImportScan(file).catch(error => alert(error instanceof Error ? error.message : 'Could not import scan')); }}
+        onUpdateAlignment={setScanAlignment}
+        onRemoveScan={() => { handleRemoveScan().catch(error => alert(error instanceof Error ? error.message : 'Could not remove scan')); }}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 // LocalStorage utilities for saving and loading garden plans
 
 import { GardenPlan } from '../types/plant';
+import { normalizeGardenPlan } from './planSchema';
 
 const STORAGE_KEY = 'garden-planner-plans';
 const CURRENT_PLAN_KEY = 'garden-planner-current';
@@ -14,7 +15,8 @@ export function generateId(): string {
 export function loadSavedPlans(): GardenPlan[] {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    const parsed = data ? JSON.parse(data) : [];
+    return Array.isArray(parsed) ? parsed.map(plan => normalizeGardenPlan(plan)) : [];
   } catch {
     return [];
   }
@@ -28,12 +30,13 @@ function savePlans(plans: GardenPlan[]): void {
 // Save a single plan (create or update)
 export function savePlan(plan: GardenPlan): void {
   const plans = loadSavedPlans();
-  const existingIndex = plans.findIndex(p => p.id === plan.id);
+  const normalizedPlan = normalizeGardenPlan(plan);
+  const existingIndex = plans.findIndex(p => p.id === normalizedPlan.id);
 
   if (existingIndex >= 0) {
-    plans[existingIndex] = { ...plan, updatedAt: new Date().toISOString() };
+    plans[existingIndex] = { ...normalizedPlan, updatedAt: new Date().toISOString() };
   } else {
-    plans.push({ ...plan, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    plans.push({ ...normalizedPlan, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
   }
 
   savePlans(plans);
@@ -49,7 +52,7 @@ export function deletePlan(planId: string): void {
 export function loadCurrentPlan(): Partial<GardenPlan> | null {
   try {
     const data = localStorage.getItem(CURRENT_PLAN_KEY);
-    return data ? JSON.parse(data) : null;
+    return data ? normalizeGardenPlan(JSON.parse(data)) : null;
   } catch {
     return null;
   }
@@ -57,7 +60,7 @@ export function loadCurrentPlan(): Partial<GardenPlan> | null {
 
 // Save the current working plan
 export function saveCurrentPlan(plan: Partial<GardenPlan>): void {
-  localStorage.setItem(CURRENT_PLAN_KEY, JSON.stringify(plan));
+  localStorage.setItem(CURRENT_PLAN_KEY, JSON.stringify(normalizeGardenPlan(plan)));
 }
 
 // Clear the current plan
@@ -88,12 +91,14 @@ export function importPlanFromJSON(file: File): Promise<GardenPlan> {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const plan = JSON.parse(content) as GardenPlan;
+        const parsed = JSON.parse(content) as Partial<GardenPlan>;
 
         // Validate required fields
-        if (!plan.placedPlants || !Array.isArray(plan.placedPlants)) {
+        if (!parsed.placedPlants || !Array.isArray(parsed.placedPlants)) {
           throw new Error('Invalid plan file: missing placedPlants array');
         }
+
+        const plan = normalizeGardenPlan(parsed);
 
         // Assign new ID to avoid conflicts
         plan.id = generateId();
@@ -114,7 +119,7 @@ export function importPlanFromJSON(file: File): Promise<GardenPlan> {
 
 // Create a new empty plan
 export function createNewPlan(name: string): GardenPlan {
-  return {
+  return normalizeGardenPlan({
     id: generateId(),
     name: name || 'Untitled Plan',
     createdAt: new Date().toISOString(),
@@ -125,5 +130,5 @@ export function createNewPlan(name: string): GardenPlan {
     scalePixelsPerFoot: null,
     placedPlants: [],
     notes: '',
-  };
+  });
 }

@@ -14,6 +14,119 @@ export type ZonePlantVariety = 'low' | 'medium' | 'high';
 export type ZoneType = 'planting' | 'exclusion';
 export type ZoneSurfaceType = 'planting' | 'pool' | 'concrete' | 'pavers' | 'gravel' | 'rockMulch' | 'barkMulch' | 'lawn' | 'firePit' | 'furniture' | 'structure' | 'exclusion';
 
+export const CURRENT_PLAN_SCHEMA_VERSION = 2;
+
+export interface PlanPoint {
+  x: number;
+  y: number;
+}
+
+export interface ObservedPlanPoint extends PlanPoint {
+  groundElevationFt?: number;
+}
+
+export type PlanLayerKind = 'background' | 'areas' | 'structures' | 'retainingWalls' | 'fences' | 'plants' | 'lights';
+
+export interface PlanLayer {
+  id: string;
+  name: string;
+  kind: PlanLayerKind;
+  visible: boolean;
+  locked: boolean;
+  order: number;
+}
+
+export type LinearSiteFeatureKind = 'standardFence' | 'gardenFence' | 'retainingWall' | 'edging' | 'boundary';
+
+export interface SiteFeaturePoint extends PlanPoint {
+  groundElevationFt?: number;
+}
+
+export interface SiteFeatureSegment {
+  heightFt?: number;
+  /** Legacy fields retained only so older saved plans can be migrated. */
+  heightStartFt?: number;
+  heightEndFt?: number;
+  thicknessFt?: number;
+  /** Legacy fields retained only so older saved plans can be migrated. */
+  buriedDepthFt?: number;
+  footerHeightFt?: number;
+  material?: string;
+  notes?: string;
+}
+
+export interface LinearSiteFeature {
+  id: string;
+  schemaVersion: 1;
+  name: string;
+  kind: LinearSiteFeatureKind;
+  points: SiteFeaturePoint[];
+  segments: SiteFeatureSegment[];
+  layerId: string;
+  order: number;
+  visible: boolean;
+  notes: string;
+}
+
+export type SiteLightType = 'downlight' | 'uplight' | 'pathLight' | 'wallLight' | 'spotlight' | 'floodlight' | 'other';
+
+export interface SiteLight {
+  id: string;
+  schemaVersion: 1;
+  name: string;
+  lightType: SiteLightType;
+  position: ObservedPlanPoint;
+  mountingHeightFt?: number;
+  azimuthDeg: number;
+  tiltDeg: number;
+  beamAngleDeg: number;
+  rangeFt?: number;
+  lumens?: number;
+  watts?: number;
+  colorTemperatureK?: number;
+  rgbwCapable?: boolean;
+  status: 'existing' | 'proposed';
+  enabled: boolean;
+  layerId: string;
+  order: number;
+  visible: boolean;
+  attachedFeatureId?: string;
+  attachedSegmentIndex?: number;
+  notes: string;
+}
+
+export interface ScanAssetReference {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  importedAt: string;
+}
+
+export interface ScanTransform {
+  translationFt: { x: number; y: number; z: number };
+  rotationDeg: { x: number; y: number; z: number };
+  uniformScale: number;
+}
+
+export interface ScanControlPointPair {
+  id: string;
+  label: string;
+  planPointFt: { x: number; y: number; z: number };
+  scanPoint: { x: number; y: number; z: number };
+  residualFt?: number;
+}
+
+export interface ScanAlignment {
+  asset?: ScanAssetReference;
+  visible: boolean;
+  opacity: number;
+  planOpacity: number;
+  transform: ScanTransform;
+  controlPoints: ScanControlPointPair[];
+  registrationErrorFt?: number;
+}
+
 export interface PlantingGroup {
   id: string;
   name: string;
@@ -160,6 +273,8 @@ export interface GardenZone {
   plantingGroupId?: string;
   plantingGroupName?: string;
   notes?: string;
+  layerId?: string;
+  order?: number;
 }
 
 // A placed plant instance on the canvas
@@ -183,6 +298,12 @@ export interface PlacedPlant {
   rockSvg?: string;
   rockSizeFt?: number;
   rockColor?: string;
+  layerId?: string;
+  order?: number;
+  plannedPosition?: PlanPoint;
+  observedPosition?: ObservedPlanPoint;
+  scanAssociationId?: string;
+  visualArchetype?: string;
 }
 
 
@@ -194,6 +315,7 @@ export interface ShrubScoreState {
 
 // Garden plan saved to localStorage
 export interface GardenPlan {
+  schemaVersion?: number;
   id: string;
   name: string;
   createdAt: string;
@@ -215,6 +337,11 @@ export interface GardenPlan {
   plantClumpStrength?: PlantClumpStrength;
   zoom?: number;
   shrubScore?: ShrubScoreState;
+  northRotationDeg?: number;
+  layers?: PlanLayer[];
+  siteFeatures?: LinearSiteFeature[];
+  siteLights?: SiteLight[];
+  scanAlignment?: ScanAlignment;
 }
 
 // Filter state for the plant library

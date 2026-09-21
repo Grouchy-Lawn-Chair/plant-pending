@@ -1553,7 +1553,11 @@ export function PlanDetails({
                       onChange={(e) => {
                         const surfaceType = e.target.value as ZoneSurfaceType;
                         const zoneType: ZoneType = surfaceType === 'planting' ? 'planting' : 'exclusion';
-                        onUpdateZone(editingZone.id, { surfaceType, zoneType });
+                        onUpdateZone(editingZone.id, {
+                          surfaceType,
+                          zoneType,
+                          layerId: surfaceType === 'structure' ? 'structures' : 'areas',
+                        });
                       }}
                       className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
                     >
