@@ -1201,6 +1201,8 @@ function App() {
 
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
   const copiedPlacedPlantsRef = useRef<PlacedPlant[]>([]);
+  const copiedSiteLightRef = useRef<SiteLight | null>(null);
+  const copiedCanvasItemKindRef = useRef<'plants' | 'light' | null>(null);
   const pasteGenerationRef = useRef(0);
   const [placingRock, setPlacingRock] = useState(false);
   const nextRockIndexRef = useRef(0);
@@ -2255,6 +2257,10 @@ function App() {
     };
     setSiteLights(current => [...current, copy]);
     setSelectedSiteLightId(copy.id);
+    setSelectedSiteFeatureId(null);
+    setSelectedZoneId(null);
+    setSelectedInstanceId(null);
+    setSelectedInstanceIds([]);
     addTestLog('siteLight.duplicated', { originalId: lightId, copyId: copy.id });
   }, [addTestLog, siteLights]);
 
@@ -2359,11 +2365,24 @@ function App() {
     if (selected.length === 0) return false;
 
     copiedPlacedPlantsRef.current = selected.map(item => ({ ...item }));
+    copiedCanvasItemKindRef.current = 'plants';
     pasteGenerationRef.current = 0;
     setCommentaryMessage(selected.length === 1 ? 'Copy, paste, shrub.' : 'Many duplicates are now possible.');
     addTestLog('selection.copied', { count: selected.length, instanceIds: ids });
     return true;
   }, [selectedInstanceIds, selectedInstanceId, placedPlants, addTestLog]);
+
+  const handleCopySelectedSiteLight = useCallback(() => {
+    if (!selectedSiteLightId) return false;
+    const selected = siteLights.find(light => light.id === selectedSiteLightId);
+    if (!selected) return false;
+    copiedSiteLightRef.current = { ...selected, position: { ...selected.position } };
+    copiedCanvasItemKindRef.current = 'light';
+    pasteGenerationRef.current = 0;
+    setCommentaryMessage('Light copied. Paste to place a duplicate.');
+    addTestLog('siteLight.copied', { lightId: selected.id });
+    return true;
+  }, [selectedSiteLightId, siteLights, addTestLog]);
 
   const handlePasteCopiedPlacedPlants = useCallback(() => {
     const copied = copiedPlacedPlantsRef.current;
@@ -2395,6 +2414,29 @@ function App() {
     return true;
   }, [pixelsPerFoot, plants, addTestLog]);
 
+  const handlePasteCopiedSiteLight = useCallback(() => {
+    const copied = copiedSiteLightRef.current;
+    if (!copied) return false;
+    pasteGenerationRef.current += 1;
+    const offset = 30 * pasteGenerationRef.current;
+    const copy: SiteLight = {
+      ...copied,
+      id: generateId(),
+      name: `${copied.name} copy`,
+      position: { x: copied.position.x + offset, y: copied.position.y + offset },
+      order: siteLights.length,
+    };
+    setSiteLights(current => [...current, copy]);
+    setSelectedSiteLightId(copy.id);
+    setSelectedSiteFeatureId(null);
+    setSelectedZoneId(null);
+    setSelectedInstanceId(null);
+    setSelectedInstanceIds([]);
+    setCommentaryMessage('Light pasted.');
+    addTestLog('siteLight.pasted', { originalId: copied.id, copyId: copy.id, offset });
+    return true;
+  }, [siteLights.length, addTestLog]);
+
   useEffect(() => {
     const onClipboardKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -2403,15 +2445,18 @@ function App() {
 
       const key = event.key.toLowerCase();
       if (key === 'c') {
-        if (handleCopySelectedPlacedPlants()) event.preventDefault();
+        if (handleCopySelectedSiteLight() || handleCopySelectedPlacedPlants()) event.preventDefault();
       } else if (key === 'v') {
-        if (handlePasteCopiedPlacedPlants()) event.preventDefault();
+        const pasted = copiedCanvasItemKindRef.current === 'light'
+          ? handlePasteCopiedSiteLight()
+          : handlePasteCopiedPlacedPlants();
+        if (pasted) event.preventDefault();
       }
     };
 
     window.addEventListener('keydown', onClipboardKeyDown);
     return () => window.removeEventListener('keydown', onClipboardKeyDown);
-  }, [handleCopySelectedPlacedPlants, handlePasteCopiedPlacedPlants]);
+  }, [handleCopySelectedPlacedPlants, handleCopySelectedSiteLight, handlePasteCopiedPlacedPlants, handlePasteCopiedSiteLight]);
 
 
 
@@ -4031,7 +4076,12 @@ function App() {
             onDuplicateSiteLight={handleDuplicateSiteLight}
             onSelectSiteLight={(lightId) => {
               setSelectedSiteLightId(lightId);
-              if (lightId) setSelectedSiteFeatureId(null);
+              if (lightId) {
+                setSelectedSiteFeatureId(null);
+                setSelectedZoneId(null);
+                setSelectedInstanceId(null);
+                setSelectedInstanceIds([]);
+              }
             }}
             onUpdatePlanLayer={handleUpdatePlanLayer}
             onReorderPlanLayer={handleReorderPlanLayer}
