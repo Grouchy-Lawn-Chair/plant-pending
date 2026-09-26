@@ -3605,13 +3605,6 @@ function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setShowScanAlignment(true); setShowFileMenu(false); }}
-                    className="block w-full px-4 py-2 text-left text-cyan-200 hover:bg-slate-800"
-                  >
-                    Scan Alignment...
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => appFileInputRef.current?.click()}
                     className="block w-full px-4 py-2 text-left text-slate-100 hover:bg-slate-800"
                   >
