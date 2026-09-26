@@ -2243,6 +2243,21 @@ function App() {
     addTestLog('siteLight.deleted', { lightId });
   }, [addTestLog]);
 
+  const handleDuplicateSiteLight = useCallback((lightId: string) => {
+    const source = siteLights.find(light => light.id === lightId);
+    if (!source) return;
+    const copy: SiteLight = {
+      ...source,
+      id: generateId(),
+      name: `${source.name} copy`,
+      position: { x: source.position.x + 20, y: source.position.y + 20 },
+      order: siteLights.length,
+    };
+    setSiteLights(current => [...current, copy]);
+    setSelectedSiteLightId(copy.id);
+    addTestLog('siteLight.duplicated', { originalId: lightId, copyId: copy.id });
+  }, [addTestLog, siteLights]);
+
   const handleUpdatePlanLayer = useCallback((layerId: string, updates: Partial<PlanLayer>) => {
     setPlanLayers(current => current.map(layer => layer.id === layerId ? { ...layer, ...updates } : layer));
   }, []);
@@ -4013,6 +4028,7 @@ function App() {
             onAddSiteLight={handleAddSiteLight}
             onUpdateSiteLight={handleUpdateSiteLight}
             onDeleteSiteLight={handleDeleteSiteLight}
+            onDuplicateSiteLight={handleDuplicateSiteLight}
             onSelectSiteLight={(lightId) => {
               setSelectedSiteLightId(lightId);
               if (lightId) setSelectedSiteFeatureId(null);

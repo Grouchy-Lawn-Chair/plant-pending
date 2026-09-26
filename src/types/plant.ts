@@ -69,6 +69,7 @@ export interface LinearSiteFeature {
 }
 
 export type SiteLightType = 'downlight' | 'uplight' | 'pathLight' | 'wallLight' | 'spotlight' | 'floodlight' | 'other';
+export type SiteLightBeamPattern = 'directional' | 'omni360' | 'louver1' | 'louver2' | 'louver3' | 'louver4';
 
 export interface SiteLight {
   id: string;
@@ -80,6 +81,8 @@ export interface SiteLight {
   azimuthDeg: number;
   tiltDeg: number;
   beamAngleDeg: number;
+  beamPattern?: SiteLightBeamPattern;
+  showBeam?: boolean;
   rangeFt?: number;
   lumens?: number;
   watts?: number;

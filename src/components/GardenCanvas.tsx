@@ -9,7 +9,7 @@ import { buildGroupedCallouts } from '../utils/calloutUtils';
 import { buildPlantDriftClusters } from '../utils/driftUtils';
 import { PlantDriftOverlay } from './PlantDriftOverlay';
 import { SiteFeatureInspector } from './SiteFeatureInspector';
-import { getSiteLightPreset } from '../utils/siteLightPresets';
+import { beamDirectionsForPattern, getSiteLightPreset } from '../utils/siteLightPresets';
 
 const GRID_VISIBLE_KEY = 'plant-pending-grid-visible';
 const GRID_SNAP_KEY = 'plant-pending-grid-snap';
@@ -76,6 +76,7 @@ interface GardenCanvasProps {
   onAddSiteLight: (light: Omit<SiteLight, 'id' | 'schemaVersion' | 'order'>) => void;
   onUpdateSiteLight: (lightId: string, updates: Partial<SiteLight>) => void;
   onDeleteSiteLight: (lightId: string) => void;
+  onDuplicateSiteLight: (lightId: string) => void;
   onSelectSiteLight: (lightId: string | null) => void;
   onUpdatePlanLayer: (layerId: string, updates: Partial<PlanLayer>) => void;
   onReorderPlanLayer: (layerId: string, direction: -1 | 1) => void;
@@ -401,6 +402,7 @@ export function GardenCanvas({
   onAddSiteLight,
   onUpdateSiteLight,
   onDeleteSiteLight,
+  onDuplicateSiteLight,
   onSelectSiteLight,
   onUpdatePlanLayer,
   onReorderPlanLayer,
@@ -666,6 +668,8 @@ export function GardenCanvas({
         azimuthDeg: 0,
         tiltDeg: -45,
         beamAngleDeg: 60,
+        beamPattern: 'directional',
+        showBeam: true,
         mountingHeightFt: 0,
         status: 'existing',
         enabled: true,
@@ -934,6 +938,18 @@ export function GardenCanvas({
         return;
       }
 
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedSiteLightId) {
+        e.preventDefault();
+        onDeleteSiteLight(selectedSiteLightId);
+        return;
+      }
+
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedSiteFeatureId) {
+        e.preventDefault();
+        onDeleteSiteFeature(selectedSiteFeatureId);
+        return;
+      }
+
       if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedInstanceIds.length > 0 || selectedInstanceId)) {
         e.preventDefault();
         const idsToDelete = selectedInstanceIds.length > 0 ? selectedInstanceIds : selectedInstanceId ? [selectedInstanceId] : [];
@@ -963,7 +979,7 @@ export function GardenCanvas({
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', handleWindowBlur);
     };
-  }, [selectedInstanceId, selectedInstanceIds, onDeletePlacedPlant, onCancelPlantPlacement, onSelectPlacedPlant, onSelectMultiplePlacedPlants, onSelectZone, isDrawingZone, cancelZoneDraft]);
+  }, [selectedInstanceId, selectedInstanceIds, selectedSiteFeatureId, selectedSiteLightId, onDeletePlacedPlant, onDeleteSiteFeature, onDeleteSiteLight, onCancelPlantPlacement, onSelectPlacedPlant, onSelectMultiplePlacedPlants, onSelectZone, isDrawingZone, cancelZoneDraft]);
 
   const touchDistance = (touches: React.TouchList) => {
     const first = touches[0];
@@ -1601,26 +1617,24 @@ export function GardenCanvas({
               const selected = light.id === selectedSiteLightId;
               const locked = layerIsLocked(light.layerId);
               const preset = getSiteLightPreset(light.lightType);
+              const beamPattern = light.beamPattern || preset.defaultPattern;
               const rangePx = light.rangeFt && pixelsPerFoot ? light.rangeFt * pixelsPerFoot : pixelsPerFoot ? preset.previewRangeFt * pixelsPerFoot : preset.previewRangeFt * 6;
-              const directionRadians = light.azimuthDeg * Math.PI / 180;
               const halfBeamRadians = light.beamAngleDeg * Math.PI / 360;
-              const leftPoint = { x: light.position.x + Math.cos(directionRadians - halfBeamRadians) * rangePx, y: light.position.y + Math.sin(directionRadians - halfBeamRadians) * rangePx };
-              const rightPoint = { x: light.position.x + Math.cos(directionRadians + halfBeamRadians) * rangePx, y: light.position.y + Math.sin(directionRadians + halfBeamRadians) * rangePx };
-              const arrowEnd = { x: light.position.x + Math.cos(directionRadians) * rangePx, y: light.position.y + Math.sin(directionRadians) * rangePx };
+              const beamDirections = beamDirectionsForPattern(beamPattern).map(offset => (light.azimuthDeg + offset) * Math.PI / 180);
               return (
                 <svg key={light.id} className="absolute inset-0 h-full w-full overflow-visible" style={{ zIndex: 6 + layerOrder(light.layerId), pointerEvents: 'none' }}>
                   <defs><marker id={`site-light-arrow-${light.id}`} markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill={preset.color} /></marker></defs>
-                  {preset.omnidirectional ? (
+                  {light.showBeam !== false && beamPattern === 'omni360' ? (
                     <circle cx={light.position.x} cy={light.position.y} r={rangePx} fill={light.status === 'existing' ? `${preset.color}26` : `${preset.color}1f`} stroke={preset.color} strokeDasharray={light.rangeFt ? undefined : '5 4'} strokeWidth={selected ? 2 : 1} className="pointer-events-none" />
-                  ) : (
-                    <>
-                      <path d={`M ${light.position.x} ${light.position.y} L ${leftPoint.x} ${leftPoint.y} A ${rangePx} ${rangePx} 0 0 1 ${rightPoint.x} ${rightPoint.y} Z`} fill={`${preset.color}${light.status === 'existing' ? '2e' : '24'}`} stroke={preset.color} strokeDasharray={light.rangeFt ? undefined : '5 4'} strokeWidth={selected ? 2 : 1} className="pointer-events-none" />
-                      <line x1={light.position.x} y1={light.position.y} x2={arrowEnd.x} y2={arrowEnd.y} stroke={preset.color} strokeWidth="2.5" markerEnd={`url(#site-light-arrow-${light.id})`} className="pointer-events-none" />
-                    </>
-                  )}
+                  ) : light.showBeam !== false && beamDirections.map((directionRadians, beamIndex) => {
+                    const leftPoint = { x: light.position.x + Math.cos(directionRadians - halfBeamRadians) * rangePx, y: light.position.y + Math.sin(directionRadians - halfBeamRadians) * rangePx };
+                    const rightPoint = { x: light.position.x + Math.cos(directionRadians + halfBeamRadians) * rangePx, y: light.position.y + Math.sin(directionRadians + halfBeamRadians) * rangePx };
+                    const arrowEnd = { x: light.position.x + Math.cos(directionRadians) * rangePx, y: light.position.y + Math.sin(directionRadians) * rangePx };
+                    return <g key={beamIndex}><path d={`M ${light.position.x} ${light.position.y} L ${leftPoint.x} ${leftPoint.y} A ${rangePx} ${rangePx} 0 0 1 ${rightPoint.x} ${rightPoint.y} Z`} fill={`${preset.color}${light.status === 'existing' ? '2e' : '24'}`} stroke={preset.color} strokeDasharray={light.rangeFt ? undefined : '5 4'} strokeWidth={selected ? 2 : 1} className="pointer-events-none" /><line x1={light.position.x} y1={light.position.y} x2={arrowEnd.x} y2={arrowEnd.y} stroke={preset.color} strokeWidth="2.5" markerEnd={`url(#site-light-arrow-${light.id})`} className="pointer-events-none" /></g>;
+                  })}
                   <circle cx={light.position.x} cy={light.position.y} r={selected ? 11 : 9} fill={light.enabled ? preset.color : '#64748b'} stroke={selected ? '#0f172a' : 'white'} strokeWidth="3" style={{ pointerEvents: locked ? 'none' : 'all', cursor: 'move', touchAction: 'none' }} onMouseDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onPointerDown={event => { event.preventDefault(); event.stopPropagation(); onSelectSiteLight(light.id); onSelectSiteFeature(null); onSelectZone(null); onSelectPlacedPlant(null); setShowLayers(false); setDraggingSiteLight(light.id); }} />
                   <text x={light.position.x} y={light.position.y + 3} textAnchor="middle" className="pointer-events-none text-[8px] font-black" fill="#111827">{preset.marker}</text>
-                  {selected && <text x={light.position.x} y={light.position.y - 17} textAnchor="middle" className="pointer-events-none text-[10px] font-bold" fill={preset.color} paintOrder="stroke" stroke="white" strokeWidth="3">{preset.label} · {preset.omnidirectional ? 'all directions' : `${Math.round(light.azimuthDeg)}° · ${light.beamAngleDeg}° beam`}</text>}
+                  {selected && <text x={light.position.x} y={light.position.y - 17} textAnchor="middle" className="pointer-events-none text-[10px] font-bold" fill={preset.color} paintOrder="stroke" stroke="white" strokeWidth="3">{preset.label} · {light.showBeam === false ? 'beam hidden' : beamPattern === 'omni360' ? '360°' : `${Math.round(light.azimuthDeg)}° · ${light.beamAngleDeg}° beam`}</text>}
                 </svg>
               );
             })}
@@ -1819,6 +1833,7 @@ export function GardenCanvas({
         onDeleteFeature={onDeleteSiteFeature}
         onUpdateLight={onUpdateSiteLight}
         onDeleteLight={onDeleteSiteLight}
+        onDuplicateLight={onDuplicateSiteLight}
         onUpdateLayer={onUpdatePlanLayer}
         onReorderLayer={onReorderPlanLayer}
         onNorthRotationChange={onNorthRotationChange}

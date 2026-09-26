@@ -1,6 +1,6 @@
 import { GardenZone, LinearSiteFeature, PlanLayer, SiteFeatureSegment, SiteLight } from '../types/plant';
 import { canvasDistanceToFeet, normalizeDegrees } from '../utils/sceneCoordinates';
-import { getSiteLightPreset, SITE_LIGHT_PRESETS } from '../utils/siteLightPresets';
+import { getSiteLightPreset, SITE_LIGHT_PRESETS, WELL_LIGHT_PATTERNS } from '../utils/siteLightPresets';
 
 interface SiteFeatureInspectorProps {
   selectedFeature: LinearSiteFeature | null;
@@ -21,6 +21,7 @@ interface SiteFeatureInspectorProps {
   onDeleteFeature: (featureId: string) => void;
   onUpdateLight: (lightId: string, updates: Partial<SiteLight>) => void;
   onDeleteLight: (lightId: string) => void;
+  onDuplicateLight: (lightId: string) => void;
   onUpdateLayer: (layerId: string, updates: Partial<PlanLayer>) => void;
   onReorderLayer: (layerId: string, direction: -1 | 1) => void;
   onNorthRotationChange: (degrees: number) => void;
@@ -65,6 +66,7 @@ export function SiteFeatureInspector({
   onDeleteFeature,
   onUpdateLight,
   onDeleteLight,
+  onDuplicateLight,
   onUpdateLayer,
   onReorderLayer,
   onNorthRotationChange,
@@ -214,15 +216,19 @@ export function SiteFeatureInspector({
         <div className="space-y-3">
           <label><span className={labelClass}>Name</span><input value={selectedLight.name} onChange={event => onUpdateLight(selectedLight.id, { name: event.target.value })} className={inputClass} /></label>
           <div className="grid grid-cols-2 gap-2">
-            <label><span className={labelClass}>Type</span><select value={selectedLight.lightType} onChange={event => { const lightType = event.target.value as SiteLight['lightType']; const preset = getSiteLightPreset(lightType); onUpdateLight(selectedLight.id, { lightType, tiltDeg: preset.tiltDeg, beamAngleDeg: preset.beamAngleDeg }); }} className={inputClass}>{(Object.entries(SITE_LIGHT_PRESETS) as Array<[SiteLight['lightType'], (typeof SITE_LIGHT_PRESETS)[SiteLight['lightType']]]>).map(([value, preset]) => <option key={value} value={value}>{preset.label}</option>)}</select></label>
+            <label><span className={labelClass}>Type</span><select value={selectedLight.lightType} onChange={event => { const lightType = event.target.value as SiteLight['lightType']; const preset = getSiteLightPreset(lightType); onUpdateLight(selectedLight.id, { lightType, tiltDeg: preset.tiltDeg, beamAngleDeg: preset.beamAngleDeg, beamPattern: preset.defaultPattern, showBeam: true }); }} className={inputClass}>{(Object.entries(SITE_LIGHT_PRESETS) as Array<[SiteLight['lightType'], (typeof SITE_LIGHT_PRESETS)[SiteLight['lightType']]]>).map(([value, preset]) => <option key={value} value={value}>{preset.label}</option>)}</select></label>
             <label><span className={labelClass}>Existing / proposed</span><select value={selectedLight.status} onChange={event => onUpdateLight(selectedLight.id, { status: event.target.value as SiteLight['status'] })} className={inputClass}><option value="existing">Existing</option><option value="proposed">Proposed</option></select></label>
           </div>
           <label><span className={labelClass}>Azimuth / rotation: {Math.round(selectedLight.azimuthDeg)}°</span><input type="range" min="0" max="359" value={selectedLight.azimuthDeg} onChange={event => onUpdateLight(selectedLight.id, { azimuthDeg: Number(event.target.value) })} className="w-full" /></label>
           <div className="grid grid-cols-3 gap-2"><button type="button" onClick={() => onUpdateLight(selectedLight.id, { azimuthDeg: normalizeDegrees(selectedLight.azimuthDeg - 5) })} className="rounded border border-slate-700 p-1.5 text-xs">−5°</button><input type="number" value={selectedLight.azimuthDeg} onChange={event => onUpdateLight(selectedLight.id, { azimuthDeg: normalizeDegrees(Number(event.target.value) || 0) })} className={inputClass} /><button type="button" onClick={() => onUpdateLight(selectedLight.id, { azimuthDeg: normalizeDegrees(selectedLight.azimuthDeg + 5) })} className="rounded border border-slate-700 p-1.5 text-xs">+5°</button></div>
           <label><span className={labelClass}>Tilt: {selectedLight.tiltDeg}°</span><input type="range" min="-90" max="90" value={selectedLight.tiltDeg} onChange={event => onUpdateLight(selectedLight.id, { tiltDeg: Number(event.target.value) })} className="w-full" /></label>
           <div className="grid grid-cols-3 gap-2"><button type="button" onClick={() => onUpdateLight(selectedLight.id, { tiltDeg: -45 })} className="rounded border border-slate-700 p-1.5 text-xs">Down</button><button type="button" onClick={() => onUpdateLight(selectedLight.id, { tiltDeg: 0 })} className="rounded border border-slate-700 p-1.5 text-xs">Level</button><button type="button" onClick={() => onUpdateLight(selectedLight.id, { tiltDeg: 45 })} className="rounded border border-slate-700 p-1.5 text-xs">Up</button></div>
-          {getSiteLightPreset(selectedLight.lightType).omnidirectional ? (
-            <div className="rounded border border-lime-700/60 bg-lime-950/30 px-3 py-2 text-xs text-lime-200">Path lights use an omnidirectional map footprint.</div>
+          <label className="flex items-center gap-2 rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm"><input type="checkbox" checked={selectedLight.showBeam !== false} onChange={event => onUpdateLight(selectedLight.id, { showBeam: event.target.checked })} /> Show beam on map</label>
+          {selectedLight.lightType === 'uplight' && (
+            <label><span className={labelClass}>Well-light pattern</span><select value={selectedLight.beamPattern || 'omni360'} onChange={event => onUpdateLight(selectedLight.id, { beamPattern: event.target.value as SiteLight['beamPattern'] })} className={inputClass}>{WELL_LIGHT_PATTERNS.map(pattern => <option key={pattern.value} value={pattern.value}>{pattern.label}</option>)}</select></label>
+          )}
+          {(selectedLight.beamPattern || getSiteLightPreset(selectedLight.lightType).defaultPattern) === 'omni360' ? (
+            <div className="rounded border border-lime-700/60 bg-lime-950/30 px-3 py-2 text-xs text-lime-200">This pattern displays light in all directions. Choose a louver pattern for directional openings.</div>
           ) : (
             <>
               <label><span className={labelClass}>Beam angle: {selectedLight.beamAngleDeg}°</span><input type="range" min="5" max="160" value={selectedLight.beamAngleDeg} onChange={event => onUpdateLight(selectedLight.id, { beamAngleDeg: Number(event.target.value) })} className="w-full" /></label>
@@ -231,7 +237,7 @@ export function SiteFeatureInspector({
           )}
           <div className="grid grid-cols-2 gap-2">
             <label><span className={labelClass}>Mounting height (ft)</span><input type="number" step="0.25" value={selectedLight.mountingHeightFt ?? ''} onChange={event => onUpdateLight(selectedLight.id, { mountingHeightFt: optionalNumber(event.target.value) })} className={inputClass} /></label>
-            <label><span className={labelClass}>Range (ft)</span><input type="number" step="0.5" value={selectedLight.rangeFt ?? ''} onChange={event => onUpdateLight(selectedLight.id, { rangeFt: optionalNumber(event.target.value) })} className={inputClass} /></label>
+            <label><span className={labelClass}>Beam reach / map scale (ft)</span><input type="number" min="0.5" step="0.5" value={selectedLight.rangeFt ?? getSiteLightPreset(selectedLight.lightType).previewRangeFt} onChange={event => onUpdateLight(selectedLight.id, { rangeFt: optionalNumber(event.target.value) })} className={inputClass} /></label>
             <label><span className={labelClass}>Lumens</span><input type="number" value={selectedLight.lumens ?? ''} onChange={event => onUpdateLight(selectedLight.id, { lumens: optionalNumber(event.target.value) })} className={inputClass} /></label>
             <label><span className={labelClass}>Watts</span><input type="number" step="0.1" value={selectedLight.watts ?? ''} onChange={event => onUpdateLight(selectedLight.id, { watts: optionalNumber(event.target.value) })} className={inputClass} /></label>
             <label><span className={labelClass}>Color temperature (K)</span><input type="number" step="100" value={selectedLight.colorTemperatureK ?? ''} onChange={event => onUpdateLight(selectedLight.id, { colorTemperatureK: optionalNumber(event.target.value) })} className={inputClass} /></label>
@@ -239,7 +245,10 @@ export function SiteFeatureInspector({
           </div>
           <label><span className={labelClass}>Layer</span><select value={selectedLight.layerId} onChange={event => onUpdateLight(selectedLight.id, { layerId: event.target.value })} className={inputClass}>{layers.map(layer => <option key={layer.id} value={layer.id}>{layer.name}</option>)}</select></label>
           <label><span className={labelClass}>Notes</span><textarea value={selectedLight.notes} onChange={event => onUpdateLight(selectedLight.id, { notes: event.target.value })} className={`${inputClass} min-h-16`} /></label>
-          <button type="button" onClick={() => onDeleteLight(selectedLight.id)} className="w-full rounded border border-red-500/40 bg-red-500/15 px-3 py-2 text-xs text-red-200">Delete light</button>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => onDuplicateLight(selectedLight.id)} className="rounded border border-cyan-500/40 bg-cyan-500/15 px-3 py-2 text-xs text-cyan-100">Duplicate light</button>
+            <button type="button" onClick={() => { onDeleteLight(selectedLight.id); onClose(); }} className="rounded border border-red-500/40 bg-red-500/15 px-3 py-2 text-xs text-red-200">Delete light</button>
+          </div>
         </div>
       )}
     </aside>
