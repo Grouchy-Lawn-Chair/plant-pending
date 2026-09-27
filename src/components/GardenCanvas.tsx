@@ -14,6 +14,7 @@ import { beamDirectionsForPattern, getSiteLightPreset } from '../utils/siteLight
 const GRID_VISIBLE_KEY = 'plant-pending-grid-visible';
 const GRID_SNAP_KEY = 'plant-pending-grid-snap';
 const GRID_SIZE_FEET_KEY = 'plant-pending-grid-size-feet';
+const CANVAS_LAYER_Z_BASE = 6;
 
 const publicAssetUrl = (path: string) => {
   if (!path) return import.meta.env.BASE_URL;
@@ -1589,7 +1590,7 @@ export function GardenCanvas({
               const locked = layerIsLocked(feature.layerId);
               const stroke = feature.kind === 'retainingWall' ? '#7c3aed' : feature.kind === 'gardenFence' ? '#0891b2' : feature.kind === 'standardFence' ? '#92400e' : '#475569';
               return (
-                <svg key={feature.id} className="absolute inset-0 h-full w-full overflow-visible" style={{ zIndex: 6 + layerOrder(feature.layerId), pointerEvents: 'none' }}>
+                <svg key={feature.id} className="absolute inset-0 h-full w-full overflow-visible" style={{ zIndex: CANVAS_LAYER_Z_BASE + layerOrder(feature.layerId), pointerEvents: 'none' }}>
                   {feature.segments.map((segment, index) => {
                     const start = feature.points[index];
                     const end = feature.points[index + 1];
@@ -1622,7 +1623,7 @@ export function GardenCanvas({
               const halfBeamRadians = light.beamAngleDeg * Math.PI / 360;
               const beamDirections = beamDirectionsForPattern(beamPattern).map(offset => (light.azimuthDeg + offset) * Math.PI / 180);
               return (
-                <svg key={light.id} className="absolute inset-0 h-full w-full overflow-visible" style={{ zIndex: 6 + layerOrder(light.layerId), pointerEvents: 'none' }}>
+                <svg key={light.id} className="absolute inset-0 h-full w-full overflow-visible" style={{ zIndex: CANVAS_LAYER_Z_BASE + layerOrder(light.layerId), pointerEvents: 'none' }}>
                   <defs><marker id={`site-light-arrow-${light.id}`} markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill={preset.color} /></marker></defs>
                   {light.showBeam !== false && beamPattern === 'omni360' ? (
                     <circle cx={light.position.x} cy={light.position.y} r={rangePx} fill={light.status === 'existing' ? `${preset.color}26` : `${preset.color}1f`} stroke={preset.color} strokeDasharray={light.rangeFt ? undefined : '5 4'} strokeWidth={selected ? 2 : 1} className="pointer-events-none" />
@@ -1654,7 +1655,7 @@ export function GardenCanvas({
                 legendNumber={legendNumbers.get(cluster.plantId) || 0}
                 placementIndex={Math.max(0, (legendNumbers.get(cluster.plantId) || 1) - 1)}
                 isSelected={clusterHasSelection}
-                zIndex={30 + layerOrder('plants')}
+                zIndex={CANVAS_LAYER_Z_BASE + layerOrder('plants')}
               />
             );
           })}
@@ -1673,7 +1674,7 @@ export function GardenCanvas({
                   sizePx={getRockSizePx(placed)}
                   isSelected={isSelected}
                   onPointerDown={(e) => handlePlantPointerDown(e, placed.instanceId)}
-                  zIndex={30 + layerOrder(placed.layerId || 'plants')}
+                  zIndex={CANVAS_LAYER_Z_BASE + layerOrder(placed.layerId || 'plants')}
                 />
               );
             }
@@ -1698,7 +1699,7 @@ export function GardenCanvas({
                     height: symbolSize,
                     background: 'transparent',
                     touchAction: 'none',
-                    zIndex: 30 + layerOrder(placed.layerId || 'plants') + (isSelected ? 2 : 0),
+                    zIndex: CANVAS_LAYER_Z_BASE + layerOrder(placed.layerId || 'plants') + (isSelected ? 2 : 0),
                   }}
                   title={`${plant.commonName || plant.botanicalName}\n${placed.displayWidthFt || plant.matureWidthFt || '?'}' display width${placed.displayWidthFt ? ` (mature ${plant.matureWidthFt || '?'}')` : ''}\n${placed.zone ? 'Area assigned' : 'No area assigned'}`}
                 >
@@ -1725,7 +1726,7 @@ export function GardenCanvas({
                 placementIndex={Math.max(0, (legendNumbers.get(placed.plantId) || 1) - 1)}
                 onPointerDown={(e) => handlePlantPointerDown(e, placed.instanceId)}
                 drifted={false}
-                zIndex={30 + layerOrder(placed.layerId || 'plants')}
+                zIndex={CANVAS_LAYER_Z_BASE + layerOrder(placed.layerId || 'plants')}
               />
             );
           })}
