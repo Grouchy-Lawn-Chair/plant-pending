@@ -1624,11 +1624,20 @@ export function GardenCanvas({
               const tiltRadians = light.tiltDeg * Math.PI / 180;
               const tiltDirection = light.tiltDeg > 2 ? 'up' : light.tiltDeg < -2 ? 'down' : 'level';
               const aimDirectionRadians = light.azimuthDeg * Math.PI / 180;
-              const aimPlanLength = 46 * Math.cos(tiltRadians);
-              const aimRise = 38 * Math.sin(tiltRadians);
-              const aimEnd = {
+              const aimGroundLength = 46;
+              const aimPlanLength = aimGroundLength * Math.cos(tiltRadians);
+              const aimHeight = 46 * Math.sin(tiltRadians);
+              const aimGroundEnd = {
+                x: light.position.x + Math.cos(aimDirectionRadians) * aimGroundLength,
+                y: light.position.y + Math.sin(aimDirectionRadians) * aimGroundLength,
+              };
+              const aimProjectedGroundPoint = {
                 x: light.position.x + Math.cos(aimDirectionRadians) * aimPlanLength,
-                y: light.position.y + Math.sin(aimDirectionRadians) * aimPlanLength - aimRise,
+                y: light.position.y + Math.sin(aimDirectionRadians) * aimPlanLength,
+              };
+              const aimEnd = {
+                x: aimProjectedGroundPoint.x - aimHeight * 0.38,
+                y: aimProjectedGroundPoint.y - aimHeight * 0.78,
               };
               const beamDirections = beamDirectionsForPattern(beamPattern).map(offset => (light.azimuthDeg + offset) * Math.PI / 180);
               return (
@@ -1644,9 +1653,15 @@ export function GardenCanvas({
                     </g>;
                   })}
                   <g className="pointer-events-none">
-                    <line x1={light.position.x + 3} y1={light.position.y + 4} x2={aimEnd.x + 3} y2={aimEnd.y + 4} stroke="#0f172a" strokeOpacity="0.45" strokeWidth="7" strokeLinecap="round" />
+                    <line x1={light.position.x} y1={light.position.y} x2={aimGroundEnd.x} y2={aimGroundEnd.y} stroke="#334155" strokeOpacity="0.7" strokeWidth="2" strokeDasharray="4 4" strokeLinecap="round" />
+                    {Math.abs(light.tiltDeg) > 2 && <>
+                      <ellipse cx={aimProjectedGroundPoint.x + 3} cy={aimProjectedGroundPoint.y + 4} rx="6" ry="3" fill="#0f172a" fillOpacity="0.28" />
+                      <line x1={aimProjectedGroundPoint.x} y1={aimProjectedGroundPoint.y} x2={aimEnd.x} y2={aimEnd.y} stroke={preset.color} strokeOpacity="0.45" strokeWidth="2" strokeDasharray="3 3" />
+                    </>}
+                    <line x1={light.position.x + 4} y1={light.position.y + 5} x2={aimEnd.x + 4} y2={aimEnd.y + 5} stroke="#0f172a" strokeOpacity="0.42" strokeWidth="8" strokeLinecap="round" />
                     <line x1={light.position.x} y1={light.position.y} x2={aimEnd.x} y2={aimEnd.y} stroke="white" strokeWidth="7" strokeLinecap="round" />
                     <line x1={light.position.x} y1={light.position.y} x2={aimEnd.x} y2={aimEnd.y} stroke={preset.color} strokeWidth="4" strokeLinecap="round" markerEnd={`url(#site-light-arrow-${light.id})`} />
+                    <line x1={light.position.x + 1} y1={light.position.y - 1} x2={aimEnd.x + 1} y2={aimEnd.y - 1} stroke="white" strokeOpacity="0.5" strokeWidth="1.25" strokeLinecap="round" />
                   </g>
                   <circle cx={light.position.x} cy={light.position.y} r={selected ? 11 : 9} fill={light.enabled ? preset.color : '#64748b'} stroke={selected ? '#0f172a' : 'white'} strokeWidth="3" style={{ pointerEvents: locked ? 'none' : 'all', cursor: 'move', touchAction: 'none' }} onMouseDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onPointerDown={event => { event.preventDefault(); event.stopPropagation(); onSelectSiteLight(light.id); onSelectSiteFeature(null); onSelectZone(null); onSelectPlacedPlant(null); setShowLayers(false); setDraggingSiteLight(light.id); }} />
                   <text x={light.position.x} y={light.position.y + 3} textAnchor="middle" className="pointer-events-none text-[8px] font-black" fill="#111827">{preset.marker}</text>
