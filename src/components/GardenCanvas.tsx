@@ -1621,6 +1621,9 @@ export function GardenCanvas({
               const beamPattern = light.beamPattern || preset.defaultPattern;
               const rangePx = light.rangeFt && pixelsPerFoot ? light.rangeFt * pixelsPerFoot : pixelsPerFoot ? preset.previewRangeFt * pixelsPerFoot : preset.previewRangeFt * 6;
               const halfBeamRadians = light.beamAngleDeg * Math.PI / 360;
+              const tiltRadians = Math.abs(light.tiltDeg) * Math.PI / 180;
+              const planProjection = Math.max(0, Math.cos(tiltRadians));
+              const tiltDirection = light.tiltDeg > 2 ? 'up' : light.tiltDeg < -2 ? 'down' : 'level';
               const beamDirections = beamDirectionsForPattern(beamPattern).map(offset => (light.azimuthDeg + offset) * Math.PI / 180);
               return (
                 <svg key={light.id} className="absolute inset-0 h-full w-full overflow-visible" style={{ zIndex: CANVAS_LAYER_Z_BASE + layerOrder(light.layerId), pointerEvents: 'none' }}>
@@ -1630,12 +1633,18 @@ export function GardenCanvas({
                   ) : light.showBeam !== false && beamDirections.map((directionRadians, beamIndex) => {
                     const leftPoint = { x: light.position.x + Math.cos(directionRadians - halfBeamRadians) * rangePx, y: light.position.y + Math.sin(directionRadians - halfBeamRadians) * rangePx };
                     const rightPoint = { x: light.position.x + Math.cos(directionRadians + halfBeamRadians) * rangePx, y: light.position.y + Math.sin(directionRadians + halfBeamRadians) * rangePx };
-                    const arrowEnd = { x: light.position.x + Math.cos(directionRadians) * rangePx, y: light.position.y + Math.sin(directionRadians) * rangePx };
-                    return <g key={beamIndex}><path d={`M ${light.position.x} ${light.position.y} L ${leftPoint.x} ${leftPoint.y} A ${rangePx} ${rangePx} 0 0 1 ${rightPoint.x} ${rightPoint.y} Z`} fill={`${preset.color}${light.status === 'existing' ? '2e' : '24'}`} stroke={preset.color} strokeDasharray={light.rangeFt ? undefined : '5 4'} strokeWidth={selected ? 2 : 1} className="pointer-events-none" /><line x1={light.position.x} y1={light.position.y} x2={arrowEnd.x} y2={arrowEnd.y} stroke={preset.color} strokeWidth="2.5" markerEnd={`url(#site-light-arrow-${light.id})`} className="pointer-events-none" /></g>;
+                    const projectedArrowLength = rangePx * planProjection;
+                    const arrowEnd = { x: light.position.x + Math.cos(directionRadians) * projectedArrowLength, y: light.position.y + Math.sin(directionRadians) * projectedArrowLength };
+                    const tiltMarkRadius = 4 + Math.min(4, Math.abs(Math.sin(light.tiltDeg * Math.PI / 180)) * 4);
+                    return <g key={beamIndex}>
+                      <path d={`M ${light.position.x} ${light.position.y} L ${leftPoint.x} ${leftPoint.y} A ${rangePx} ${rangePx} 0 0 1 ${rightPoint.x} ${rightPoint.y} Z`} fill={`${preset.color}${light.status === 'existing' ? '2e' : '24'}`} stroke={preset.color} strokeDasharray={light.rangeFt ? undefined : '5 4'} strokeWidth={selected ? 2 : 1} className="pointer-events-none" />
+                      {planProjection > 0.08 && <line x1={light.position.x} y1={light.position.y} x2={arrowEnd.x} y2={arrowEnd.y} stroke={preset.color} strokeWidth="2.5" markerEnd={tiltDirection === 'level' ? `url(#site-light-arrow-${light.id})` : undefined} className="pointer-events-none" />}
+                      {tiltDirection !== 'level' && <g className="pointer-events-none"><circle cx={arrowEnd.x} cy={arrowEnd.y} r={tiltMarkRadius} fill="white" stroke={preset.color} strokeWidth="2" />{tiltDirection === 'up' ? <circle cx={arrowEnd.x} cy={arrowEnd.y} r="2.25" fill={preset.color} /> : <><line x1={arrowEnd.x - 2.5} y1={arrowEnd.y - 2.5} x2={arrowEnd.x + 2.5} y2={arrowEnd.y + 2.5} stroke={preset.color} strokeWidth="1.5" /><line x1={arrowEnd.x + 2.5} y1={arrowEnd.y - 2.5} x2={arrowEnd.x - 2.5} y2={arrowEnd.y + 2.5} stroke={preset.color} strokeWidth="1.5" /></>}</g>}
+                    </g>;
                   })}
                   <circle cx={light.position.x} cy={light.position.y} r={selected ? 11 : 9} fill={light.enabled ? preset.color : '#64748b'} stroke={selected ? '#0f172a' : 'white'} strokeWidth="3" style={{ pointerEvents: locked ? 'none' : 'all', cursor: 'move', touchAction: 'none' }} onMouseDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onPointerDown={event => { event.preventDefault(); event.stopPropagation(); onSelectSiteLight(light.id); onSelectSiteFeature(null); onSelectZone(null); onSelectPlacedPlant(null); setShowLayers(false); setDraggingSiteLight(light.id); }} />
                   <text x={light.position.x} y={light.position.y + 3} textAnchor="middle" className="pointer-events-none text-[8px] font-black" fill="#111827">{preset.marker}</text>
-                  {selected && <text x={light.position.x} y={light.position.y - 17} textAnchor="middle" className="pointer-events-none text-[10px] font-bold" fill={preset.color} paintOrder="stroke" stroke="white" strokeWidth="3">{preset.label} · {light.showBeam === false ? 'beam hidden' : beamPattern === 'omni360' ? '360°' : `${Math.round(light.azimuthDeg)}° · ${light.beamAngleDeg}° beam`}</text>}
+                  {selected && <text x={light.position.x} y={light.position.y - 17} textAnchor="middle" className="pointer-events-none text-[10px] font-bold" fill={preset.color} paintOrder="stroke" stroke="white" strokeWidth="3">{preset.label} · {Math.abs(Math.round(light.tiltDeg))}° {tiltDirection}{light.showBeam === false ? ' · beam hidden' : beamPattern === 'omni360' ? ' · 360°' : ` · ${Math.round(light.azimuthDeg)}° azimuth · ${light.beamAngleDeg}° beam`}</text>}
                 </svg>
               );
             })}

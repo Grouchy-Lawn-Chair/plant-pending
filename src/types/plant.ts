@@ -68,7 +68,7 @@ export interface LinearSiteFeature {
   notes: string;
 }
 
-export type SiteLightType = 'downlight' | 'uplight' | 'pathLight' | 'wallLight' | 'spotlight' | 'floodlight' | 'other';
+export type SiteLightType = 'downlight' | 'uplight' | 'pathLight' | 'wallLight' | 'spotlight' | 'likeLightUcs2904' | 'floodlight' | 'other';
 export type SiteLightBeamPattern = 'directional' | 'omni360' | 'louver1' | 'louver2' | 'louver3' | 'louver4';
 
 export interface SiteLight {

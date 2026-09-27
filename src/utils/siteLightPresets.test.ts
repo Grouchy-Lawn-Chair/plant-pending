@@ -21,4 +21,12 @@ describe('site light presets', () => {
     expect(beamDirectionsForPattern('louver3')).toEqual([0, 120, 240]);
     expect(beamDirectionsForPattern('louver4')).toEqual([0, 90, 180, 270]);
   });
+
+  it('includes the Like Light UCS2904 RGBW spotlight preset', () => {
+    const preset = getSiteLightPreset('likeLightUcs2904');
+    expect(preset.label).toBe('Like Light UCS2904 RGBW In-ground Spotlight');
+    expect(preset.beamAngleDeg).toBe(24);
+    expect(preset.defaultWatts).toBe(8);
+    expect(preset.rgbwCapable).toBe(true);
+  });
 });

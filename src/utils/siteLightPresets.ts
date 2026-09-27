@@ -8,6 +8,8 @@ export interface SiteLightPreset {
   beamAngleDeg: number;
   previewRangeFt: number;
   defaultPattern: SiteLightBeamPattern;
+  defaultWatts?: number;
+  rgbwCapable?: boolean;
 }
 
 export const SITE_LIGHT_PRESETS: Record<SiteLightType, SiteLightPreset> = {
@@ -16,6 +18,7 @@ export const SITE_LIGHT_PRESETS: Record<SiteLightType, SiteLightPreset> = {
   pathLight: { label: 'Path light', marker: 'P', color: '#a3e635', tiltDeg: -20, beamAngleDeg: 120, previewRangeFt: 6, defaultPattern: 'omni360' },
   wallLight: { label: 'Wall light', marker: 'W', color: '#fb923c', tiltDeg: -35, beamAngleDeg: 90, previewRangeFt: 12, defaultPattern: 'directional' },
   spotlight: { label: 'Spotlight', marker: 'S', color: '#e879f9', tiltDeg: 25, beamAngleDeg: 20, previewRangeFt: 15, defaultPattern: 'directional' },
+  likeLightUcs2904: { label: 'Like Light UCS2904 RGBW In-ground Spotlight', marker: 'S', color: '#c084fc', tiltDeg: 45, beamAngleDeg: 24, previewRangeFt: 15, defaultPattern: 'directional', defaultWatts: 8, rgbwCapable: true },
   floodlight: { label: 'Floodlight', marker: 'F', color: '#f97316', tiltDeg: -20, beamAngleDeg: 110, previewRangeFt: 20, defaultPattern: 'directional' },
   other: { label: 'Other light', marker: 'L', color: '#facc15', tiltDeg: 0, beamAngleDeg: 60, previewRangeFt: 10, defaultPattern: 'directional' },
 };

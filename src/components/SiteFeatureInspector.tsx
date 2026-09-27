@@ -130,6 +130,9 @@ export function SiteFeatureInspector({
   const selectedLightBeamReachFt = selectedLight
     ? selectedLight.rangeFt ?? getSiteLightPreset(selectedLight.lightType).previewRangeFt
     : 0;
+  const beamAngleChoices = selectedLight?.lightType === 'likeLightUcs2904'
+    ? [{ value: 15, label: '15°' }, { value: 24, label: '24°' }, { value: 36, label: '36°' }]
+    : [{ value: 20, label: 'Narrow' }, { value: 60, label: 'Medium' }, { value: 110, label: 'Wide' }];
 
   return (
     <aside className="absolute right-3 top-3 z-[45] max-h-[calc(100%-1.5rem)] w-[min(23rem,calc(100%-1.5rem))] overflow-y-auto rounded-xl border border-slate-700 bg-slate-900/95 p-3 text-slate-100 shadow-2xl backdrop-blur">
@@ -219,7 +222,7 @@ export function SiteFeatureInspector({
         <div className="space-y-3">
           <label><span className={labelClass}>Name</span><input value={selectedLight.name} onChange={event => onUpdateLight(selectedLight.id, { name: event.target.value })} className={inputClass} /></label>
           <div className="grid grid-cols-2 gap-2">
-            <label><span className={labelClass}>Type</span><select value={selectedLight.lightType} onChange={event => { const lightType = event.target.value as SiteLight['lightType']; const preset = getSiteLightPreset(lightType); onUpdateLight(selectedLight.id, { lightType, tiltDeg: preset.tiltDeg, beamAngleDeg: preset.beamAngleDeg, beamPattern: preset.defaultPattern, showBeam: true }); }} className={inputClass}>{(Object.entries(SITE_LIGHT_PRESETS) as Array<[SiteLight['lightType'], (typeof SITE_LIGHT_PRESETS)[SiteLight['lightType']]]>).map(([value, preset]) => <option key={value} value={value}>{preset.label}</option>)}</select></label>
+            <label><span className={labelClass}>Type</span><select value={selectedLight.lightType} onChange={event => { const lightType = event.target.value as SiteLight['lightType']; const preset = getSiteLightPreset(lightType); onUpdateLight(selectedLight.id, { lightType, tiltDeg: preset.tiltDeg, beamAngleDeg: preset.beamAngleDeg, beamPattern: preset.defaultPattern, showBeam: true, watts: preset.defaultWatts ?? selectedLight.watts, rgbwCapable: preset.rgbwCapable ?? selectedLight.rgbwCapable }); }} className={inputClass}>{(Object.entries(SITE_LIGHT_PRESETS) as Array<[SiteLight['lightType'], (typeof SITE_LIGHT_PRESETS)[SiteLight['lightType']]]>).map(([value, preset]) => <option key={value} value={value}>{preset.label}</option>)}</select></label>
             <label><span className={labelClass}>Existing / proposed</span><select value={selectedLight.status} onChange={event => onUpdateLight(selectedLight.id, { status: event.target.value as SiteLight['status'] })} className={inputClass}><option value="existing">Existing</option><option value="proposed">Proposed</option></select></label>
           </div>
           <label><span className={labelClass}>Azimuth / rotation: {Math.round(selectedLight.azimuthDeg)}°</span><input type="range" min="0" max="359" value={selectedLight.azimuthDeg} onChange={event => onUpdateLight(selectedLight.id, { azimuthDeg: Number(event.target.value) })} className="w-full" /></label>
@@ -235,7 +238,7 @@ export function SiteFeatureInspector({
           ) : (
             <>
               <label><span className={labelClass}>Beam angle: {selectedLight.beamAngleDeg}°</span><input type="range" min="5" max="160" value={selectedLight.beamAngleDeg} onChange={event => onUpdateLight(selectedLight.id, { beamAngleDeg: Number(event.target.value) })} className="w-full" /></label>
-              <div className="grid grid-cols-3 gap-2"><button type="button" onClick={() => onUpdateLight(selectedLight.id, { beamAngleDeg: 20 })} className="rounded border border-slate-700 p-1.5 text-xs">Narrow</button><button type="button" onClick={() => onUpdateLight(selectedLight.id, { beamAngleDeg: 60 })} className="rounded border border-slate-700 p-1.5 text-xs">Medium</button><button type="button" onClick={() => onUpdateLight(selectedLight.id, { beamAngleDeg: 110 })} className="rounded border border-slate-700 p-1.5 text-xs">Wide</button></div>
+              <div className="grid grid-cols-3 gap-2">{beamAngleChoices.map(choice => <button key={choice.value} type="button" onClick={() => onUpdateLight(selectedLight.id, { beamAngleDeg: choice.value })} className={`rounded border p-1.5 text-xs ${selectedLight.beamAngleDeg === choice.value ? 'border-cyan-400 bg-cyan-500/20 text-cyan-100' : 'border-slate-700'}`}>{choice.label}</button>)}</div>
             </>
           )}
           <label>
