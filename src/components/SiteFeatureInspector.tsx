@@ -127,6 +127,9 @@ export function SiteFeatureInspector({
       onMove: (direction: -1 | 1) => reorderWithinLayer(siteLights, light, direction, onUpdateLight),
     })),
   ].sort((a, b) => b.order - a.order);
+  const selectedLightBeamReachFt = selectedLight
+    ? selectedLight.rangeFt ?? getSiteLightPreset(selectedLight.lightType).previewRangeFt
+    : 0;
 
   return (
     <aside className="absolute right-3 top-3 z-[45] max-h-[calc(100%-1.5rem)] w-[min(23rem,calc(100%-1.5rem))] overflow-y-auto rounded-xl border border-slate-700 bg-slate-900/95 p-3 text-slate-100 shadow-2xl backdrop-blur">
@@ -235,9 +238,15 @@ export function SiteFeatureInspector({
               <div className="grid grid-cols-3 gap-2"><button type="button" onClick={() => onUpdateLight(selectedLight.id, { beamAngleDeg: 20 })} className="rounded border border-slate-700 p-1.5 text-xs">Narrow</button><button type="button" onClick={() => onUpdateLight(selectedLight.id, { beamAngleDeg: 60 })} className="rounded border border-slate-700 p-1.5 text-xs">Medium</button><button type="button" onClick={() => onUpdateLight(selectedLight.id, { beamAngleDeg: 110 })} className="rounded border border-slate-700 p-1.5 text-xs">Wide</button></div>
             </>
           )}
+          <label>
+            <span className={labelClass}>Beam reach: {selectedLightBeamReachFt} ft</span>
+            <div className="flex items-center gap-2">
+              <input type="range" min="1" max="50" step="0.5" value={selectedLightBeamReachFt} onChange={event => onUpdateLight(selectedLight.id, { rangeFt: Number(event.target.value) })} className="min-w-0 flex-1" />
+              <input type="number" min="0.5" step="0.5" value={selectedLightBeamReachFt} onChange={event => onUpdateLight(selectedLight.id, { rangeFt: optionalNumber(event.target.value) })} className="w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white" aria-label="Beam reach in feet" />
+            </div>
+          </label>
           <div className="grid grid-cols-2 gap-2">
             <label><span className={labelClass}>Mounting height (ft)</span><input type="number" step="0.25" value={selectedLight.mountingHeightFt ?? ''} onChange={event => onUpdateLight(selectedLight.id, { mountingHeightFt: optionalNumber(event.target.value) })} className={inputClass} /></label>
-            <label><span className={labelClass}>Beam reach / map scale (ft)</span><input type="number" min="0.5" step="0.5" value={selectedLight.rangeFt ?? getSiteLightPreset(selectedLight.lightType).previewRangeFt} onChange={event => onUpdateLight(selectedLight.id, { rangeFt: optionalNumber(event.target.value) })} className={inputClass} /></label>
             <label><span className={labelClass}>Lumens</span><input type="number" value={selectedLight.lumens ?? ''} onChange={event => onUpdateLight(selectedLight.id, { lumens: optionalNumber(event.target.value) })} className={inputClass} /></label>
             <label><span className={labelClass}>Watts</span><input type="number" step="0.1" value={selectedLight.watts ?? ''} onChange={event => onUpdateLight(selectedLight.id, { watts: optionalNumber(event.target.value) })} className={inputClass} /></label>
             <label><span className={labelClass}>Color temperature (K)</span><input type="number" step="100" value={selectedLight.colorTemperatureK ?? ''} onChange={event => onUpdateLight(selectedLight.id, { colorTemperatureK: optionalNumber(event.target.value) })} className={inputClass} /></label>
